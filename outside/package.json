@@ -1,0 +1,12 @@
+{
+  "name": "spores-outside",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Spores outside service (SPEC §6.4 option 2): a paid data feed we run, sold only to active spores' operators against a settled router payment.",
+  "type": "module",
+  "engines": { "node": ">=23.6" },
+  "scripts": {
+    "start": "node src/server.ts",
+    "test": "node --test test/*.test.ts"
+  }
+}
