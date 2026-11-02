@@ -1,0 +1,13 @@
+[package]
+name = "spores-core"
+version = "0.1.0"
+description = "Pure integer graph, fee, pool and fingerprint math for Spores. No chain dependency."
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+sha2 = { version = "0.10", default-features = false }
+
+[dev-dependencies]
+serde_json = "1"
