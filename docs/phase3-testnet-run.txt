@@ -1,0 +1,86 @@
+router spores-hack-router2.testnet, 2026-10-31T11:53:20Z
+PASS | mint_genesis 16 more (have 0)                    | u2Cns9XVKy1r5gmLZDLDK1h6iUSPRiT1wknk1CQ5DDZ | 44.18 Tgas | ok [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+PASS | mint_genesis 16 more (have 16)                   | FeYwjnwuk7uBCKbQ6Bz9sSsAWZPiGfAoW68cr7ww39vV | 64.8 Tgas | ok [16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+PASS | mint_genesis 16 more (have 32)                   | 5zzU2uJv6jJoGedUESooBUnLuthGPAkUA1jYGmsh2cGJ | 69.45 Tgas | ok [32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47]
+PASS | mint_genesis 16 more (have 48)                   | xhAF2y2vGV4zHaHBFzi7fG51pdJ1Xhb9E2LKoFWCCu9 | 77.1 Tgas | ok [48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63]
+PASS | 64 spores minted                                 | - | 0 Tgas | supply 64; 565 bytes per spore over 64 mints; storage now 473832 bytes
+PASS | mint by a non-admin                              | 733RZVCAwTHKXn21GEXNMmoyk888KRawpQbr9DRZG6LB | 2.03 Tgas | rejected: Smart contract panicked: only the admin can mint
+PASS | activate below the minimum deposit               | CrAyTtfotZiu3Khys3izFxWy22tnW5HsCf5AEVcZUHpb | 2.35 Tgas | rejected: Smart contract panicked: activation needs at least min_activation_deposit attached
+PASS | activate by a non-owner                          | GGaMdebSbJcCAnq9ZrgezjsEwXRJajhFozC8fN8tHCLC | 2.34 Tgas | rejected: Smart contract panicked: only the spore owner can do this
+PASS | activate spore 0 (0.3 NEAR)                      | ByWcqUw25LVJy7D7HB8zFYvMchHecW2bF5MKxNDyDSGK | 2.61 Tgas | ok 
+PASS | activate spore 1 (0.3 NEAR)                      | GcEmf1aFjcvfACt9W3Jchx7HJa2UkM5w5GAQL9osqNLD | 2.61 Tgas | ok 
+PASS | activate spore 2 (0.3 NEAR)                      | 9VvjSekDy55zp9PSSF1K9qr8BCbSwFxPqEcYyVrCtBKE | 2.61 Tgas | ok 
+PASS | operator before set_policy: spore is locked      | 2qvBHV661xran3ZecBYDqGc5uPiqhoVUnQGnszo4cCtR | 2.12 Tgas | rejected: Smart contract panicked: policy: spore is paused
+PASS | set_policy without 1 yocto                       | FrenEZaoby42x1iaznkjzhBWBtQY335UYJFcNzXTPGP7 | 2.05 Tgas | rejected: Smart contract panicked: Requires attached deposit of exactly 1 yoctoNEAR
+PASS | set_policy by a non-owner                        | 9GjeTissSBw6pMg2mkM8mUX4LdWx48AnU6kfRPU1yhGL | 2.36 Tgas | rejected: Smart contract panicked: only the spore owner can do this
+PASS | set_policy spore 0: 0.2/epoch, cap 0.05, any     | HgkEh598Y5gG7Uqb4Z5FHcdxiYzDFDSA7RLBVM9SJ5EL | 2.67 Tgas | ok 
+PASS | set_policy spore 1: 0.2/epoch, cap 0.05, any     | Am9ss8opFfVVF8r1WkYrZr2CGLSUz6sAALLEaqAHX49F | 2.67 Tgas | ok 
+PASS | set_policy spore 2: 0.2/epoch, cap 0.05, any     | G63EK2Sg9XRyok3HxGkih9NmBg7yAqAjGKPKWnvEuCGw | 2.67 Tgas | ok 
+PASS | deposit 0.1 NEAR to spore 1 (anyone)             | CSEB3T9gTHAz2Bmj7gJPE7wofcZ1nAnjcG8oDN58uRwR | 2.52 Tgas | ok "400000000000000000000000"
+PASS | FC key calls set_policy (not in its list)        | CKJoq8F57DnHVdpqNY5KdgYvczJX91XkCNmtck53SnVN(not included) | 0 Tgas | rejected: {"TxExecutionError":{"InvalidTxError":{"InvalidAccessKeyError":{"MethodNameMismatch":{"method_name":"set_policy"}}}}}
+PASS | FC key calls withdraw (not in its list)          | 7NFZ6DCUS6FaJxnkvQ734ZbktjEqJBs64A7VdSatMgYm(not included) | 0 Tgas | rejected: {"TxExecutionError":{"InvalidTxError":{"InvalidAccessKeyError":{"MethodNameMismatch":{"method_name":"withdraw"}}}}}
+PASS | FC key attaches a deposit                        | BeLoK42MeDC6E3SqY5nrqZSc3GJSy1MWUDqedrH6whSH(not included) | 0 Tgas | rejected: {"TxExecutionError":{"InvalidTxError":{"InvalidAccessKeyError":"DepositWithFunctionCall"}}}
+PASS | operator's full key: withdraw                    | AvUZjXpc2Y2tXbkVTJcb1ZVT6bM6qaf1PcwxeKmFcwnM | 2.34 Tgas | rejected: Smart contract panicked: only the spore owner can do this
+PASS | stranger calls private on_withdraw               | AwvGCNPjv1jdwc8n4yKo9Z5Wpd7i8AZVN15AELgwyBHY | 1.94 Tgas | rejected: Smart contract panicked: Method on_withdraw is private
+PASS | post_job by spore 0                              | DBVG2AwTTVnJy29ng5KFg6neHenRHAa53dpgXj4tGLd5 | 2.88 Tgas | ok 0
+PASS | quote on job 0 by spore 1                        | 6JLyYkw66TABnU5MLersPBSjP6fDi3yPURDTEYMao2sQ | 2.6 Tgas | ok 
+PASS | accept job 0 from spore 1                        | CEkNWgE2RNhfUPjHDrpv9bXL9TaMchNHdvAMc3jwv8Gb | 2.98 Tgas | ok 
+PASS | deliver job 0                                    | Grv97AVt2hvnS1vFd2ykV5NHYjr66puiowV3vLbSrHM6 | 2.6 Tgas | ok 
+PASS | settle job 0                                     | HTQbKXmqfY1RqBmB3VrcnM99TXqvMRHQaEiyYkgpEucT | 3.15 Tgas | ok 
+PASS | post_job by spore 2                              | EUqNCbTyWP9CEeNtY6hYkPreFwpyfANjDJJ1VwH4NUSN | 2.88 Tgas | ok 1
+PASS | quote on job 1 by spore 0                        | BsF22zaK8Ap7pkFFRfNJnw5JEC9tqGgZQ77SqbzbTZ3a | 2.61 Tgas | ok 
+PASS | accept job 1 from spore 0                        | 5eZNsYcLapi3z3345sRgpJDDE2N9YJ43ZNxXmQB514aa | 2.99 Tgas | ok 
+PASS | deliver job 1                                    | 41zm7wgfp9k6zxMNTdHS75VVbdhQejcWrnBttPkkrdkB | 2.6 Tgas | ok 
+PASS | settle job 1                                     | FqCVYjL136kiyGvo5LEBvKnpDsBNbwBCbiHMVtTjoo2A | 3.16 Tgas | ok 
+PASS | fee pool after two settles                       | - | 0 Tgas | pool 800000000000000000000 = 2 x 1% of 0.04 NEAR
+PASS | post_job for the policy checks                   | BDSxDi6ySR7Ea4qUAiBHzbeUrj8RQY8krPhGqGkMLrsv | 2.89 Tgas | ok 2
+PASS | quote on job 2 by spore 1                        | 41VxkbPihWhCQRF6QSWzZ2tJCLTQGKL9o3gbasTm91qn | 2.61 Tgas | ok 
+PASS | accept over the per-payment cap                  | 8Av3vXWnEBP5qxBe5AjXA4MEV3Ep9fxMk4f8vhcZs5yu | 2.31 Tgas | rejected: Smart contract panicked: policy: payment exceeds the per-payment cap
+PASS | quote on job 2 by spore 1                        | DtxXNtBibgZsBaNkqFzGipBHWELPfHkKUTNu2WQ8HkSi | 2.61 Tgas | ok 
+PASS | owner: allowlist only spore 2                    | 92Dj2AD2TwAqMgTNRBy4BEtu2sX6rp6GCBJqATe3o2D1 | 2.69 Tgas | ok 
+PASS | accept a payee not on the allowlist              | 9m53G7aFo1zBtpPBWDArvRy5b9v7DbqV9kr3fezudfiJ | 2.31 Tgas | rejected: Smart contract panicked: policy: payee is not on the allowlist
+PASS | owner: budget 0.05/epoch (0.04 spent)            | 81hcwDq9TYmUtKdKvJDzPRRpaDMvDuHSyF7nqpitu5Wz | 2.68 Tgas | ok 
+PASS | accept over the epoch budget                     | 51CWywffyzvPsRrBCJ4ZjjgrDxquW3JArCvcaY4ehBsf | 2.3 Tgas | rejected: Smart contract panicked: policy: epoch budget exceeded
+PASS | owner: open policy again                         | HTmirBd5M8ehe3Uy4rvWUWYiewSgfn6ZcVNF1HrZpH5j | 2.68 Tgas | ok 
+PASS | owner: pause spore 0                             | 6B945gCq2htJ1ZXP8NmWTTzuAcZdLTDpNrRqUkVKCcjA | 2.56 Tgas | ok 
+PASS | accept while paused                              | 4y7safDknTwApEXpMneSqvexpZAD57JVvqM4svJoNLtz | 2.3 Tgas | rejected: Smart contract panicked: policy: spore is paused
+PASS | rejected payments moved nothing                  | - | 0 Tgas | balance of spore 0 unchanged, escrow 0
+PASS | owner: unpause (set_policy)                      | BsvyPUcGrQdAScpytiJcsqkcgt48ya3Y4NkChUtDqVVM | 2.68 Tgas | ok 
+PASS | close_epoch (anyone)                             | 7xupQju7iBSbuwnm2rT1QfeZ4XyC7Hm71QwogyrKiqWa | 3.31 Tgas | ok "e9892356159e24469ef34df151147a484924476e5c5e91324f8c20bb5fd6cb96"
+PASS | close_epoch again at once                        | 3MFB31rEGL1Psriu5aqeUXk8XERd9uWdoZRWkngs343y | 2.01 Tgas | rejected: Smart contract panicked: epoch has not ended yet
+PASS | fingerprint stored for epoch 1                   | - | 0 Tgas | e9892356159e24469ef34df151147a484924476e5c5e91324f8c20bb5fd6cb96
+PASS | tubes after epoch 1                              | - | 0 Tgas | [[0,1,"71428"],[0,2,"71428"]]
+PASS | render spore 0 from chain state                  | - | 0 Tgas | renderer v1 age 1 edges 2 image_hash 22b3bfaa210f2db8e50308744c0d23bcc6ab18c5863d035e3506a1ccce7e301e -> out/phase3/spore0.png
+PASS | render spore 3 from chain state                  | - | 0 Tgas | renderer v1 age 0 edges 0 image_hash c8a29c6b587158f2b1991d269653623214beb0532ea3ef238b213ad45126d5c8 -> out/phase3/spore3.png
+PASS | post_job by spore 0 (will be rejected)           | EUr9nfVQBU4gcc3EX2ap5kcBZhPubGLEV8diYbuRvbrj | 2.89 Tgas | ok 3
+PASS | quote on job 3 by spore 1                        | 53noNAYnB6QchSFvNd5DiXKsC8wK35Xe8xNKPa119P5 | 2.61 Tgas | ok 
+PASS | accept job 3 from spore 1                        | 5DZ2TAFKWBfJ2aNRrxyuEhY1iFV44YP3HELTrJ2tKSGL | 2.99 Tgas | ok 
+PASS | deliver job 3                                    | CQwUn8Du4XrjF7vDXBiu3ik4zNezDEw8r9RbqDxy6kV5 | 2.6 Tgas | ok 
+PASS | reject job 3 (refund, tube cut at close)         | 4twjUNXbPEufHM9mBGfUf8oJcXYCLmNhhANQUQuA4i98 | 3.15 Tgas | ok 
+PASS | reject refunded 0.04                             | - | 0 Tgas | balance +0.04
+PASS | post_job by spore 1 (will time out)              | HrARhGfSSUPuP47dg8noPrgpwYSNQ76kw5jQdWLuKk1C | 2.89 Tgas | ok 4
+PASS | quote on job 4 by spore 0                        | 4HZHc4Y82kpAwLhtBkMoo3zZjxZ3W2dSPnN1zqbT6PM3 | 2.62 Tgas | ok 
+PASS | accept job 4 from spore 0                        | 3fV7T2BKShVXFEz6DRErve2jLAP7R3eS46mc7HxTeTYP | 3 Tgas | ok 
+PASS | timeout_job too early                            | 9n63YfoCz9qaEPcK53JEEVFTigRwxZj2DL3WYvpFfAyu | 2.12 Tgas | rejected: Smart contract panicked: job has not timed out
+waiting 65 s for the 60 s job deadline...
+PASS | deliver after the deadline                       | FsCcHF3xthjBbgeAU6zfMvQDyRyrb5KPAHrzYkhEPszB | 2.12 Tgas | rejected: Smart contract panicked: job has timed out
+PASS | timeout_job (anyone) refunds the consumer        | F2ZscKngJtkDG4Nxtj6FeHzmrQYwD2YEFYHYLWGMd3Bt | 3.14 Tgas | ok 
+PASS | timeout refunded 0.03 to spore 1                 | - | 0 Tgas | balance +0.03
+PASS | post_job by spore 0 (in flight at transfer)      | 8XKC4R4hX8q1geEzbti3TFYAK5oiXC46fd1RwVch3dyk | 2.89 Tgas | ok 5
+PASS | quote on job 5 by spore 2                        | 8TDnn5dpMvmg4D9YK51r7zmFJ1MQnCa73J14uMJogrSp | 2.61 Tgas | ok 
+PASS | accept job 5 from spore 2                        | 6jj65gHRfUwkgsWKdybQVhSVx6htmr4arCYAcHqsx7Tt | 3 Tgas | ok 
+PASS | owner transfers spore 0 to buyer (NEP-171)       | B6Bfk3S67FeQV5EzJdnfzLXV7YnR2REkusGcnjiWG3GE | 5.64 Tgas | ok 
+PASS | old operator key: post_job                       | 3ZoN9WoNw7cgSeXu2RrdDJ7JgpG2Eq25nYsQbhNq2dtd | 2.13 Tgas | rejected: Smart contract panicked: caller is not this spore's operator
+PASS | old operator key: quote                          | 7BCBiTEDbPyxYeTdVLRRC9HbGuoD3exN7DHTjzJjASoW | 2.13 Tgas | rejected: Smart contract panicked: caller is not this spore's operator
+PASS | old owner: withdraw                              | 6d8xASC4KECjQhkUEboEGtrP1NrPXvrp1dbUBq94eSS6 | 2.34 Tgas | rejected: Smart contract panicked: only the spore owner can do this
+PASS | old owner: set_policy                            | tfzexnJ9rQ643VGQxPwijAin611QXjQsPnaojmpb1hB | 2.36 Tgas | rejected: Smart contract panicked: only the spore owner can do this
+PASS | owner is now the buyer                           | - | 0 Tgas | buyer.spores-hack.testnet
+PASS | policy reset to paused, zero budget              | - | 0 Tgas | {"paused":true,"budget_per_epoch":"0","max_payment":"0","allow_all_spores":false,"allowlist":[]}
+PASS | tubes, age, reputation unchanged                 | - | 0 Tgas | [[[1,"71428"],[2,"71428"]],1,"534"]
+PASS | balance kept, own escrow refunded                | - | 0 Tgas | before 259742857000000000000000 after 299742857000000000000000
+PASS | job in flight refunded and removed               | - | 0 Tgas | get_job 5 = null
+PASS | new owner withdraws 0.05 NEAR                    | 6JhahSU4jc7Druz6UjUANuL4d5hbaXaPCyTpLdmLRqRZ | 5.64 Tgas | ok true
+PASS | withdraw callback saw a successful transfer      | - | 0 Tgas | on_withdraw returned true
+PASS | ledger conserved                                 | - | 0 Tgas | {"deposited":"1000000000000000000000000","withdrawn":"50000000000000000000000","balances":"949485714000000000000000","escrow":"0","pool":"0","treasury":"514286000000000000000","conserved":true}
+PASS | router solvent (storage + ledger covered)        | - | 0 Tgas | {"storage_bytes":"474049","storage_cost":"4740490000000000000000000","account_balance":"10946505099195519400000009","ledger":"950000000000000000000000","solvent":true}
+PASS 83  FAIL 0
