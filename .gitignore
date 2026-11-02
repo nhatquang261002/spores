@@ -1,0 +1,34 @@
+# Secrets: keys, seed phrases and the submission payload never go in the repo
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+credentials/
+.near-credentials/
+submission*.json
+payload*.json
+
+# Rust
+target/
+**/*.rs.bk
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+*.log
+
+# Generated renders (commit only chosen samples deliberately)
+v2-*.png
+out/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

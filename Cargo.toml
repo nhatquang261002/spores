@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = ["core", "sim", "renderer", "router"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+rust-version = "1.86"
+
+[profile.release]
+overflow-checks = true
+
+# Router wasm: optimise for size (storage costs 1 NEAR per 100 kB), keep overflow
+# checks. A separate profile so `sim` and the renderer stay fast in `release`.
+# Build: cd router && cargo near build non-reproducible-wasm --profile contract
+[profile.contract]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+debug = false
+strip = true
+
+# The renderer runs ~10^8 integer ops per image; keep it fast under `cargo test`.
+[profile.dev.package.spores-renderer]
+opt-level = 3
