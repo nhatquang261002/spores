@@ -7,6 +7,7 @@ pub mod epoch;
 pub mod error;
 pub mod fee;
 pub mod fingerprint;
+pub mod glyph;
 pub mod graph;
 pub mod hiring;
 pub mod market;
@@ -14,6 +15,7 @@ pub mod math;
 pub mod params;
 pub mod pool;
 pub mod rng;
+pub mod state;
 
 pub use epoch::{close_epoch, EpochInput, EpochOutput};
 pub use error::CoreError;

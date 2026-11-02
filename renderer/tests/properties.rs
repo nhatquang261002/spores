@@ -116,3 +116,11 @@ fn spore_bytes_round_trip_and_reject_bad_lengths() {
 fn image_is_n_by_n_rgb() {
     assert_eq!(render(&case("dormant")).len(), N * N * 3);
 }
+
+#[test]
+fn glyph_ring_table_matches_the_renderer_sine() {
+    let t = sin_table();
+    for (k, v) in spores_core::glyph::QUARTER_SIN.iter().enumerate() {
+        assert_eq!(*v, t[64 * k], "slot angle {k}");
+    }
+}

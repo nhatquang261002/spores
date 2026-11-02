@@ -27,8 +27,8 @@ Here the NFT is the agent's account and its history in one tradeable asset. Spen
 | Feature | Use |
 | --- | --- |
 | NEP-171 NFTs | One NFT per spore. Transfer is implemented so it clears the old operator and resets policy <!-- TODO: confirm NEP-171 details --> |
-| Dynamic on-chain metadata | Name, traits and a vector glyph are generated from chain state; the image hash is committed on-chain <!-- TODO: confirm glyph generation in views, and how wallets display it --> |
-| Royalties | Market resales pay a royalty <!-- TODO: confirm NEP-199 payout support --> |
+| Dynamic on-chain metadata | Traits and a vector glyph are generated from chain state on every read: NEP-177 `media` is the glyph as a `data:image/svg+xml` URI with its `media_hash`, and the `glyph` view returns it (2.33 Tgas on testnet). The hash of the Physarum render is committed on-chain with `commit_image` after every epoch <!-- TODO: name trait; how wallets display it --> |
+| Royalties | The router's own `buy` pays the seller and a 5% royalty in the same call (tested on testnet: 0.475 + 0.025 NEAR for a 0.5 NEAR sale). NEP-199 `nft_payout` reports the same split; approvals (NEP-178) are off, so outside marketplaces cannot sell a spore and `nft_transfer_payout` is owner only |
 | Sub-accounts | One operator account per active spore for the agent runtime <!-- TODO: say whether spores are also real sub-accounts (spike result) --> |
 | Function-call access keys | Operators can only call the allowed router methods, with an allowance <!-- TODO: confirm exact key limits --> |
 | Native NEAR | Deposits, withdrawals, market sales and payments to external services |
@@ -86,10 +86,11 @@ Each step is "do X, see Y". Fill in the commands and outputs from a real run, an
 ## Verify an epoch
 
 ```
-<!-- TODO: command for the verify script -->
+cargo run --release -p spores-verify -- epochs --router spores-hack-router4.testnet --closes docs/phase5-closes.txt
+cargo run --release -p spores-verify -- image  --router spores-hack-router4.testnet --closes docs/phase5-closes.txt --spore 5
 ```
 
-The script reads an epoch's payments from chain history, reruns the update rule, rebuilds the canonical string and compares its sha256 with the fingerprint stored on-chain. It can also regenerate a spore's image from state and compare its hash with the one committed on-chain. Expected output: `match`. <!-- TODO: confirm -->
+The script reads each epoch's `epoch_closed` event from its close transaction (payments, rejections, fee pool and active set), reruns the update rule with the router's own parameters, rebuilds the canonical string and compares its sha256 with the fingerprint in the event and the one stored on-chain. `image` rebuilds a spore's state at the epoch of its committed image, checks the committed state hash, renders it and compares the image hash. On the Phase 5 run it printed one `epoch N: <fingerprint> match` line per epoch, then `verified 16 epochs on spores-hack-router4.testnet: match` and `image: match`. Old transactions are only on NEAR's rate-limited archival RPC, so a late replay is slow.
 
 ## Does the slime mold help?
 
@@ -123,9 +124,9 @@ Report every result, even if connections do not win. -->
 | Router, ledger and policy | TODO |
 | Spore NFT and transfer semantics | TODO |
 | Fixed-point renderer, image commits, glyph and gallery | TODO |
-| Market and royalties | TODO |
+| Market and royalties | Built and run on testnet: list, buy with royalty, old operator locked out, new owner takes over (`docs/phase5-results.md`) |
 | Agents, job escrow and outside service | TODO |
-| Living allowance | TODO |
+| Living allowance | Built and enforced on every payment; values from the sim (`docs/phase5-results.md`). It did not bind in the testnet run |
 | Visualization | TODO |
 | Baseline and wash-trading results | TODO |
 

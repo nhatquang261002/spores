@@ -1,5 +1,6 @@
 //! Ledger keyed by spore id (SPEC §5.2): anyone deposits, only the owner
-//! withdraws, and only to the owner's own account.
+//! withdraws, and only to the owner's own account. The admin withdraws the
+//! treasury, only to itself.
 
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
@@ -30,7 +31,8 @@ impl Router {
 
     /// Owner only, 1 yoctoNEAR. Pays `amount` from the spore's balance to the
     /// owner. There is no recipient argument, so an operator (or anyone else)
-    /// cannot withdraw to itself. If the transfer fails the balance is restored.
+    /// cannot withdraw to itself. Refused while listed. If the transfer fails
+    /// the balance is restored.
     #[payable]
     pub fn withdraw(&mut self, spore_id: SporeId, amount: U128) -> Promise {
         assert_one_yocto();
@@ -38,6 +40,7 @@ impl Router {
         let amount = amount.0;
         require!(amount > 0, "amount must be positive");
         let s = self.spore_mut(spore_id);
+        require!(s.listing.is_none(), "a listed spore cannot withdraw; delist it first");
         require!(s.balance >= amount, "insufficient balance");
         s.balance -= amount;
         self.withdrawn += amount;
@@ -50,6 +53,35 @@ impl Router {
                 .with_static_gas(GAS_FOR_ON_WITHDRAW)
                 .on_withdraw(spore_id, owner, U128(amount)),
         )
+    }
+
+    /// Admin only, 1 yoctoNEAR. Pays `amount` of the treasury (the pool share
+    /// not rebated, SPEC §8.3) to the admin. Restored if the transfer fails.
+    #[payable]
+    pub fn withdraw_treasury(&mut self, amount: U128) -> Promise {
+        assert_one_yocto();
+        let admin = env::predecessor_account_id();
+        require!(admin == self.admin, "only the admin can withdraw the treasury");
+        require!(amount.0 > 0 && amount.0 <= self.treasury, "amount must be in 1..=treasury");
+        self.treasury -= amount.0;
+        self.withdrawn += amount.0;
+        emit("treasury_withdraw", json!({ "to": admin, "amount": amount }));
+        Promise::new(admin).transfer(NearToken::from_yoctonear(amount.0)).then(
+            Self::ext(env::current_account_id())
+                .with_static_gas(GAS_FOR_ON_WITHDRAW)
+                .on_treasury_withdraw(amount),
+        )
+    }
+
+    #[private]
+    pub fn on_treasury_withdraw(&mut self, amount: U128) -> bool {
+        if near_sdk::is_promise_success() {
+            return true;
+        }
+        self.treasury += amount.0;
+        self.withdrawn -= amount.0;
+        emit("treasury_withdraw_failed", json!({ "amount": amount }));
+        false
     }
 
     #[private]

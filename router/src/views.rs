@@ -5,6 +5,7 @@ use near_sdk::json_types::{U128, U64};
 use near_sdk::{env, near, AccountId};
 use spores_core::math::isqrt;
 
+use crate::art::ImageCommitView;
 use crate::types::{hex, Config, Job, Policy, SporeId};
 use crate::{Router, RouterExt};
 
@@ -25,11 +26,19 @@ pub struct SporeSummary {
     pub connections: Vec<(SporeId, U128)>,
     pub policy: Policy,
     pub spent_this_epoch: U128,
+    /// The living allowance: `min(owner budget, base + trust_gain * R / 1000)`.
+    pub effective_budget: U128,
+    /// `effective_budget` minus what was spent this epoch.
     pub budget_left: U128,
     pub seed: String,
     pub posted_jobs: Vec<u64>,
     pub serving_jobs: Vec<u64>,
     pub transfers: u32,
+    pub sales: u32,
+    pub listed_price: Option<U128>,
+    /// `(epoch, state hash hex)` stored at the last close.
+    pub state: Option<(u64, String)>,
+    pub image: Option<ImageCommitView>,
 }
 
 /// Exactly the renderer's inputs (`spores_renderer::Spore`): seed, age and
@@ -134,11 +143,16 @@ impl Router {
             connections: self.connections(spore_id).into_iter().map(|(n, d)| (n, U128(d))).collect(),
             policy: s.policy.clone(),
             spent_this_epoch: U128(spent),
-            budget_left: U128(s.policy.budget_per_epoch.0.saturating_sub(spent)),
+            effective_budget: U128(self.effective_budget(spore_id)),
+            budget_left: U128(self.effective_budget(spore_id).saturating_sub(spent)),
             seed: hex(&s.seed),
             posted_jobs: s.posted.clone(),
             serving_jobs: s.serving.clone(),
             transfers: s.transfers,
+            sales: s.sales,
+            listed_price: s.listing.map(U128),
+            state: s.state.map(|(e, h)| (e, hex(&h))),
+            image: s.image.as_ref().map(ImageCommitView::from),
         })
     }
 

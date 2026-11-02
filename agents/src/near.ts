@@ -45,11 +45,14 @@ export async function rpc(method: string, params: unknown, timeoutMs = 20_000): 
   }
 }
 
-/** Read-only call at final finality; returns the parsed JSON result. */
-export async function view(contract: string, method: string, args: object = {}): Promise<any> {
+/**
+ * Read-only call at final finality, or at `blockId` (height or hash) when
+ * given; returns the parsed JSON result.
+ */
+export async function view(contract: string, method: string, args: object = {}, blockId?: number | string): Promise<any> {
   const r = await rpc('query', {
     request_type: 'call_function',
-    finality: 'final',
+    ...(blockId === undefined ? { finality: 'final' } : { block_id: blockId }),
     account_id: contract,
     method_name: method,
     args_base64: Buffer.from(JSON.stringify(args)).toString('base64'),
@@ -214,13 +217,24 @@ export class Caller {
   }
 }
 
-/** Current chain time in ns, from the latest final block. */
+/**
+ * A finished transaction with its receipts (`EXPERIMENTAL_tx_status`): the
+ * receipts carry each action (e.g. a Transfer's deposit) and the outcomes
+ * carry each receipt's status and block.
+ */
+export async function txStatus(hash: string, sender: string): Promise<any> {
+  const r = await rpc('EXPERIMENTAL_tx_status', { tx_hash: hash, sender_account_id: sender, wait_until: 'FINAL' }, 30_000);
+  if (r.error) throw new Error(`tx status ${hash}: ${JSON.stringify(r.error)}`);
+  return r.result;
+}
+
 /** Account balance in yocto, or null if the account does not exist. */
 export async function balanceOf(accountId: string): Promise<bigint | null> {
   const r = await rpc('query', { request_type: 'view_account', finality: 'final', account_id: accountId });
   return r.result ? BigInt(r.result.amount) : null;
 }
 
+/** Current chain time in ns, from the latest final block. */
 export async function chainTimeNs(): Promise<bigint> {
   const r = await rpc('block', { finality: 'final' });
   return BigInt(r.result.header.timestamp_nanosec);

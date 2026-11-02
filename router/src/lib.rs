@@ -3,16 +3,21 @@
 //! All graph, fee and pool math is `spores-core`, the same code `sim` and
 //! `verify` run.
 //!
-//! Money leaves the ledger only through `withdraw` (owner only, to the owner)
-//! and `pay_service` (operator, only to a payee on the owner's
-//! `external_allowlist`, within the same budget and cap as a job). Agents act through a registered operator account whose key should be
-//! a function-call key limited to the job methods; those methods take no
-//! deposit, because a function-call key cannot attach one. Owner methods that
-//! change control require 1 yoctoNEAR, which only a full-access key can attach.
+//! Money leaves the ledger only through `withdraw` (owner only, to the owner),
+//! `withdraw_treasury` (admin only, to the admin) and `pay_service` (operator,
+//! only to a payee on the owner's `external_allowlist`, within the same budget
+//! and cap as a job). A `buy` pays seller and royalty straight from the
+//! attached deposit and never touches the ledger. Agents act through a
+//! registered operator account whose key should be a function-call key limited
+//! to the job methods; those methods take no deposit, because a function-call
+//! key cannot attach one. Owner methods that change control require 1
+//! yoctoNEAR, which only a full-access key can attach.
 
+mod art;
 mod epoch;
 mod jobs;
 mod ledger;
+mod market;
 mod nft;
 mod service;
 mod types;
@@ -31,7 +36,7 @@ use near_sdk::store::{IterableMap, LookupMap, Vector};
 use near_sdk::{assert_one_yocto, env, near, require, AccountId, BorshStorageKey, PanicOnDefault};
 use sha2::{Digest, Sha256};
 
-pub use crate::types::{Config, Job, JobStatus, Policy, Quote, Spore, SporeId};
+pub use crate::types::{Config, ImageCommit, Job, JobStatus, Policy, Quote, Spore, SporeId};
 use crate::types::{emit, MAX_EXTERNAL_PAYEES, MAX_SUPPLY};
 
 #[near]
@@ -156,6 +161,10 @@ impl Router {
                 posted: Vec::new(),
                 serving: Vec::new(),
                 transfers: 0,
+                listing: None,
+                sales: 0,
+                state: None,
+                image: None,
             });
             // The router pays for its own storage (`storage_report`), so no
             // deposit is charged; the standard mint event is emitted here.
@@ -236,9 +245,11 @@ impl Router {
         emit("policy_set", json!({ "spore_id": spore_id, "policy": policy }));
     }
 
-    /// Owner only. No deposit needed, so any key the owner holds can stop the agent.
+    /// Owner only. No deposit needed, so any key the owner holds can stop the
+    /// agent. Refused while the spore is listed (SPEC §5.4).
     pub fn pause(&mut self, spore_id: SporeId) {
         self.require_owner(spore_id);
+        require!(self.spore(spore_id).listing.is_none(), "a listed spore cannot be paused; delist it first");
         self.spore_mut(spore_id).policy.paused = true;
         emit("spore_paused", json!({ "spore_id": spore_id }));
     }

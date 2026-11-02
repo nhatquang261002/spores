@@ -1,7 +1,8 @@
 // One agent = one active spore (SPEC §4, §6). Usage: SPORE_ID=N node src/agent.ts
-// (normally started by run.ts). Signs with SPORE_<N>_FC_PRIVATE_KEY, a
-// function-call key on the operator account limited to the router's job and
-// pay methods. Every money decision follows the shared rules (rules.ts =
+// (normally started by run.ts). Signs with <KEY_PREFIX>SPORE_<N>_FC_PRIVATE_KEY,
+// a function-call key on the operator account limited to the router's job and
+// pay methods. After a sale the new owner's operator takes over: run.ts starts
+// the agent again with AGENT_OPERATOR_ACCOUNT_ID and AGENT_FC_PRIVATE_KEY. Every money decision follows the shared rules (rules.ts =
 // spores-core): providers quote cost * (1 + margin); consumers hire by
 // quote / (1 + w * D_norm) and log each decision.
 import { createHash } from 'node:crypto';
@@ -14,9 +15,10 @@ import { SERVICES, decodeTask, deliver, encodeTask, makeTask, profile, resultHas
 
 const cfg = loadConfig();
 const me = Number(process.env.SPORE_ID);
-const key = process.env[`SPORE_${me}_FC_PRIVATE_KEY`];
-if (!Number.isInteger(me) || !key) throw new Error('set SPORE_ID and SPORE_<id>_FC_PRIVATE_KEY');
-const chain = new Caller(cfg.operatorId, key, cfg.router, 'EXECUTED_OPTIMISTIC');
+const operatorId = process.env.AGENT_OPERATOR_ACCOUNT_ID || cfg.operatorId;
+const key = process.env.AGENT_FC_PRIVATE_KEY || process.env[`${process.env.KEY_PREFIX ?? ''}SPORE_${me}_FC_PRIVATE_KEY`];
+if (!Number.isInteger(me) || !key) throw new Error('set SPORE_ID and <KEY_PREFIX>SPORE_<id>_FC_PRIVATE_KEY');
+const chain = new Caller(operatorId, key, cfg.router, 'EXECUTED_OPTIMISTIC');
 const myService = serviceOf(me);
 const { cost, qualityBps } = profile(cfg.seed, me);
 const resultsDir = join(cfg.runDir, 'results');
@@ -72,7 +74,7 @@ let epochEnds = 0n;
 
 async function inControl(): Promise<boolean> {
   const s = await view(cfg.router, 'spore_summary', { spore_id: me });
-  const why = !s ? 'unknown spore' : !s.active ? 'spore is not active' : s.operator_id !== cfg.operatorId ? 'not the registered operator' : s.policy.paused ? 'policy is paused' : '';
+  const why = !s ? 'unknown spore' : !s.active ? 'spore is not active' : s.operator_id !== operatorId ? 'not the registered operator' : s.policy.paused ? 'policy is paused' : '';
   if (why !== idleReason) note(why ? 'idle' : 'resumed', { reason: why || undefined, operator_gen: s?.operator_gen });
   idleReason = why;
   return !why;
@@ -101,7 +103,7 @@ async function buyOutside() {
     const res = await fetch(`${cfg.outsideUrl}/redeem`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ spore_id: me, signer_id: cfg.operatorId, tx_hash: r.hash }),
+      body: JSON.stringify({ spore_id: me, signer_id: operatorId, tx_hash: r.hash }),
       signal: AbortSignal.timeout(30_000),
     });
     const got = await res.json();
@@ -204,6 +206,11 @@ async function consume(jobs: any[], ctl: ReturnType<typeof readControl>, policyM
       winner,
       tx: { post: current.postTx } as Record<string, string>,
     };
+    // The router enforces the living allowance (SPEC §7.2) and the balance;
+    // skip a hire it would refuse instead of spending a failed transaction on it.
+    const s = await view(cfg.router, 'spore_summary', { spore_id: me });
+    if (s && BigInt(s.budget_left) < quotes[i].price) return finish('over_budget', { budget_left: s.budget_left });
+    if (s && BigInt(s.balance) < quotes[i].price) return finish('low_balance', { balance: s.balance });
     const r = await send('accept', { job_id: current.jobId, provider_id: winner });
     current.decision.tx.accept = r.hash;
     if (!r.ok) return finish('accept_failed', { err: r.err });
@@ -232,7 +239,7 @@ async function consume(jobs: any[], ctl: ReturnType<typeof readControl>, policyM
 async function main() {
   // Stagger the agents' polling so their RPC requests do not arrive together.
   await sleep((me * 997) % cfg.pollMs);
-  note('start', { service: SERVICES[myService], cost, quality_bps: qualityBps, pid: process.pid });
+  note('start', { service: SERVICES[myService], cost, quality_bps: qualityBps, operator: operatorId, pid: process.pid });
   let summary: any = null;
   for (;;) {
     loops++;

@@ -3,6 +3,7 @@
 use near_sdk::json_types::{U128, U64};
 use near_sdk::serde_json::{self, json, Value};
 use near_sdk::{env, near, AccountId};
+use spores_core::allowance::Allowance;
 use spores_core::{Params, PoolRule};
 
 pub type SporeId = u32;
@@ -71,6 +72,24 @@ pub struct Spore {
     /// Escrowed jobs this spore is providing.
     pub serving: Vec<u64>,
     pub transfers: u32,
+    /// Asking price while listed (SPEC §5.4). Listing blocks `withdraw` and `pause`.
+    pub listing: Option<u128>,
+    pub sales: u32,
+    /// `(epoch, state hash)` written at each close for active spores: what
+    /// `commit_image` binds an image to (`spores_core::state`).
+    pub state: Option<(u64, [u8; 32])>,
+    pub image: Option<ImageCommit>,
+}
+
+/// An off-chain render committed against a state hash (SPEC §5.5). The router
+/// does not check the image; `verify` regenerates it.
+#[near(serializers=[borsh])]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ImageCommit {
+    pub epoch: u64,
+    pub state_hash: [u8; 32],
+    pub image_hash: [u8; 32],
+    pub renderer_version: u32,
 }
 
 impl Spore {
@@ -117,7 +136,8 @@ pub struct Job {
     pub posted_ns: U64,
     pub accepted_epoch: u64,
     /// Open: `posted + timeout`. Escrowed: `accepted + timeout`. After it
-    /// anyone may call `timeout_job`, which refunds the consumer.
+    /// anyone may call `timeout_job`: an open or accepted job refunds the
+    /// consumer, a delivered one settles to the provider without flow.
     pub deadline_ns: U64,
 }
 
@@ -138,6 +158,29 @@ pub struct Config {
     pub rebate_bps: u32,
     pub breadth_full: u32,
     pub reject_bps: u32,
+    /// Living allowance (SPEC §7.2): the epoch budget is
+    /// `min(owner budget, base_budget + trust_gain * R / 1000)`.
+    #[serde(default = "default_base_budget")]
+    pub base_budget: U128,
+    #[serde(default = "default_trust_gain")]
+    pub trust_gain: U128,
+    /// Share of each `buy` paid to `royalty_account` (the admin when unset).
+    #[serde(default = "default_royalty_bps")]
+    pub royalty_bps: u32,
+    #[serde(default)]
+    pub royalty_account: Option<AccountId>,
+}
+
+fn default_base_budget() -> U128 {
+    U128(Allowance::shipped().base_budget)
+}
+
+fn default_trust_gain() -> U128 {
+    U128(Allowance::shipped().trust_gain)
+}
+
+fn default_royalty_bps() -> u32 {
+    500
 }
 
 impl Config {
@@ -161,6 +204,17 @@ impl Config {
             rebate_bps,
             breadth_full: p.breadth_full,
             reject_bps: p.reject_bps,
+            base_budget: default_base_budget(),
+            trust_gain: default_trust_gain(),
+            royalty_bps: default_royalty_bps(),
+            royalty_account: None,
+        }
+    }
+
+    pub fn allowance(&self) -> Allowance {
+        Allowance {
+            base_budget: self.base_budget.0,
+            trust_gain: self.trust_gain.0,
         }
     }
 
@@ -188,6 +242,9 @@ impl Config {
         if self.epoch_len_ns.0 == 0 || self.job_timeout_ns.0 == 0 {
             return Err("epoch_len_ns and job_timeout_ns must be positive".into());
         }
+        if self.royalty_bps > 10_000 {
+            return Err("royalty_bps must be <= 10000".into());
+        }
         Ok(())
     }
 }
@@ -200,4 +257,23 @@ pub fn emit(event: &str, data: Value) {
 
 pub fn hex(bytes: &[u8]) -> String {
     spores_core::fingerprint::hex(bytes)
+}
+
+/// 64 lowercase or uppercase hex digits to 32 bytes; panics with `what` otherwise.
+pub fn unhex32(s: &str, what: &str) -> [u8; 32] {
+    let b = s.as_bytes();
+    if b.len() != 64 {
+        env::panic_str(&format!("{what} must be 64 hex digits"));
+    }
+    let digit = |c: u8| match c {
+        b'0'..=b'9' => c - b'0',
+        b'a'..=b'f' => c - b'a' + 10,
+        b'A'..=b'F' => c - b'A' + 10,
+        _ => env::panic_str(&format!("{what} must be 64 hex digits")),
+    };
+    let mut out = [0u8; 32];
+    for (i, o) in out.iter_mut().enumerate() {
+        *o = digit(b[2 * i]) << 4 | digit(b[2 * i + 1]);
+    }
+    out
 }

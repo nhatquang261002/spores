@@ -1,7 +1,11 @@
 //! Checks spores-core against the shared vectors in `vectors/core.json`.
 
 use serde_json::Value;
+use spores_core::allowance::{effective_budget, Allowance};
 use spores_core::fee::split_payment;
+use spores_core::glyph::glyph_svg;
+use spores_core::market::royalty_split;
+use spores_core::state;
 use spores_core::fingerprint::hex;
 use spores_core::graph::{next_conductivity, saturation};
 use spores_core::hiring::score;
@@ -149,5 +153,39 @@ fn epoch_chain_vectors() {
             d = out.conductivity;
             prev = out.fingerprint;
         }
+    }
+}
+
+#[test]
+fn market_allowance_state_and_glyph_vectors() {
+    let v = load();
+    for c in v["royalty_split"].as_array().unwrap() {
+        let (seller, royalty) = royalty_split(n(&c["price"]), u(&c["royalty_bps"])).unwrap();
+        assert_eq!((seller, royalty), (n(&c["seller"]), n(&c["royalty"])));
+        assert_eq!(seller + royalty, n(&c["price"]));
+    }
+    for c in v["allowance"].as_array().unwrap() {
+        let b = effective_budget(n(&c["owner_budget"]), n(&c["base_budget"]), n(&c["trust_gain"]), n(&c["reputation"]));
+        assert_eq!(b, n(&c["effective"]));
+    }
+    let shipped = Allowance::shipped();
+    assert_eq!(n(&v["allowance"][0]["base_budget"]), shipped.base_budget);
+    assert_eq!(n(&v["allowance"][0]["trust_gain"]), shipped.trust_gain);
+    let cases = v["spore_state"].as_array().unwrap();
+    assert!(!cases.is_empty());
+    for c in cases {
+        let seed_hex = c["seed"].as_str().unwrap();
+        let mut seed = [0u8; 32];
+        for (i, b) in seed.iter_mut().enumerate() {
+            *b = u8::from_str_radix(&seed_hex[2 * i..2 * i + 2], 16).unwrap();
+        }
+        let id = u(&c["id"]);
+        let epoch = c["epoch"].as_u64().unwrap();
+        let age = u(&c["age"]);
+        let edges = pairs(&c["edges"]);
+        assert_eq!(state::canonical(id, epoch, &seed, age, &edges), c["canonical"].as_str().unwrap());
+        assert_eq!(hex(&state::state_hash(id, epoch, &seed, age, &edges)), c["state_hash"].as_str().unwrap());
+        let active = c["active"].as_bool().unwrap();
+        assert_eq!(glyph_svg(id, &seed, age, active, &edges), c["glyph"].as_str().unwrap());
     }
 }

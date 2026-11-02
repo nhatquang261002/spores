@@ -1,0 +1,12 @@
+[package]
+name = "spores-verify"
+version = "0.1.0"
+description = "Replays Spores epoch fingerprints from the router's close receipts and regenerates committed images. Talks to NEAR RPC through curl."
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+spores-core = { path = "../core" }
+spores-renderer = { path = "../renderer" }
+serde_json = "1"

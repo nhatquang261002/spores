@@ -4,9 +4,10 @@
 
 use std::collections::BTreeMap;
 
+use spores_core::allowance::Allowance;
 use spores_core::fee::split_payment;
 use spores_core::fingerprint::{hex, GENESIS};
-use spores_core::graph::{edge_gain, saturation};
+use spores_core::graph::{edge_gain, reputation, saturation};
 use spores_core::hiring::{pick, Norm, Quote};
 use spores_core::market::{job_service, next_margin, quote_price, MARGIN_START};
 use spores_core::math::{BPS, ONE, REP_ONE};
@@ -78,6 +79,9 @@ pub struct Config {
     pub attempts: u32,
     pub shocks: Shocks,
     pub attack: Option<Attack>,
+    /// Living-allowance ceiling on each spore's settled spend per epoch
+    /// (owner budget unlimited). `None` reproduces the Phase 1 runs.
+    pub allowance: Option<Allowance>,
 }
 
 impl Config {
@@ -94,6 +98,7 @@ impl Config {
             attempts: 2,
             shocks: Shocks::default(),
             attack: None,
+            allowance: None,
         }
     }
 }
@@ -121,6 +126,8 @@ pub struct EpochStats {
     pub failures: u32,
     pub unfulfilled: u32,
     pub settled: u32,
+    /// Hires skipped because the payment would exceed the allowance.
+    pub budget_blocked: u32,
     pub paid: u128,
     pub hired_quality: f64,
     pub fees: u128,
@@ -306,6 +313,12 @@ pub fn run(cfg: &Config) -> Run {
         let mut rejects = RejectMap::new();
         let mut edge_fees: BTreeMap<Edge, u128> = BTreeMap::new();
         let mut pool = 0u128;
+        let rep = reputation(&conductivity);
+        let cap = |id: SporeId| {
+            cfg.allowance
+                .map_or(u128::MAX, |a| a.effective(u128::MAX, rep.get(&id).copied().unwrap_or(0)))
+        };
+        let mut spent: BTreeMap<SporeId, u128> = BTreeMap::new();
         let mut pay = |from: SporeId, to: SporeId, amount: u128, flows: &mut EdgeMap| -> u128 {
             let e = Edge::new(from, to).expect("distinct spores");
             let split = split_payment(amount, p.fee_bps).expect("valid fee");
@@ -341,6 +354,11 @@ pub fn run(cfg: &Config) -> Run {
                         .collect();
                     let Some(i) = pick(&quotes, w_bps, norm) else { break };
                     let q = quotes[i];
+                    let used = spent.get(&c).copied().unwrap_or(0);
+                    if used + q.price > cap(c) {
+                        st.budget_blocked += 1;
+                        break;
+                    }
                     tried.push(q.provider);
                     let quality = agents[&q.provider].quality;
                     st.attempts += 1;
@@ -348,6 +366,7 @@ pub fn run(cfg: &Config) -> Run {
                     let roll = stream(&[cfg.seed, t, c as u64, j as u64, 1 + attempt as u64]).unit();
                     if roll < quality {
                         pay(c, q.provider, q.price, &mut flows);
+                        *spent.entry(c).or_default() += q.price;
                         agents.get_mut(&q.provider).unwrap().wins += 1;
                         st.settled += 1;
                         st.paid += q.price;
@@ -368,8 +387,10 @@ pub fn run(cfg: &Config) -> Run {
             for &(from, to, volume) in &attack_edges {
                 let parts = a.payments.max(1) as u128;
                 for i in 0..parts {
-                    let amount = volume / parts + u128::from(i < volume % parts);
+                    let used = spent.get(&from).copied().unwrap_or(0);
+                    let amount = (volume / parts + u128::from(i < volume % parts)).min(cap(from) - used);
                     if amount > 0 {
+                        *spent.entry(from).or_default() += amount;
                         attack_fees += pay(from, to, amount, &mut flows);
                     }
                 }

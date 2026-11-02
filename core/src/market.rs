@@ -14,6 +14,16 @@ pub fn quote_price(cost: u128, margin_bps: u32) -> u128 {
     cost * (BPS + margin_bps as u128) / BPS
 }
 
+/// Sale split (SPEC §5.4): `(seller, royalty)` with the royalty rounded down,
+/// so the two always sum to `price`. `None` if `royalty_bps > 10000`.
+pub fn royalty_split(price: u128, royalty_bps: u32) -> Option<(u128, u128)> {
+    if royalty_bps as u128 > BPS {
+        return None;
+    }
+    let royalty = crate::math::mul_div(price, royalty_bps as u128, BPS)?;
+    Some((price - royalty, royalty))
+}
+
 /// End-of-epoch margin update: up one step after two or more wins, down one
 /// step after none, within `MARGIN_MIN..=MARGIN_MAX`.
 pub fn next_margin(margin_bps: u32, wins: u32) -> u32 {
@@ -55,6 +65,21 @@ mod tests {
     fn quote_adds_margin_rounding_down() {
         assert_eq!(quote_price(1_000, 2_000), 1_200);
         assert_eq!(quote_price(7, 2_500), 8);
+    }
+
+    #[test]
+    fn royalty_and_seller_sum_to_the_price() {
+        assert_eq!(royalty_split(1_000, 500), Some((950, 50)));
+        assert_eq!(royalty_split(19, 500), Some((19, 0)));
+        assert_eq!(royalty_split(u128::MAX, 500).map(|(s, r)| s + r), Some(u128::MAX));
+        assert_eq!(royalty_split(7, 10_000), Some((0, 7)));
+        assert_eq!(royalty_split(7, 10_001), None);
+        for price in [0u128, 1, 99, 10u128.pow(24) + 3, 10u128.pow(30)] {
+            for bps in [0u32, 1, 500, 9_999] {
+                let (s, r) = royalty_split(price, bps).unwrap();
+                assert_eq!(s + r, price);
+            }
+        }
     }
 
     #[test]

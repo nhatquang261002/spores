@@ -67,13 +67,15 @@ Results, testnet evidence and deviations: `docs/phase4-results.md`.
 
 ## Phase 5: Epochs, allowance, market (Days 8-10: Nov 8-10)
 
-- [ ] `close_epoch` (anyone, after duration; twice or too early fails; empty epoch does nothing), graph update, fee pool distribution, fingerprint and state hash stored per epoch. (All but the per-spore state hash landed in Phase 3.) Also a treasury withdrawal.
-- [ ] `commit_image` and the `verify` script (fingerprint replay and image regeneration).
-- [ ] Living allowance `min(owner_budget, base + trust_gain * R)`; drops as tubes decay.
-- [ ] Market: `list`, `delist`, `buy` atomic (NFT, seller, royalty); listing freezes withdraw and pause. Check NEP-199 payouts.
-- [ ] On-chain SVG glyph within view gas limit at 16 active spores.
+Results, testnet evidence and deviations: `docs/phase5-results.md`.
 
-**Exit:** the sale scene runs end to end: old operator key fails, new policy starts paused, royalty paid, balance/tubes/age intact, new owner re-registers an operator and the agent resumes. `verify` reproduces fingerprints.
+- [x] `close_epoch` (anyone, after duration; twice or too early fails; empty epoch does nothing), graph update, fee pool distribution, fingerprint and state hash stored per epoch. (All but the per-spore state hash landed in Phase 3.) Also a treasury withdrawal. (State hash: latest per active spore, history from the now complete `epoch_closed` event; an empty epoch pays nothing but tubes still decay; `withdraw_treasury` to the admin.)
+- [x] `commit_image` and the `verify` script (fingerprint replay and image regeneration). (`spores-verify epochs | image`, chain data only; the keeper commits after every close.)
+- [x] Living allowance `min(owner_budget, base + trust_gain * R)`; drops as tubes decay. (0.1 NEAR + 0.2 NEAR per 1000 R, from `spores-sim allowance`; a 0.05 NEAR base fails the wash gate.)
+- [x] Market: `list`, `delist`, `buy` atomic (NFT, seller, royalty); listing freezes withdraw and pause. Check NEP-199 payouts. (`nft_payout`, owner-only `nft_transfer_payout`; payouts are detached transfers, a failed one goes to the treasury.)
+- [x] On-chain SVG glyph within view gas limit at 16 active spores. (Glyph is NEP-177 `media`. Measured at 9 active: `glyph` 2.33 Tgas, `nft_tokens` of 64 26.33 Tgas; the 16-active worst case is not measured.)
+
+**Exit:** the sale scene runs end to end: old operator key fails, new policy starts paused, royalty paid, balance/tubes/age intact, new owner re-registers an operator and the agent resumes. `verify` reproduces fingerprints. **Met 2026-11-02:** 14/14 checks on `spores-hack-router4.testnet` (`out/agents/phase5-exit2/report.md`); `spores-verify` matches all 16 epochs and spore 5's committed image.
 
 ## Phase 6: Viz, scenes, demo (Days 10-12: Nov 10-12)
 

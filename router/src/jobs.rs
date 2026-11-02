@@ -203,16 +203,23 @@ impl Router {
     }
 
     /// The payee-independent rules every payment obeys: per-payment cap, epoch
-    /// budget, balance.
+    /// budget (the living allowance), balance.
     pub(crate) fn check_limits(&self, payer: SporeId, amount: u128) {
         let s = self.spore(payer);
         let p = &s.policy;
         require!(amount <= p.max_payment.0, "policy: payment exceeds the per-payment cap");
         require!(
-            s.spent_in(self.epoch).saturating_add(amount) <= p.budget_per_epoch.0,
+            s.spent_in(self.epoch).saturating_add(amount) <= self.effective_budget(payer),
             "policy: epoch budget exceeded"
         );
         require!(s.balance >= amount, "insufficient balance");
+    }
+
+    /// SPEC §7.2: `min(owner budget, base + trust_gain * R / 1000)`, with `R`
+    /// from the tubes after the last close, so it drops as tubes decay.
+    pub(crate) fn effective_budget(&self, id: SporeId) -> u128 {
+        let owner_budget = self.spore(id).policy.budget_per_epoch.0;
+        self.config.allowance().effective(owner_budget, self.traits(id).reputation as u128)
     }
 
     /// Debits `amount` from the payer's balance and counts it against this

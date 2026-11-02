@@ -15,10 +15,12 @@ use near_contract_standards::non_fungible_token::metadata::{
     NFTContractMetadata, NonFungibleTokenMetadataProvider, TokenMetadata, NFT_METADATA_SPEC,
 };
 use near_contract_standards::non_fungible_token::{Token, TokenId};
-use near_sdk::json_types::U128;
+use near_sdk::json_types::{Base64VecU8, U128};
+use sha2::{Digest, Sha256};
 use near_sdk::serde_json::json;
 use near_sdk::{assert_one_yocto, env, near, AccountId, Gas, PromiseOrValue};
 
+use crate::art::ImageCommitView;
 use crate::types::{emit, hex, Policy, SporeId};
 use crate::{Router, RouterExt};
 
@@ -154,10 +156,12 @@ impl NonFungibleTokenEnumeration for Router {
 
 impl Router {
     /// SPEC §5.3: clear the operator (bumping its generation, which voids its
-    /// quotes), reset policy to paused with zero budget and refund every job in
-    /// flight to its payer. Balance, tubes, age and history stay with the spore.
+    /// quotes), reset policy to paused with zero budget, drop any listing and
+    /// refund every job in flight to its payer. Balance, tubes, age and history
+    /// stay with the spore.
     pub(crate) fn reset_control(&mut self, id: SporeId, from: &AccountId, to: &AccountId, reason: &str) {
         let s = self.spore_mut(id);
+        s.listing = None;
         s.operator = None;
         s.operator_gen += 1;
         s.policy = Policy::locked();
@@ -186,21 +190,32 @@ impl Router {
         ids
     }
 
-    /// NEP-177 metadata built from state on every read. `media` (the rendered
-    /// image) and the on-chain glyph arrive with `commit_image` in Phase 5.
+    /// NEP-177 metadata built from state on every read. `media` is the
+    /// on-chain glyph as a `data:` URI (no `base_uri`, so marketplaces that
+    /// prepend it leave it alone) with its sha256 as `media_hash`. The
+    /// committed Physarum render's hash is in `extra`.
     fn token_metadata(&self, id: SporeId) -> TokenMetadata {
         let t = self.traits(id);
+        let s = self.spore(id);
+        let svg = self.glyph_svg(id);
+        let media_hash: [u8; 32] = Sha256::digest(svg.as_bytes()).into();
         let extra = json!({
-            "seed": hex(&self.spore(id).seed),
+            "seed": hex(&s.seed),
             "active": t.active,
             "age": t.age,
             "degree": t.degree,
             "reputation": t.reputation,
-            "transfers": self.spore(id).transfers,
+            "transfers": s.transfers,
+            "sales": s.sales,
+            "listed_price": s.listing.map(U128),
+            "state_hash": s.state.map(|(_, h)| hex(&h)),
+            "image": s.image.as_ref().map(ImageCommitView::from),
         });
         TokenMetadata {
             title: Some(format!("Spore #{id}")),
             description: Some("A slime mold whose tubes are its settled trades on the Spores router.".to_string()),
+            media: Some(format!("data:image/svg+xml;utf8,{svg}")),
+            media_hash: Some(Base64VecU8::from(media_hash.to_vec())),
             copies: Some(1),
             extra: Some(extra.to_string()),
             ..Default::default()

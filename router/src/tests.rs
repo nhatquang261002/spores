@@ -6,6 +6,8 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use near_contract_standards::non_fungible_token::core::{NonFungibleTokenCore, NonFungibleTokenResolver};
+use near_contract_standards::non_fungible_token::enumeration::NonFungibleTokenEnumeration;
+use near_contract_standards::non_fungible_token::metadata::NonFungibleTokenMetadataProvider;
 use near_sdk::json_types::U128;
 use near_sdk::test_utils::{get_created_receipts, VMContextBuilder};
 use near_sdk::{testing_env, AccountId, NearToken, PromiseResult, RuntimeFeesConfig};
@@ -13,6 +15,7 @@ use sha2::{Digest, Sha256};
 use spores_core::{Edge, EdgeMap, EpochInput, RejectMap};
 
 use super::*;
+use crate::types::hex;
 
 const NEAR: u128 = spores_core::NEAR;
 const EPOCH: u64 = 1_000;
@@ -77,6 +80,8 @@ impl World {
             max_active: 3,
             epoch_len_ns: near_sdk::json_types::U64(EPOCH),
             job_timeout_ns: near_sdk::json_types::U64(TIMEOUT),
+            // The owner budget binds here; the living allowance has its own test.
+            base_budget: U128(1_000 * NEAR),
             ..Config::shipped()
         };
         let mut w = World { r: Router::new(acc("admin.near"), Some(config)), now: 0 };
@@ -610,7 +615,7 @@ fn ledger_is_conserved_under_random_operations() {
         x % n
     };
     let owners = ["alice.near", "alice.near", "bob.near", "carol.near"];
-    let (mut ok, mut settled) = (0, 0);
+    let (mut ok, mut settled, mut treasury_out) = (0, 0, 0);
     for step in 0..1_800 {
         let a = rnd(3) as u32;
         let price = (1 + rnd(40)) as u128 * NEAR / 100;
@@ -679,6 +684,42 @@ fn ledger_is_conserved_under_random_operations() {
                     w.r.on_service_paid(a, acc(payee), U128(price / 4), epoch);
                 }
             }
+            (10, _) if step % 25 == 12 => {
+                // Sell a spore to someone else and buy it back, sometimes with a
+                // payout transfer that fails and lands in the treasury.
+                let (from, to) = (owners[a as usize], "dave.near");
+                w.call(from, 1).list(a, U128(price));
+                w.call(to, price).buy(a);
+                w.call(to, 1).list(a, U128(price));
+                w.call(from, price).buy(a);
+                if rnd(2) == 0 {
+                    testing_env!(
+                        World::context("router.near", 0, w.now),
+                        near_sdk::test_vm_config(),
+                        RuntimeFeesConfig::test(),
+                        Default::default(),
+                        vec![PromiseResult::Failed]
+                    );
+                    w.r.on_sale_paid(a, acc(from), U128(price / 2), "seller".into());
+                }
+                w.call(from, 1).register_operator(a, acc(&World::op(a)));
+                w.call(from, 1).set_policy(a, open_policy());
+            }
+            (11, _) if w.r.treasury > 0 && rnd(2) == 0 => {
+                let amount = price.min(w.r.treasury);
+                let _ = w.call("admin.near", 1).withdraw_treasury(U128(amount));
+                treasury_out += 1;
+                if rnd(3) == 0 {
+                    testing_env!(
+                        World::context("router.near", 0, w.now),
+                        near_sdk::test_vm_config(),
+                        RuntimeFeesConfig::test(),
+                        Default::default(),
+                        vec![PromiseResult::Failed]
+                    );
+                    w.r.on_treasury_withdraw(U128(amount));
+                }
+            }
             (10, _) if step % 25 == 0 => {
                 // Hand a spore to someone else and back, re-registering its operator.
                 let (from, to) = (owners[a as usize], "dave.near");
@@ -695,8 +736,13 @@ fn ledger_is_conserved_under_random_operations() {
     let t = w.view().ledger_totals();
     assert!(ok > 500, "too few calls succeeded to mean much: {ok}");
     assert!(settled > 30, "too few settlements: {settled}");
-    assert!(t.treasury.0 > 0 && t.withdrawn.0 > 0, "the mix exercised fees and withdrawals");
+    assert!(
+        (t.treasury.0 > 0 || treasury_out > 0) && t.withdrawn.0 > 0,
+        "the mix exercised fees and withdrawals"
+    );
+    assert!(treasury_out > 0, "the mix exercised treasury withdrawals");
     assert!(t.paid_out.0 > 0, "the mix exercised service payments");
+    assert!(w.r.spores.iter().any(|s| s.sales > 0), "the mix exercised sales");
 }
 
 // ---- outside service ------------------------------------------------------------
@@ -792,4 +838,378 @@ fn policy_json_without_external_allowlist_still_parses() {
     )
     .unwrap();
     assert!(p.external_allowlist.is_empty());
+}
+
+// ---- market (SPEC §5.4) ----------------------------------------------------------------
+
+/// `(receiver, amount)` of every plain transfer the last call created.
+fn transfers_out() -> Vec<(AccountId, u128)> {
+    get_created_receipts()
+        .into_iter()
+        .flat_map(|r| {
+            let to = r.receiver_id.clone();
+            r.actions.into_iter().filter_map(move |a| match a {
+                near_sdk::mock::MockAction::Transfer { deposit, .. } => Some((to.clone(), deposit.as_yoctonear())),
+                _ => None,
+            })
+        })
+        .collect()
+}
+
+fn failed_callback(w: &World) {
+    testing_env!(
+        World::context("router.near", 0, w.now),
+        near_sdk::test_vm_config(),
+        RuntimeFeesConfig::test(),
+        Default::default(),
+        vec![PromiseResult::Failed]
+    );
+}
+
+#[test]
+fn only_the_owner_can_list_or_delist_and_a_listing_freezes_withdraw_and_pause() {
+    let mut w = World::new();
+    assert_fails("only the spore owner", || w.call("bob.near", 1).list(0, U128(NEAR)));
+    assert_fails("exactly 1 yoctoNEAR", || w.call("alice.near", 0).list(0, U128(NEAR)));
+    assert_fails("price must be positive", || w.call("alice.near", 1).list(0, U128(0)));
+    w.call("alice.near", 1).list(0, U128(3 * NEAR));
+    assert_eq!(w.view().listings(), vec![(0, U128(3 * NEAR))]);
+    assert_eq!(w.view().spore_summary(0).unwrap().listed_price, Some(U128(3 * NEAR)));
+    assert_fails("a listed spore cannot withdraw", || {
+        let _ = w.call("alice.near", 1).withdraw(0, U128(1));
+    });
+    assert_fails("a listed spore cannot be paused", || w.call("alice.near", 0).pause(0));
+    assert_fails("only the spore owner", || w.call("bob.near", 1).delist(0));
+    w.call("alice.near", 1).delist(0);
+    assert!(w.view().listings().is_empty());
+    assert_fails("spore is not listed", || w.call("alice.near", 1).delist(0));
+    // Delisting restores both.
+    let _ = w.call("alice.near", 1).withdraw(0, U128(1));
+    w.call("alice.near", 0).pause(0);
+
+    // A plain transfer drops the listing, so the new owner is not bound by it.
+    w.call("alice.near", 1).list(1, U128(NEAR));
+    w.call("alice.near", 1).nft_transfer(acc("carol.near"), "1".into(), None, None);
+    assert!(w.view().listings().is_empty());
+    assert_fails("spore is not listed", || {
+        w.call("bob.near", NEAR).buy(1);
+    });
+    w.assert_conserved();
+}
+
+#[test]
+fn buy_moves_the_spore_resets_control_and_splits_the_price() {
+    let mut w = World::new();
+    w.trade(0, 2, NEAR / 10);
+    w.close();
+    let as_consumer = w.hire(0, 2, NEAR / 5);
+    let as_provider = w.hire(1, 0, NEAR / 5);
+    let before = w.view().spore_summary(0).unwrap();
+    let (edges, totals, bal1) = (w.view().edges(), w.view().ledger_totals(), w.balance(1));
+
+    w.call("alice.near", 1).list(0, U128(3 * NEAR));
+    assert_fails("attach exactly the listed price", || {
+        w.call("bob.near", 3 * NEAR - 1).buy(0);
+    });
+    assert_fails("attach exactly the listed price", || {
+        w.call("bob.near", 3 * NEAR + 1).buy(0);
+    });
+    assert_fails("the owner cannot buy its own spore", || {
+        w.call("alice.near", 3 * NEAR).buy(0);
+    });
+    w.call("bob.near", 3 * NEAR).buy(0);
+    let paid = transfers_out();
+    let royalty = 3 * NEAR * 500 / 10_000;
+    assert_eq!(paid, vec![(acc("alice.near"), 3 * NEAR - royalty), (acc("admin.near"), royalty)]);
+    assert_eq!(paid.iter().map(|p| p.1).sum::<u128>(), 3 * NEAR, "seller and royalty sum to the price");
+    let logs = near_sdk::test_utils::get_logs();
+    assert!(logs.iter().any(|l| l.contains("\"event\":\"nft_transfer\"")), "standard transfer event");
+    assert!(logs.iter().any(|l| l.contains("\"event\":\"spore_sold\"")));
+
+    let after = w.view().spore_summary(0).unwrap();
+    assert_eq!(after.owner_id, acc("bob.near"));
+    assert_eq!(after.policy, Policy::locked(), "policy resets to paused with zero budget");
+    assert!(after.operator_id.is_none());
+    assert_eq!(after.operator_gen, before.operator_gen + 1);
+    assert_eq!(after.balance.0, before.balance.0 + NEAR / 5, "balance stays; its own escrow comes back");
+    assert_eq!(w.balance(1), bal1 + NEAR / 5, "the payer of the job it was serving is refunded");
+    assert_eq!(
+        (after.age, after.connections.clone(), after.reputation),
+        (before.age, before.connections.clone(), before.reputation)
+    );
+    assert_eq!((after.transfers, after.sales, after.listed_price), (1, 1, None));
+    assert_eq!(w.view().edges(), edges);
+    assert!(w.view().get_job(as_consumer).is_none() && w.view().get_job(as_provider).is_none());
+    let t = w.view().ledger_totals();
+    assert_eq!(t.deposited, totals.deposited, "the price never enters the ledger");
+
+    assert_fails("caller is not this spore's operator", || {
+        w.post(0, 1);
+    });
+    assert_fails("only the spore owner", || {
+        let _ = w.call("alice.near", 1).withdraw(0, U128(1));
+    });
+    w.call("bob.near", 1).register_operator(0, acc("op9.near"));
+    w.call("bob.near", 1).set_policy(0, open_policy());
+    w.call("op9.near", 0).post_job(0, "x".into(), U128(1));
+    w.assert_conserved();
+
+    // A payout to an account that no longer exists ends in the treasury.
+    let treasury = w.r.treasury;
+    failed_callback(&w);
+    assert!(!w.r.on_sale_paid(0, acc("alice.near"), U128(NEAR), "seller".into()));
+    assert_eq!(w.r.treasury, treasury + NEAR);
+    w.assert_conserved();
+}
+
+#[test]
+fn nft_payout_splits_like_buy_and_transfer_payout_resets_control() {
+    let mut w = World::new();
+    let p = w.view().nft_payout("0".into(), U128(1_000), None);
+    assert_eq!(
+        p.payout.into_iter().collect::<Vec<_>>(),
+        vec![(acc("admin.near"), U128(50)), (acc("alice.near"), U128(950))]
+    );
+    let p = w.view().nft_payout("0".into(), U128(19), Some(10));
+    assert_eq!(p.payout.len(), 1, "a zero royalty is left out");
+    assert_fails("payout is longer than max_len_payout", || {
+        w.view().nft_payout("0".into(), U128(1_000), Some(1));
+    });
+    let p = w.call("alice.near", 1).nft_transfer_payout(acc("bob.near"), "0".into(), None, None, U128(1_000), Some(10));
+    assert_eq!(p.payout.values().map(|v| v.0).sum::<u128>(), 1_000);
+    let s = w.view().spore_summary(0).unwrap();
+    assert_eq!((s.owner_id, s.policy, s.operator_id), (acc("bob.near"), Policy::locked(), None));
+    assert_fails("Approval extension is disabled", || {
+        w.call("alice.near", 1).nft_transfer_payout(acc("carol.near"), "0".into(), None, None, U128(1), None);
+    });
+}
+
+// ---- living allowance (SPEC §7.2) -------------------------------------------------------
+
+#[test]
+fn the_living_allowance_caps_spending_and_drops_as_tubes_decay() {
+    let mut w = World::new();
+    w.r.config.base_budget = U128(NEAR / 10);
+    w.r.config.trust_gain = U128(NEAR / 5);
+    let eff = |w: &mut World| w.view().spore_summary(0).unwrap().effective_budget.0;
+    assert_eq!(eff(&mut w), NEAR / 10, "no tubes: the base budget");
+    assert_fails("policy: epoch budget exceeded", || {
+        w.hire(0, 1, NEAR / 10 + 1);
+    });
+    w.trade(0, 1, NEAR / 10);
+    assert_fails("policy: epoch budget exceeded", || {
+        w.hire(0, 2, 1);
+    });
+    assert_fails("policy: epoch budget exceeded", || {
+        let _ = w.call("op0.near", 0).pay_service(0, acc("outside.near"), U128(1), "n".into());
+    });
+    w.trade(1, 0, NEAR / 10);
+    w.trade(2, 0, NEAR / 10);
+    w.close();
+    let s = w.view().spore_summary(0).unwrap();
+    let r = s.reputation.0 as u128;
+    assert!(r > 0);
+    assert_eq!(s.effective_budget.0, NEAR / 10 + NEAR / 5 * r / 1_000);
+    assert!(s.effective_budget.0 <= open_policy().budget_per_epoch.0);
+    assert_eq!(s.budget_left, s.effective_budget);
+
+    // No new flow: tubes decay, then prune, and the ceiling falls back to base.
+    let mut last = s.effective_budget.0;
+    for _ in 0..15 {
+        w.close();
+        let b = eff(&mut w);
+        assert!(b <= last, "the allowance never grows without flow");
+        last = b;
+    }
+    assert_eq!(last, NEAR / 10);
+
+    // An owner budget below the ceiling binds instead.
+    w.call("alice.near", 1).set_policy(0, Policy { budget_per_epoch: U128(NEAR / 20), ..open_policy() });
+    assert_eq!(eff(&mut w), NEAR / 20);
+}
+
+// ---- art: state hashes, image commits, glyph (SPEC §5.5) --------------------------------
+
+fn seed_of(hex_seed: &str) -> [u8; 32] {
+    crate::types::unhex32(hex_seed, "seed")
+}
+
+#[test]
+fn commit_image_binds_a_render_to_the_stored_state_hash() {
+    let mut w = World::new();
+    assert_fails("no state hash yet", || {
+        w.call("admin.near", 0).commit_image(0, 1, "00".repeat(32), 1)
+    });
+    w.trade(0, 1, NEAR / 10);
+    w.trade(0, 2, NEAR / 10);
+    w.close();
+    let (epoch, state_hex) = w.view().spore_summary(0).unwrap().state.unwrap();
+    assert_eq!(epoch, 2);
+    let ri = w.view().render_input(0);
+    let seed = seed_of(&ri.seed);
+    let conns: Vec<(SporeId, u128)> = ri.edges.iter().map(|(n, d)| (*n, *d as u128)).collect();
+    assert_eq!(state_hex, hex(&spores_core::state::state_hash(0, ri.epoch, &seed, ri.age, &conns)));
+    assert!(w.view().spore_summary(3).unwrap().state.is_none(), "dormant spores have no state hash");
+
+    let img = spores_renderer::render(&spores_renderer::Spore::new(seed, ri.age, ri.edges.clone()));
+    let h = hex(&spores_renderer::image_hash(&img));
+    assert_fails("only the admin", || {
+        w.call("alice.near", 0).commit_image(0, 2, h.clone(), spores_renderer::RENDERER_VERSION)
+    });
+    assert_fails("epoch does not match", || {
+        w.call("admin.near", 0).commit_image(0, 1, h.clone(), spores_renderer::RENDERER_VERSION)
+    });
+    assert_fails("image_hash must be 64 hex digits", || {
+        w.call("admin.near", 0).commit_image(0, 2, "zz".into(), 1)
+    });
+    w.call("admin.near", 0).commit_image(0, 2, h.clone(), spores_renderer::RENDERER_VERSION);
+    let c = w.view().image_commit(0).unwrap();
+    assert_eq!((c.epoch, c.state_hash.clone(), c.image_hash.clone()), (2, state_hex.clone(), h.clone()));
+
+    // The next close moves the state on; the old commit stays until replaced.
+    w.close();
+    assert_ne!(w.view().spore_summary(0).unwrap().state.unwrap().1, state_hex);
+    assert_eq!(w.view().image_commit(0).unwrap().image_hash, h);
+}
+
+#[test]
+fn metadata_serves_the_glyph_with_its_hash_and_it_matches_core() {
+    let mut w = World::new();
+    w.trade(0, 1, NEAR / 10);
+    w.close();
+    let ri = w.view().render_input(0);
+    let conns: Vec<(SporeId, u128)> = ri.edges.iter().map(|(n, d)| (*n, *d as u128)).collect();
+    let svg = w.view().glyph(0);
+    assert_eq!(svg, spores_core::glyph::glyph_svg(0, &seed_of(&ri.seed), ri.age, true, &conns));
+    let m = w.view().nft_token("0".into()).unwrap().metadata.unwrap();
+    let media = m.media.unwrap();
+    assert_eq!(media, format!("data:image/svg+xml;utf8,{svg}"));
+    assert_eq!(m.media_hash.unwrap().0, Sha256::digest(svg.as_bytes()).to_vec());
+    assert!(w.view().nft_metadata().base_uri.is_none());
+    // Dormant spore 3: the faint mark.
+    assert!(!w.view().glyph(3).contains("<line"));
+    assert_eq!(w.view().nft_tokens(None, None).len(), 4);
+}
+
+// ---- verify from the event log ------------------------------------------------------------
+
+fn epoch_closed_event() -> near_sdk::serde_json::Value {
+    let line = near_sdk::test_utils::get_logs()
+        .into_iter()
+        .find(|l| l.contains("\"event\":\"epoch_closed\""))
+        .expect("epoch_closed logged");
+    let v: near_sdk::serde_json::Value = near_sdk::serde_json::from_str(&line["EVENT_JSON:".len()..]).unwrap();
+    v["data"][0].clone()
+}
+
+fn triples(v: &near_sdk::serde_json::Value) -> Vec<(u32, u32, u128)> {
+    v.as_array()
+        .unwrap()
+        .iter()
+        .map(|t| {
+            let n = |x: &near_sdk::serde_json::Value| x.as_u64().map(|v| v as u128).unwrap_or_else(|| x.as_str().unwrap().parse().unwrap());
+            (n(&t[0]) as u32, n(&t[1]) as u32, n(&t[2]))
+        })
+        .collect()
+}
+
+#[test]
+fn the_epoch_closed_event_alone_replays_every_fingerprint() {
+    let mut w = World::new();
+    let params = w.r.config.params();
+    let mut d = EdgeMap::new();
+    let mut prev = spores_core::fingerprint::GENESIS;
+    for round in 0..4u32 {
+        w.trade(0, 1, NEAR / 10 * (round as u128 + 1));
+        if round != 2 {
+            w.trade(1, 2, NEAR / 3);
+            let job = w.hire(2, 0, NEAR / 20);
+            w.call("op0.near", 0).deliver(job, "h".into());
+            w.call("op2.near", 0).reject(job);
+        }
+        let fp = w.close();
+        let ev = epoch_closed_event();
+        let edge = |(a, b, x): (u32, u32, u128)| (Edge::new(a, b).unwrap(), x);
+        let flows: EdgeMap = triples(&ev["flows"]).into_iter().map(edge).collect();
+        let rejects: RejectMap = triples(&ev["rejects"]).into_iter().map(|t| (edge(t).0, t.2 as u32)).collect();
+        let active: Vec<u32> = ev["active"].as_array().unwrap().iter().map(|x| x.as_u64().unwrap() as u32).collect();
+        let pool: u128 = ev["pool"].as_str().unwrap().parse().unwrap();
+        assert_eq!(ev["prev_fingerprint"].as_str().unwrap(), hex(&prev));
+        let out = spores_core::close_epoch(
+            &params,
+            &EpochInput {
+                epoch: ev["epoch"].as_u64().unwrap(),
+                prev_fingerprint: prev,
+                active: &active,
+                conductivity: &d,
+                flows: &flows,
+                rejects: &rejects,
+                pool,
+            },
+        )
+        .unwrap();
+        assert_eq!(hex(&out.fingerprint), fp);
+        assert_eq!(ev["fingerprint"].as_str().unwrap(), fp);
+        let tubes: EdgeMap = triples(&ev["tubes"]).into_iter().map(edge).collect();
+        assert_eq!(tubes, out.conductivity);
+        assert_eq!(w.view().fingerprint(ev["epoch"].as_u64().unwrap()), Some(fp));
+        d = out.conductivity;
+        prev = out.fingerprint;
+    }
+}
+
+#[test]
+fn the_largest_epoch_closed_event_fits_the_log_limit() {
+    // 16 active spores, every pair trading, rejecting and holding a tube, with
+    // 27-digit amounts: the worst case the active cap allows.
+    testing_env!(World::context("admin.near", 0, 0));
+    let config = Config { supply_cap: 16, max_active: 16, epoch_len_ns: near_sdk::json_types::U64(EPOCH), ..Config::shipped() };
+    let mut w = World { r: Router::new(acc("admin.near"), Some(config)), now: 0 };
+    w.call("admin.near", 0).mint_genesis(vec![acc("alice.near"); 16]);
+    for id in 0..16 {
+        w.call("alice.near", NEAR).activate(id, acc(&World::op(id)));
+    }
+    let big = 123_456_789_012_345_678_901_234_567u128;
+    for a in 0..16 {
+        for b in a + 1..16 {
+            w.r.flows.insert((a, b), big);
+            w.r.rejects.insert((a, b), 1_000);
+            w.r.edges.insert((a, b), 4_000_000);
+        }
+    }
+    w.r.pool = big;
+    w.r.deposited += big;
+    w.close();
+    let logs = near_sdk::test_utils::get_logs();
+    let total: usize = logs.iter().map(|l| l.len()).sum();
+    // Live testnet limits (EXPERIMENTAL_protocol_config, protocol 88).
+    assert!(total < 16_384 && logs.len() <= 100, "{total} bytes in {} logs", logs.len());
+}
+
+// ---- treasury --------------------------------------------------------------------------------
+
+#[test]
+fn the_admin_withdraws_the_treasury_and_a_failed_transfer_restores_it() {
+    let mut w = World::new();
+    w.trade(0, 1, NEAR / 2);
+    w.close();
+    let t = w.r.treasury;
+    assert!(t > 0);
+    assert_fails("only the admin", || {
+        let _ = w.call("alice.near", 1).withdraw_treasury(U128(1));
+    });
+    assert_fails("exactly 1 yoctoNEAR", || {
+        let _ = w.call("admin.near", 0).withdraw_treasury(U128(1));
+    });
+    assert_fails("amount must be in 1..=treasury", || {
+        let _ = w.call("admin.near", 1).withdraw_treasury(U128(t + 1));
+    });
+    let _ = w.call("admin.near", 1).withdraw_treasury(U128(t));
+    assert_eq!(transfers_out(), vec![(acc("admin.near"), t)]);
+    assert_eq!(w.r.treasury, 0);
+    w.assert_conserved();
+    failed_callback(&w);
+    assert!(!w.r.on_treasury_withdraw(U128(t)));
+    assert_eq!(w.r.treasury, t);
+    w.assert_conserved();
 }

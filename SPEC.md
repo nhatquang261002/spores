@@ -82,7 +82,7 @@ Spore NFTs use the standard NEP-171 transfer methods (**VERIFY** requirements), 
 
 ### 5.4 Market and royalties
 - `list(spore, price)`, `delist(spore)` and `buy(spore)`. A buy settles atomically in one call: NFT moves, seller is paid, royalty is paid, transfer semantics (5.3) run.
-- `royalty_bps` (start at 500) goes to the royalty account. Check NEP-199 payout support so external marketplaces can honor it (**VERIFY**).
+- `royalty_bps` (start at 500) goes to the royalty account. Check NEP-199 payout support so external marketplaces can honor it (**VERIFY**). Built (Phase 5): the royalty account defaults to the admin; seller and royalty are paid from the buyer's attached deposit by two detached transfers (NEAR forbids returning a joint promise), and a failed payout goes to the treasury. `nft_payout` reports the same split; with approvals off, `nft_transfer_payout` is owner only, so royalties are enforced by `buy`.
 - Listing freezes withdrawals and pausing for that spore until it is delisted or sold, so a spore cannot be emptied just before a sale.
 - `spore_summary(spore)` is a read-only view for buyers: balance, reputation, age, active connections, current policy.
 
@@ -100,7 +100,7 @@ The visible image is a slime mold render: a dark background, a glowing organic n
 - **Ring:** the 64 collection positions are drawn as dots, brighter for active spores.
 
 **On-chain proof layer:**
-- At each epoch close the contract stores the spore's state hash. A renderer operator commits `image_hash` for that state with `commit_image(spore, epoch, image_hash, renderer_version)`.
+- At each epoch close the contract stores the spore's state hash. A renderer operator commits `image_hash` for that state with `commit_image(spore, epoch, image_hash, renderer_version)`. Built (Phase 5): only the latest `(epoch, state hash)` per active spore is stored (`spores_core::state`); older ones follow from the `epoch_closed` events, which carry each epoch's full input. The renderer operator is the admin (the keeper's key).
 - `verify` recomputes the image from state and compares it with the committed hash. The contract guarantees the state; it does not itself check the image, so the README says the image hash is committed by the project's renderer and is checkable by anyone.
 - The contract also generates a small vector glyph (an SVG of the spore's edges as straight lines on the ring, integers only) into the metadata, so a minimal verifiable picture exists fully on-chain (**VERIFY** view gas limits).
 
@@ -108,7 +108,7 @@ The visible image is a slime mold render: a dark background, a glowing organic n
 - **Earned traits** in the metadata, computed from state and not rolled: degree, age in epochs, reputation tier, peak reputation, number of epochs sold through.
 - **Name:** derived from the hash of the spore's neighborhood and a frozen syllable table.
 - **Gallery:** the viz draws the whole collection on the same ring with all tubes, so the collection looks like one living mycelium.
-- **Metadata:** `media` points to the renderer's image with its hash; wallets and marketplaces that cannot load it still show the on-chain glyph (**VERIFY** how marketplaces read metadata).
+- **Metadata:** `media` points to the renderer's image with its hash; wallets and marketplaces that cannot load it still show the on-chain glyph (**VERIFY** how marketplaces read metadata). Built (Phase 5): until the viz hosts the renders, `media` is the glyph as a `data:image/svg+xml;utf8,` URI with `media_hash`, and the committed image hash is in `extra`.
 
 **Spike (day 4, half a day):** port the simulation to fixed-point and check byte-identical output across two machines and across Rust and JS. If it cannot be made reproducible in time, ship the on-chain vector glyph as the image and keep the slime render as the gallery's presentation layer, and say so in the README.
 
@@ -174,7 +174,7 @@ The owner's budget is a request, not a grant. The effective per-epoch budget is:
 effective = min(owner_budget, base_budget + trust_gain * R)
 ```
 
-`R` is the spore's reputation (8.2). A new spore starts at `base_budget`, which is small. A spore with broad, sustained flow earns a higher ceiling, and a neglected one loses it as its tubes decay. A buyer pays for that ceiling when buying a spore with history.
+`R` is the spore's reputation (8.2), and `trust_gain` is per 1000 of `R` (one tube at `D = 1.0`). Shipped: `base_budget` 0.1 NEAR, `trust_gain` 0.2 NEAR, from `spores-sim allowance`; a 0.05 NEAR base starved honest spores until a wash ring out-ranked their median (`docs/phase5-results.md`). A new spore starts at `base_budget`, which is small. A spore with broad, sustained flow earns a higher ceiling, and a neglected one loses it as its tubes decay. A buyer pays for that ceiling when buying a spore with history.
 
 ### 7.3 Demo scenes
 - **Injection:** a real LLM-driven agent is given a job whose description tells it to send funds to an attacker. For a reproducible run the agent is configured as a deliberately naive one, and the README labels it so. The router rejects the payment regardless of what the model does, and the failed receipt and the model's output are both shown. Include a recorded run, and record honestly whether the model complied.
