@@ -11,6 +11,12 @@ pub type SporeId = u32;
 /// Jobs a spore may have posted and not yet finished, so contract-paid job
 /// storage stays bounded at `max_active * MAX_POSTED_JOBS` records.
 pub const MAX_POSTED_JOBS: usize = 4;
+/// Trading pairs one epoch can hold (Phase 6). `accept` refuses a pair not yet
+/// in this epoch's flows or rejects once those pairs plus the escrowed jobs
+/// (which can settle after the close) reach it, so every close names at most
+/// this many pairs and its `epoch_closed` log fits NEAR's 16 KiB limit at 64
+/// active spores (`tests::epoch_closed_log_size_at_64_active`).
+pub const MAX_EPOCH_PAIRS: u64 = 224;
 pub const MAX_QUOTES: usize = 8;
 pub const MAX_TASK_BYTES: usize = 256;
 pub const MAX_RESULT_BYTES: usize = 128;

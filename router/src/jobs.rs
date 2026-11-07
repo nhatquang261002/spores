@@ -14,8 +14,14 @@ use near_sdk::serde_json::json;
 use near_sdk::{env, near, require};
 use spores_core::fee::split_payment;
 
-use crate::types::{emit, Job, JobStatus, Quote, SporeId, MAX_POSTED_JOBS, MAX_QUOTES, MAX_RESULT_BYTES, MAX_TASK_BYTES};
+use crate::types::{
+    emit, Job, JobStatus, Quote, SporeId, MAX_EPOCH_PAIRS, MAX_POSTED_JOBS, MAX_QUOTES, MAX_RESULT_BYTES, MAX_TASK_BYTES,
+};
 use crate::{edge_key, Router, RouterExt};
+
+/// Raw storage key of the escrowed-job count (jobs with a provider). It lives
+/// outside the state struct so adding it kept router4's state layout.
+pub(crate) const ESCROWED_JOBS_KEY: &[u8] = b"escrowed_jobs";
 
 #[near]
 impl Router {
@@ -103,10 +109,12 @@ impl Router {
         );
         require!(!p.policy.paused, "provider is paused");
         self.check_payment(consumer, provider_id, price);
+        self.check_pair_cap(edge_key(consumer, provider_id));
 
         let epoch = self.epoch;
         self.charge(consumer, price);
         self.escrow += price;
+        self.set_escrowed_jobs(self.escrowed_jobs() + 1);
         self.spore_mut(provider_id).serving.push(job_id);
         let deadline = now + self.config.job_timeout_ns.0;
         let job = self.job_mut(job_id);
@@ -282,6 +290,39 @@ impl Router {
         self.spore_mut(job.consumer).posted.retain(|&j| j != job.id);
         if let Some(p) = job.provider {
             self.spore_mut(p).serving.retain(|&j| j != job.id);
+            self.set_escrowed_jobs(self.escrowed_jobs().saturating_sub(1));
         }
+    }
+
+    /// Accepted or delivered jobs not yet finished. Absent (router4 before
+    /// `set_max_active` recounted it) reads as 0.
+    pub(crate) fn escrowed_jobs(&self) -> u64 {
+        env::storage_read(ESCROWED_JOBS_KEY)
+            .and_then(|b| <[u8; 8]>::try_from(b).ok())
+            .map(u64::from_le_bytes)
+            .unwrap_or(0)
+    }
+
+    pub(crate) fn set_escrowed_jobs(&mut self, n: u64) {
+        env::storage_write(ESCROWED_JOBS_KEY, &n.to_le_bytes());
+    }
+
+    /// Pairs this epoch's close will name: flows and rejects.
+    pub(crate) fn epoch_pairs(&self) -> u64 {
+        let rejects_only = self.rejects.keys().filter(|k| !self.flows.contains_key(k)).count();
+        (self.flows.len() + rejects_only) as u64
+    }
+
+    /// A pair already in this epoch's flows or rejects is always allowed; a new
+    /// one only while those pairs plus every escrowed job (each may still add
+    /// a pair, even after the close) stay under `MAX_EPOCH_PAIRS`.
+    fn check_pair_cap(&self, pair: (SporeId, SporeId)) {
+        if self.flows.contains_key(&pair) || self.rejects.contains_key(&pair) {
+            return;
+        }
+        require!(
+            self.epoch_pairs() + self.escrowed_jobs() < MAX_EPOCH_PAIRS,
+            "epoch pair cap reached: try next epoch"
+        );
     }
 }

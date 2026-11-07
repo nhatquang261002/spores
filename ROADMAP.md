@@ -19,7 +19,7 @@ Before window work starts: make the baseline commit and `pre-hackathon` tag (Q-0
 
 Focus: pure integer code, written once and reused by `sim`, contract and `verify`.
 
-Results and design changes: `docs/phase1-results.md`.
+Results and design changes: `docs/results.md`.
 
 - [x] Pure functions with tests first: edge update `D' = D - D*decay_bps/10000 + gain*q/(q+K)`, pruning at `D_min`, `isqrt` reputation, fee split, pool distribution by saturated weight, canonical string and `sha256` fingerprint (§8). (`core/`; pool rule, fee rounding, breadth damping and rejection cut revised.)
 - [x] Shared test vectors (JSON) so the Rust contract, `sim` and `verify` must agree byte for byte. (`vectors/core.json`)
@@ -32,16 +32,16 @@ Results and design changes: `docs/phase1-results.md`.
 
 ## Phase 2: Spikes and doc reading (Days 3-4: Nov 3-4)
 
-Results and decisions: `docs/phase2-results.md`.
+Results and decisions: `docs/results.md`.
 
 - [x] Spore sub-account spike (§5.6), half a day. Go only if every §11 test still passes; no-go keeps the single ledger. Record the decision. (**No-go**, desk spike: no custody gain, breaks atomic `buy`, policy stays in the router. Not run on testnet.)
-- [x] Renderer spike (§5.5), half a day: port the Physarum sim to fixed point with a fixed PRNG and sin/cos tables; check byte-identical output across two machines and across Rust and JS. (**Go**: `renderer/`, 10 cases identical on native arm64, native x86_64, wasm32 and a JS port. A second physical machine is still to run: `docs/phase2-results.md`.)
+- [x] Renderer spike (§5.5), half a day: port the Physarum sim to fixed point with a fixed PRNG and sin/cos tables; check byte-identical output across two machines and across Rust and JS. (**Go**: `renderer/`, 10 cases identical on native arm64, native x86_64, wasm32 and a JS port. A second physical machine is still to run: `docs/results.md`.)
 
 **Gate:** go/no-go for each spike written down. If the renderer is not reproducible, the on-chain glyph becomes the NFT image, the slime render stays a gallery presentation layer, and the README says so.
 
 ## Phase 3: Router contract and renderer (Days 4-6: Nov 4-6)
 
-Results, testnet evidence and deviations: `docs/phase3-results.md`.
+Results, testnet evidence and deviations: `docs/results.md`.
 
 - [x] Spore NFTs (NEP-171) with transfer logic: clear operator and bump key generation, reset policy to paused with zero budget, keep balance/edges/age/name, refund in-flight jobs. (`router/src/nft.rs`; a reverted `nft_transfer_call` resets again. Name trait not built yet.)
 - [x] Ledger keyed by spore id: `deposit`, owner-only `withdraw`, operator cannot withdraw to itself.
@@ -55,7 +55,7 @@ Results, testnet evidence and deviations: `docs/phase3-results.md`.
 
 ## Phase 4: Agents, outside service, decision log (Days 6-8: Nov 6-8)
 
-Results, testnet evidence and deviations: `docs/phase4-results.md`.
+Results, testnet evidence and deviations: `docs/results.md`.
 
 - [x] Agent runtime: one process per active spore, operator key from env, bid / deliver / pay using the same rules as `sim`. (`agents/`, TypeScript; margins, demand and RNG moved into `spores-core` and ported against `vectors/agents.json`; one function-call key per spore.)
 - [x] Decision log per hire: candidates, quotes, tube strengths, winner. (`decisions.jsonl`; `spores-sim replay-decisions` re-checks every hire against `spores_core::hiring::pick`.)
@@ -67,7 +67,7 @@ Results, testnet evidence and deviations: `docs/phase4-results.md`.
 
 ## Phase 5: Epochs, allowance, market (Days 8-10: Nov 8-10)
 
-Results, testnet evidence and deviations: `docs/phase5-results.md`.
+Results, testnet evidence and deviations: `docs/results.md`.
 
 - [x] `close_epoch` (anyone, after duration; twice or too early fails; empty epoch does nothing), graph update, fee pool distribution, fingerprint and state hash stored per epoch. (All but the per-spore state hash landed in Phase 3.) Also a treasury withdrawal. (State hash: latest per active spore, history from the now complete `epoch_closed` event; an empty epoch pays nothing but tubes still decay; `withdraw_treasury` to the admin.)
 - [x] `commit_image` and the `verify` script (fingerprint replay and image regeneration). (`spores-verify epochs | image`, chain data only; the keeper commits after every close.)
@@ -79,11 +79,13 @@ Results, testnet evidence and deviations: `docs/phase5-results.md`.
 
 ## Phase 6: Viz, scenes, demo (Days 10-12: Nov 10-12)
 
-- [ ] `viz` on chain state: collection ring gallery, live network, decision log, receipts with explorer links, verify button.
-- [ ] Scenes: injection (naive LLM agent, labeled as such, record whether the model complied), rogue agent, sale, wash-trading attacker.
-- [ ] One-command fast-epoch demo (about 30 s epochs) with expected output printed, plus a recorded fallback run.
+Detailed plan and session log: `docs/phase6-plan.md`.
+
+- [x] `viz` on chain state: collection ring gallery, live network, decision log, receipts with explorer links, verify button.
+- [x] Scenes: rogue agent, sale, wash-trading attacker. Injection is **not built** (decision D2, `docs/phase6-plan.md`); its card says so.
+- [x] One-command fast-epoch demo (about 30 s epochs) with expected output printed, plus a recorded fallback run.
 - [ ] Art polish (cut last among optional items).
-- [ ] End-to-end test: scripted 5-epoch run with a mid-run sale and an injected job, unattended; `verify` reproduces every fingerprint and the sold spore's image.
+- [x] End-to-end test: scripted 9-epoch run with a mid-run sale, unattended, no injected job (D2); `verify` reproduced every fingerprint and the sold spore's image (`demo-20261106T101440Z`).
 - [ ] Removal test (§3): drop any track whose feature fails.
 
 **Exit:** a 60-90 s recording is possible from the script in §10.

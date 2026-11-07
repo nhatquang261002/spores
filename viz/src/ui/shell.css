@@ -1,0 +1,800 @@
+/* Base and shell styles (Design §3–§6.0, §9). Colours only from tokens.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 14px/22px var(--font-sans);
+  font-variation-settings: var(--doodle);
+  -webkit-font-smoothing: antialiased;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+a {
+  color: inherit;
+}
+button,
+select {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--slime);
+  outline-offset: 2px;
+}
+::selection {
+  background: var(--slime-dim);
+}
+
+/* Vein dividers (§3.4): the shell's own edges are a living tube (VeinTube.tsx, the Network
+   map's tube body), centred on the edge it divides. Table and list rules stay plain --line. */
+.vein-tube {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 16px;
+  pointer-events: none;
+  animation: vein-grow var(--t-grow) var(--ease-out) both;
+}
+.vein-tube-bottom {
+  bottom: -8px;
+}
+.vein-tube-top {
+  top: -8px;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--s-4);
+  top: -100px;
+  z-index: var(--z-skip-link);
+  background: var(--surface);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-blob);
+}
+.skip-link:focus {
+  top: var(--s-2);
+}
+
+/* Motion (§3.5, slime theme). Durations come from tokens, so reduced motion zeroes the
+   one-shot ones; the perpetual ones are switched off outright below. */
+@keyframes vein-grow {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* the wordmark letters swell and thin, one slow breath (§3.5) */
+@keyframes wordmark-breathe {
+  from {
+    font-weight: 460;
+  }
+  to {
+    font-weight: 560;
+  }
+}
+@keyframes ooze-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96, 0.92);
+    border-radius: var(--r-blob);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Epoch pulse (VeinPulse.tsx): a bead runs both ways from the clock, then fades */
+.vein-pulse {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 12px;
+  pointer-events: none;
+  /* brief, and only on a confirmed close: the one glow outside the art (§3.4) */
+  filter: drop-shadow(0 0 4px var(--slime));
+}
+/* the bead runs down the tube's centre line */
+.vein-pulse > span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, transparent, var(--slime) 35%, var(--text) 50%, var(--slime) 65%, transparent) 0 0 / 140px 100% no-repeat;
+}
+.vein-pulse-left {
+  animation: pulse-left var(--t-pulse) var(--ease-out) both;
+}
+.vein-pulse-right {
+  animation: pulse-right var(--t-pulse) var(--ease-out) both;
+}
+@keyframes pulse-left {
+  from {
+    background-position: calc(var(--pulse-x) - 70px) 0;
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    background-position: -140px 0;
+    opacity: 0;
+  }
+}
+@keyframes pulse-right {
+  from {
+    background-position: calc(var(--pulse-x) - 70px) 0;
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    background-position: 100vw 0;
+    opacity: 0;
+  }
+}
+/* VeinTube draws itself still under reduced motion */
+:root[data-reduced-motion='true'] .wordmark {
+  animation: none;
+}
+
+/* Top bar (§5.2): 56 px, sticky, solid, a vein along the bottom, no blur */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  padding: 0 var(--page-pad);
+  background: var(--bg);
+}
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font: 460 22px/26px var(--font-display);
+  text-decoration: none;
+  animation: wordmark-breathe var(--t-breathe) var(--ease-decay) infinite alternate;
+}
+/* The tile's margin is clear space drawn in --bg: pulled in, the ring lines up with the page edge. */
+.brand-mark {
+  display: block;
+  flex: none;
+  margin: -6px -6px -6px -9px;
+}
+.topnav {
+  display: flex;
+  gap: var(--s-5);
+}
+.navlink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font: 500 14px/22px var(--font-sans);
+  color: var(--text-2);
+  /* the active underline: a wavy yolk tube, 8 px below the baseline (§5.2) */
+  text-decoration: underline wavy 1.5px transparent;
+  text-underline-offset: 8px;
+  transition: color var(--t-micro) var(--ease-out);
+}
+.navlink:hover,
+.navlink.active {
+  color: var(--text);
+}
+.navlink.active {
+  text-decoration-color: var(--slime);
+}
+.status-cluster {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+/* SourceBadge (§4.1) */
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 28px;
+  padding: 0 var(--s-3);
+  border-radius: var(--r-blob);
+  background: none;
+  border: 1px solid transparent;
+  transition: border-radius var(--t-ui) var(--ease-grow);
+}
+.source-badge:hover {
+  border-radius: var(--r-blob-2);
+}
+.source-badge .label {
+  font: 600 11px/16px var(--font-sans);
+  letter-spacing: 0.08em;
+}
+.source-detail {
+  color: var(--text-2);
+}
+.dot-live {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: var(--growth);
+}
+.dot-run {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--text);
+}
+.source-sim {
+  border: 1px dashed var(--line-strong);
+}
+.source-badge.is-stale {
+  border: 1px dashed var(--caution);
+  color: var(--text-2);
+}
+.glyph-caution {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--caution);
+  border-radius: var(--r-full);
+  color: var(--caution);
+  font: 600 10px/1 var(--font-sans);
+}
+.glyph-warn {
+  color: var(--warn);
+}
+
+/* EpochClock */
+.epoch-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  white-space: nowrap;
+}
+.epoch-clock.is-stale {
+  color: var(--text-2);
+}
+.epoch-arc .track {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.epoch-arc .fill {
+  fill: none;
+  stroke: var(--slime);
+  stroke-width: 1;
+}
+.epoch-arc.phase-closing .fill {
+  stroke: var(--text-3);
+}
+.countdown {
+  color: var(--text-2);
+  min-width: 5ch;
+}
+
+/* Buttons (blob radius, hit target 40 px) */
+.btn {
+  min-height: 40px;
+  padding: 0 var(--s-5);
+  border-radius: var(--r-blob);
+  cursor: pointer;
+  font: 500 14px/22px var(--font-sans);
+  transition:
+    background var(--t-micro) var(--ease-out),
+    border-radius var(--t-ui) var(--ease-grow),
+    transform var(--t-micro) var(--ease-out);
+}
+/* A link that looks like a button: centred, no underline. */
+a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+/* Blob interactions: hover moves the bulge, press squashes the cell */
+.btn:hover:not(:disabled):not([aria-disabled='true']) {
+  border-radius: var(--r-blob-2);
+}
+.btn:active:not(:disabled):not([aria-disabled='true']),
+.btn-avatar:active:not([aria-disabled='true']) {
+  transform: scale(0.97, 0.93);
+}
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+/* Primary (not a status): yolk fill, --bg text (11.5:1) */
+.btn-primary {
+  background: var(--slime);
+  border: 1px solid var(--slime);
+  color: var(--bg);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--text);
+  border-color: var(--text);
+}
+.btn-primary:disabled,
+.btn-primary[aria-disabled='true'] {
+  background: none;
+  border-color: var(--line-strong);
+}
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  cursor: not-allowed;
+  color: var(--text-3);
+}
+.btn[aria-disabled='true']:hover {
+  background: none;
+}
+/* Mobile wallet avatar (§5.3): 44 px touch target, round like an avatar */
+.btn-avatar {
+  transition: transform var(--t-micro) var(--ease-out);
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-full);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.btn-avatar[aria-disabled='true'] {
+  cursor: not-allowed;
+  color: var(--text-3);
+}
+
+/* Tooltip (§7): hover and focus, max 280 px, popover layer, one float shadow */
+.tip-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.tooltip {
+  position: absolute;
+  top: calc(100% + var(--s-2));
+  left: 0;
+  z-index: var(--z-popover);
+  width: max-content;
+  max-width: 280px;
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-float);
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+  transform-origin: top left;
+  animation: ooze-in var(--t-ui) var(--ease-grow) both;
+}
+.tooltip-end {
+  left: auto;
+  right: 0;
+  transform-origin: top right;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* RECORDED banner (§4.1): persistent, not dismissible */
+.recorded-banner {
+  /* Block, not flex: a flex row split the sentence's text and code into columns on a phone. */
+  min-height: 28px;
+  padding: var(--s-0) var(--page-pad);
+  overflow-wrap: anywhere;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+}
+
+/* Page frame (§3.3) */
+.page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--s-7) var(--page-pad);
+  min-height: calc(100vh - var(--topbar-h) - 64px);
+}
+.page:focus {
+  outline: none;
+}
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  margin-bottom: var(--s-7);
+}
+.footer {
+  position: relative;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--s-5) var(--page-pad);
+  color: var(--text-3);
+}
+
+/* Global states (§6.0) */
+.loading-bar {
+  display: inline-block;
+  height: 1px;
+  vertical-align: middle;
+  background: var(--line);
+}
+.empty-state,
+.error-state {
+  display: grid;
+  gap: var(--s-3);
+  max-width: var(--prose-max);
+  padding: var(--s-5);
+  background: var(--surface);
+  border-radius: var(--r-2);
+  transform-origin: top left;
+  animation: ooze-in var(--t-panel) var(--ease-grow) both;
+}
+.empty-state .body-l {
+  color: var(--text-2);
+}
+.error-text {
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.unavailable {
+  color: var(--text-3);
+}
+
+/* Tx tray (drawer layer) */
+.tx-tray {
+  position: fixed;
+  right: var(--s-4);
+  bottom: var(--s-4);
+  z-index: var(--z-drawer);
+  width: 320px;
+}
+.tx-tray ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-2);
+}
+.tx-row {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  background: var(--surface);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-float);
+  transform-origin: bottom right;
+  animation: ooze-in var(--t-panel) var(--ease-grow) both;
+}
+.tx-ok .mono-s:first-of-type {
+  color: var(--growth);
+}
+.tx-failed .mono-s:first-of-type {
+  color: var(--warn);
+}
+
+/* Mobile (§5.3): bottom bar, collapsed badge */
+.bottombar {
+  display: none;
+}
+.only-mobile {
+  display: none;
+}
+@media (max-width: 899px) {
+  .topnav,
+  .lab-link,
+  .only-desktop {
+    display: none;
+  }
+  .only-mobile {
+    display: inline;
+  }
+  .topbar {
+    gap: var(--s-3);
+  }
+  .status-cluster {
+    gap: var(--s-2);
+  }
+  .source-badge.is-compact {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  .bottombar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    height: calc(var(--bottombar-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--bg);
+  }
+  .bottomlink {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 2px;
+    min-height: 44px;
+    color: var(--text-2);
+    text-decoration: none;
+    font: 500 11px/16px var(--font-sans);
+  }
+  .bottomlink.active {
+    color: var(--slime);
+  }
+  .page,
+  .footer {
+    padding-bottom: calc(var(--bottombar-h) + var(--s-5));
+  }
+  .tx-tray {
+    bottom: calc(var(--bottombar-h) + var(--s-4));
+    left: var(--s-4);
+    width: auto;
+  }
+}
+
+/* SporeArtwork (§7): square, never rounded, no border (the art has its own frame).
+   The glyph sits underneath; each new image fades in on top of the previous one.
+   Once real pixels are shown the frame blooms softly in the spore's own accent (§3.4). */
+.artwork {
+  margin: 0;
+  display: grid;
+  gap: var(--s-2);
+}
+.artwork-frame {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--art-bg);
+  border-radius: var(--r-0);
+  overflow: hidden;
+  transition: box-shadow var(--t-art) var(--ease-out);
+}
+/* The bloom is written here, not as a :root token, because it reads --accent, which
+   SporeArtwork sets per spore (a :root token would resolve it before it exists). */
+.artwork[data-state='ready']:not(.artwork-thumb) .artwork-frame {
+  box-shadow: 0 0 56px -12px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.artwork-glyph,
+.artwork-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.artwork-canvas {
+  z-index: 1;
+}
+.artwork-canvas.is-front {
+  z-index: 2;
+  animation: art-in var(--t-art) var(--ease-out);
+}
+@keyframes art-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.artwork-caption {
+  color: var(--text-3);
+}
+.artwork-thumb .artwork-frame {
+  width: 96px;
+}
+
+/* ConfirmationDialog (§7): the dialog layer, one float shadow, uneven cell wall */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+}
+.dialog {
+  width: min(100%, var(--prose-max));
+  max-height: calc(100dvh - var(--s-7));
+  overflow: auto;
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--surface);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-float);
+  transform-origin: center;
+  animation: ooze-in var(--t-panel) var(--ease-grow) both;
+}
+.dialog:focus {
+  outline: none;
+}
+.dialog .title {
+  margin: 0;
+}
+.dialog-body {
+  display: grid;
+  gap: var(--s-4);
+}
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+/* TxAction: the form, the exact call, consequences, then the state line (§8.3) */
+.tx-fields {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.field {
+  display: grid;
+  gap: var(--s-1);
+}
+.field input:not([type='checkbox']) {
+  min-height: 40px;
+  padding: 0 var(--s-3);
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+}
+.field-check {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 40px;
+}
+.field-check input {
+  accent-color: var(--slime);
+}
+.field-hint {
+  color: var(--text-2);
+}
+.tx-draft-error {
+  color: var(--text-2);
+  margin: 0;
+}
+.tx-call {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--s-1) var(--s-4);
+  margin: 0;
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.tx-call dt {
+  color: var(--text-2);
+}
+.tx-call dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.tx-args {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tx-consequences ul {
+  margin: 0;
+  padding-left: var(--s-5);
+  display: grid;
+  gap: var(--s-1);
+  color: var(--text-2);
+}
+.tx-status p {
+  margin: 0;
+}
+.tx-status.tx-ok > p:first-child {
+  color: var(--growth);
+}
+.tx-status.tx-failed > p:first-child {
+  color: var(--warn);
+}
+/* pending spinner: perpetual motion allowed because it measures real time (principle 3) */
+.tx-spinner {
+  display: inline-block;
+  width: var(--s-3);
+  height: var(--s-3);
+  margin-right: var(--s-2);
+  vertical-align: middle;
+  border: 1px solid var(--line-strong);
+  border-top-color: var(--slime);
+  border-radius: var(--r-full);
+  animation: tx-spin var(--t-grow) linear infinite;
+}
+:root[data-reduced-motion='true'] .tx-spinner {
+  animation: none;
+}
+@keyframes tx-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* WalletStatus (§5.2, §7): account button and its menu on the popover layer */
+.wallet {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.wallet .btn .mono {
+  color: var(--text);
+}
+.btn-avatar.is-connected {
+  color: var(--slime);
+  border-color: var(--slime);
+}
+.wallet-menu {
+  position: absolute;
+  top: calc(100% + var(--s-2));
+  right: 0;
+  z-index: var(--z-popover);
+  min-width: calc(var(--s-9) * 2.5);
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  background: var(--surface-2);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-float);
+  transform-origin: top right;
+  animation: ooze-in var(--t-ui) var(--ease-grow) both;
+}
+.wallet-menu p {
+  margin: 0 0 var(--s-2);
+}
+.wallet-account {
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.wallet-menu a,
+.wallet-disconnect {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--s-2);
+  border-radius: var(--r-1);
+  color: var(--text);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.wallet-menu a:hover,
+.wallet-disconnect:hover {
+  background: var(--surface-3);
+}

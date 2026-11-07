@@ -18,6 +18,16 @@ export interface RunConfig {
   outsideUrl: string;
   /** Each spore buys from the outside service every `buyEvery` epochs (0 = never). */
   buyEvery: number;
+  /**
+   * 0: every provider of the service quotes on every job (Phase 4 and 5).
+   * k > 0 (Phase 6, 64 active): only the consumer's tube neighbours and k
+   * seeded picks among the other providers quote, at most MAX_QUOTES in all.
+   */
+  quoteFanout: number;
+  /** Agents re-read their spore's summary (control, policy) every this many polls, and at each new epoch. */
+  controlEvery: number;
+  /** Each spore posts its jobs every this many epochs, staggered by id (1 = every epoch). */
+  postEvery: number;
 }
 
 export function loadConfig(): RunConfig {
@@ -38,7 +48,30 @@ export function loadConfig(): RunConfig {
     pollMs: Number(process.env.POLL_MS ?? 2_500),
     outsideUrl: process.env.OUTSIDE_URL ?? 'http://127.0.0.1:8787',
     buyEvery: Number(process.env.BUY_EVERY ?? 3),
+    quoteFanout: Number(process.env.QUOTE_FANOUT ?? 0),
+    controlEvery: Number(process.env.CONTROL_EVERY ?? 5),
+    postEvery: Math.max(1, Number(process.env.POST_EVERY ?? 1)),
   };
+}
+
+/** `0-8,12` -> [0..8, 12]. */
+export function parseIds(s: string): number[] {
+  return s.split(',').filter(Boolean).flatMap((part) => {
+    const [a, b] = part.split('-').map(Number);
+    return b === undefined ? [a] : Array.from({ length: b - a + 1 }, (_, k) => a + k);
+  });
+}
+
+/**
+ * A key from the environment under the first of KEY_PREFIX's comma-separated
+ * prefixes that has it (`P6_,P5_`: Phase 6 keys first, then Phase 5 ones).
+ */
+export function envKey(name: string, env: Record<string, string | undefined> = process.env): string | undefined {
+  for (const p of (env.KEY_PREFIX ?? '').split(',')) {
+    const v = env[`${p.trim()}${name}`];
+    if (v) return v;
+  }
+  return undefined;
 }
 
 /** Scripted shocks (SPEC §6.6), written by shock.ts and read by every agent each loop. */
@@ -81,3 +114,12 @@ export function ensureDir(p: string) {
 
 export const nowNs = () => BigInt(Date.now()) * 1_000_000n;
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** True if some tube between `ids` is thicker in a snapshot than in the one before it. D only moves at a close. */
+export function tubesGrew(snaps: { edges: [number, number, string | number][] }[], ids: number[]): boolean {
+  const mine = (s: { edges: [number, number, string | number][] }) => new Map(s.edges.filter(([a, b]) => ids.includes(a) && ids.includes(b)).map(([a, b, d]) => [`${a}-${b}`, BigInt(d)]));
+  return snaps.slice(1).some((s, i) => {
+    const before = mine(snaps[i]);
+    return [...mine(s)].some(([k, d]) => d > (before.get(k) ?? 0n));
+  });
+}

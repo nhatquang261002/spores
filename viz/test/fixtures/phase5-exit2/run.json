@@ -1,0 +1,80 @@
+{
+  "run": "phase5-exit2",
+  "router": "spores-hack-router4.testnet",
+  "spores": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "epochs": 8,
+  "seed": "1",
+  "shocks": "sale@3",
+  "start_epoch": 9,
+  "shock_targets": {
+    "star": 1,
+    "runnerUp": 3
+  },
+  "config": {
+    "supply_cap": 64,
+    "max_active": 16,
+    "epoch_len_ns": "30000000000",
+    "job_timeout_ns": "60000000000",
+    "min_activation_deposit": "100000000000000000000000",
+    "decay_bps": 2500,
+    "gain": "1000000",
+    "k": "100000000000000000000000",
+    "d_min": "50000",
+    "fee_bps": 100,
+    "rebate_bps": 5000,
+    "breadth_full": 4,
+    "reject_bps": 5000,
+    "base_budget": "100000000000000000000000",
+    "trust_gain": "200000000000000000000000",
+    "royalty_bps": 500,
+    "royalty_account": null
+  },
+  "profiles": {
+    "0": {
+      "cost": "124000000000000000000000",
+      "qualityBps": 9466
+    },
+    "1": {
+      "cost": "42000000000000000000000",
+      "qualityBps": 7523
+    },
+    "2": {
+      "cost": "84000000000000000000000",
+      "qualityBps": 8363
+    },
+    "3": {
+      "cost": "45000000000000000000000",
+      "qualityBps": 5892
+    },
+    "4": {
+      "cost": "71000000000000000000000",
+      "qualityBps": 5660
+    },
+    "5": {
+      "cost": "68000000000000000000000",
+      "qualityBps": 8570
+    },
+    "6": {
+      "cost": "114000000000000000000000",
+      "qualityBps": 6540
+    },
+    "7": {
+      "cost": "91000000000000000000000",
+      "qualityBps": 5974
+    },
+    "8": {
+      "cost": "94000000000000000000000",
+      "qualityBps": 5839
+    }
+  }
+}

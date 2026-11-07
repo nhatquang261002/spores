@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "sim", "renderer", "router", "verify"]
+members = ["core", "core-wasm", "sim", "renderer", "router", "verify"]
 
 [workspace.package]
 edition = "2021"
@@ -25,3 +25,13 @@ strip = true
 # The renderer runs ~10^8 integer ops per image; keep it fast under `cargo test`.
 [profile.dev.package.spores-renderer]
 opt-level = 3
+
+# core-wasm for the browser: optimise for size (Design §10 budget: 250 kB),
+# keep overflow checks. The renderer stays on `release` (speed; its vectors and
+# check.mjs use that build). Build: scripts/build-wasm.sh
+[profile.wasm]
+inherits = "release"
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

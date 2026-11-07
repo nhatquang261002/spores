@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 use spores_core::allowance::Allowance;
 use spores_core::{Params, PoolRule, NEAR};
 
-use crate::economy::{run, Attack, Config, EpochStats, Mode, Shocks};
+use crate::economy::{run, Attack, Config, EpochStats, Mode, Scale, Series, Shocks};
 
 const SHOCKS: Shocks = Shocks {
     kill: Some(20),
@@ -79,12 +79,13 @@ pub struct Baseline {
 }
 
 /// The hiring rule agents ship with: `D_norm` relative to the strongest
-/// candidate tube, `w = 4`. Chosen from `tune`; see docs/phase1-results.md.
+/// candidate tube, `w = 4`. Chosen from `tune`; see docs/results.md.
 pub const SHIPPED_HIRING: Mode = Mode::TubesRelative {
     w_bps: spores_core::hiring::SHIPPED_W_BPS,
 };
 
-pub fn baseline(seeds: u64) -> Baseline {
+pub fn baseline(seeds: u64, scale: Scale) -> Baseline {
+    let Scale { active, jobs } = scale;
     let variants: Vec<(&str, Params, Mode)> = vec![
         ("price only", Params::shipped(), Mode::PriceOnly),
         (
@@ -115,26 +116,34 @@ pub fn baseline(seeds: u64) -> Baseline {
     let mut md = String::new();
     writeln!(
         md,
-        "{} seeds x {} epochs, 16 active spores, 4 services, 3 jobs per consumer per epoch, 2 attempts per job. \
+        "{} seeds x {} epochs, {} active spores, 4 services, {} jobs per consumer per epoch, 2 attempts per job. \
          Shocks: kill the best-value provider at epoch {}, cut the strongest tube at {}, triple the second-best provider's cost at {}. \
          Recovery: epochs until the 3-epoch rolling success rate is within 3 points of the 5 epochs before the shock (mean over seeds that recovered).\n",
-        seeds, BASELINE_EPOCHS, shocks[0].1, shocks[1].1, shocks[2].1
+        seeds, BASELINE_EPOCHS, active, jobs, shocks[0].1, shocks[1].1, shocks[2].1
     )
     .unwrap();
-    md.push_str("| Mode | Avg price paid (NEAR) | Failed attempts | Unfulfilled jobs | Hired quality | Recover: kill | Recover: cut | Recover: raise |\n");
-    md.push_str("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
+    md.push_str("| Mode | Avg price paid (NEAR) | Failed attempts | Unfulfilled jobs | Hired quality | Recover: kill | Recover: cut | Recover: raise | Tubes mean / max | Flow edges max | Reject edges max | Rebated spores max |\n");
+    md.push_str("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n");
     let mut rows = Vec::new();
     for (label, params, mode) in &variants {
         let (mut paid, mut settled, mut attempts, mut failures, mut jobs, mut unfulfilled, mut quality) =
             (0u128, 0u64, 0u64, 0u64, 0u64, 0u64, 0.0f64);
         let mut rec: Vec<Vec<Option<u64>>> = vec![Vec::new(); 3];
         let mut fingerprints = Vec::new();
+        let (mut edges_sum, mut epochs_n) = (0usize, 0usize);
+        let mut maxes = [0usize; 4]; // tubes, flow edges, reject edges, rebated spores
         for seed in 1..=seeds {
             let mut cfg = Config::new(*params, *mode, seed);
             cfg.epochs = BASELINE_EPOCHS;
             cfg.shocks = SHOCKS;
+            scale.apply(&mut cfg);
             let r = run(&cfg);
             for s in &r.stats {
+                edges_sum += s.edges;
+                epochs_n += 1;
+                for (m, x) in maxes.iter_mut().zip([s.edges, s.flow_edges, s.reject_edges, s.rebated_spores]) {
+                    *m = (*m).max(x);
+                }
                 paid += s.paid;
                 settled += s.settled as u64;
                 attempts += s.attempts as u64;
@@ -161,7 +170,7 @@ pub fn baseline(seeds: u64) -> Baseline {
             .collect();
         writeln!(
             md,
-            "| {} | {:.4} | {:.1}% | {:.1}% | {:.3} | {} | {} | {} |",
+            "| {} | {:.4} | {:.1}% | {:.1}% | {:.3} | {} | {} | {} | {:.1} / {} | {} | {} | {} |",
             label,
             avg_price,
             100.0 * fail,
@@ -169,10 +178,20 @@ pub fn baseline(seeds: u64) -> Baseline {
             q,
             rec_cells[0],
             rec_cells[1],
-            rec_cells[2]
+            rec_cells[2],
+            edges_sum as f64 / epochs_n as f64,
+            maxes[0],
+            maxes[1],
+            maxes[2],
+            maxes[3]
         )
         .unwrap();
         rows.push(json!({
+            "tubes_mean": edges_sum as f64 / epochs_n as f64,
+            "tubes_max": maxes[0],
+            "flow_edges_max": maxes[1],
+            "reject_edges_max": maxes[2],
+            "rebated_spores_max": maxes[3],
             "mode": label,
             "params": params_json(params),
             "avg_price_near": avg_price,
@@ -185,7 +204,7 @@ pub fn baseline(seeds: u64) -> Baseline {
     }
     Baseline {
         markdown: md,
-        json: json!({"seeds": seeds, "epochs": BASELINE_EPOCHS, "rows": rows}),
+        json: json!({"seeds": seeds, "epochs": BASELINE_EPOCHS, "active": active, "jobs_per_consumer": jobs, "rows": rows}),
     }
 }
 
@@ -278,6 +297,12 @@ struct Case {
     blocked: Option<String>,
     /// K within ½×–2× of the variant's default, the same range as fee and gain.
     in_range: bool,
+    /// Whole-run net (rebates minus fees) per seed, NEAR.
+    attacker_net_by_seed: Vec<f64>,
+    honest_net_by_seed: Vec<f64>,
+    /// Per-epoch series per seed (attacker, honest); only kept for the
+    /// variant's default fee, K and gain, to keep `sweep.json` small.
+    series: Vec<(u64, Series, Series)>,
 }
 
 impl Case {
@@ -328,6 +353,7 @@ fn sweep_case(
     gain: u128,
     volume_milli: u128,
     allowance: Option<Allowance>,
+    scale: Scale,
 ) -> Case {
     let params = Params {
         fee_bps,
@@ -349,11 +375,16 @@ fn sweep_case(
         honest_median: f64::INFINITY,
         blocked: None,
         in_range: base.k / 2 <= params.k && params.k <= base.k * 2,
+        attacker_net_by_seed: Vec::new(),
+        honest_net_by_seed: Vec::new(),
+        series: Vec::new(),
     };
+    let keep_series = fee_bps == base.fee_bps && params.k == base.k && gain == base.gain;
     for seed in SWEEP_SEEDS {
         let mut cfg = Config::new(params, SHIPPED_HIRING, seed);
         cfg.epochs = SWEEP_EPOCHS;
         cfg.allowance = allowance;
+        scale.apply(&mut cfg);
         cfg.attack = Some(Attack {
             spores,
             volume: volume_milli * NEAR / 1_000,
@@ -363,6 +394,11 @@ fn sweep_case(
         if let Some(e) = r.attack_error {
             c.blocked = Some(e);
             return c;
+        }
+        c.attacker_net_by_seed.push(r.attacker_net as f64 / NEAR as f64);
+        c.honest_net_by_seed.push(r.honest_net as f64 / NEAR as f64);
+        if keep_series {
+            c.series.push((seed, r.attacker_series.clone(), r.honest_series.clone()));
         }
         // Worst case over seeds.
         c.net = c.net.max(r.attacker_net as f64 / NEAR as f64);
@@ -386,17 +422,28 @@ fn fmt_ratio(x: f64) -> String {
     }
 }
 
-pub fn sweep() -> Sweep {
+fn series_json(s: &Series) -> Value {
+    json!({
+        "balance_delta": s.balance_delta,
+        "fees": s.fees,
+        "rebates": s.rebates,
+        "r_max": s.r_max,
+        "r_median": s.r_median,
+    })
+}
+
+pub fn sweep(scale: Scale) -> Sweep {
+    let Scale { active, jobs } = scale;
     let variants: [(&'static str, Params); 2] = [("spec", Params::spec()), ("shipped", Params::shipped())];
     let mut cases = Vec::new();
     for (name, base) in variants {
-        cases.push(sweep_case(name, base, 1, 100, 500, 1_000_000, 1_000, None));
+        cases.push(sweep_case(name, base, 1, 100, 500, 1_000_000, 1_000, None, scale));
         for spores in [2, 3] {
             for fee in FEES {
                 for k in KS_MILLI {
                     for gain in GAINS {
                         for v in VOLUMES_MILLI {
-                            cases.push(sweep_case(name, base, spores, fee, k, gain, v, None));
+                            cases.push(sweep_case(name, base, spores, fee, k, gain, v, None, scale));
                         }
                     }
                 }
@@ -407,7 +454,7 @@ pub fn sweep() -> Sweep {
     let mut md = String::new();
     writeln!(
         md,
-        "Grid: attacker spores 1-3, fee_bps {:?}, K {:?} milliNEAR, gain {:?}, loop volume {:?} milliNEAR per edge per epoch; \
+        "{active} active spores, {jobs} honest jobs per spore per epoch. Grid: attacker spores 1-3, fee_bps {:?}, K {:?} milliNEAR, gain {:?}, loop volume {:?} milliNEAR per edge per epoch; \
          seeds {:?}, {} epochs, metrics over the second half, worst case over seeds. The attacker's spores only trade with each other.\n\n\
          - **Gate**: attacker net < 0 (rebates minus fees) AND the attacker's best spore stays below the honest median reputation \
          (R ratio < 1). Gated over K within ½×–2× of the variant's default, the same range as fee and gain; other K values are reported.\n\
@@ -546,6 +593,13 @@ pub fn sweep() -> Sweep {
             "k_in_gate_range": c.in_range,
             "gate_pass": c.pass(),
             "literal_pass": c.literal_pass(),
+            "attacker_net_near_by_seed": c.attacker_net_by_seed,
+            "honest_net_near_by_seed": c.honest_net_by_seed,
+            "series": c.series.iter().map(|(seed, a, h)| json!({
+                "seed": seed,
+                "attacker": series_json(a),
+                "honest": series_json(h),
+            })).collect::<Vec<_>>(),
         }));
     }
     let shipped_pass = cases
@@ -555,7 +609,14 @@ pub fn sweep() -> Sweep {
     Sweep {
         markdown: md,
         full_markdown: full,
-        json: json!({"epochs": SWEEP_EPOCHS, "seeds": SWEEP_SEEDS, "cases": rows}),
+        json: json!({
+            "epochs": SWEEP_EPOCHS,
+            "seeds": SWEEP_SEEDS,
+            "active": active,
+            "jobs_per_consumer": jobs,
+            "series_note": "per-epoch series (every epoch, not only the measurement window) are kept only for each variant's default fee, K and gain; money in NEAR, R in units of REP_ONE",
+            "cases": rows
+        }),
         shipped_pass,
     }
 }
@@ -580,12 +641,13 @@ pub struct AllowanceReport {
 
 /// Shipped params and hiring with each allowance candidate: the baseline
 /// metrics (same seeds and shocks) plus the in-range wash-trading gate.
-pub fn allowance(seeds: u64) -> AllowanceReport {
+pub fn allowance(seeds: u64, scale: Scale) -> AllowanceReport {
+    let Scale { active, jobs } = scale;
     let p = Params::shipped();
     let mut md = String::new();
     writeln!(
         md,
-        "Shipped params and hiring, owner budget unlimited, so the ceiling `base + trust_gain * R / {}` binds. \
+        "{active} active spores, {jobs} honest jobs per spore per epoch. Shipped params and hiring, owner budget unlimited, so the ceiling `base + trust_gain * R / {}` binds. \
          Baseline: {} seeds x {} epochs with the Phase 1 shocks. Wash gate: the in-range shipped grid (2-3 attacker spores, \
          fee, K and gain within the shipped range, every loop volume), worst case over seeds {:?}.\n",
         spores_core::math::REP_ONE,
@@ -610,6 +672,7 @@ pub fn allowance(seeds: u64) -> AllowanceReport {
             cfg.epochs = BASELINE_EPOCHS;
             cfg.shocks = SHOCKS;
             cfg.allowance = a;
+            scale.apply(&mut cfg);
             for s in &run(&cfg).stats {
                 paid += s.paid;
                 settled += s.settled as u64;
@@ -627,7 +690,7 @@ pub fn allowance(seeds: u64) -> AllowanceReport {
                 for k in KS_MILLI {
                     for gain in GAINS {
                         for v in VOLUMES_MILLI {
-                            let c = sweep_case("shipped", p, spores, fee, k, gain, v, a);
+                            let c = sweep_case("shipped", p, spores, fee, k, gain, v, a, scale);
                             if c.in_range {
                                 cases.push(c);
                             }
@@ -684,7 +747,128 @@ pub fn allowance(seeds: u64) -> AllowanceReport {
     }
     AllowanceReport {
         markdown: md,
-        json: json!({"seeds": seeds, "epochs": BASELINE_EPOCHS, "rows": rows}),
+        json: json!({"seeds": seeds, "epochs": BASELINE_EPOCHS, "active": active, "jobs_per_consumer": jobs, "rows": rows}),
         gate_pass,
     }
+}
+
+/// The Demo Lab's wash panel (`sim wash`, docs/phase6-plan.md S12): the wash gate
+/// with the allowance the router enforces, at each traffic level S1 measured,
+/// with the per-epoch series of the default fee, K and gain, plus the Phase 1
+/// sweep's shipped results as first reported. Nothing here is a new rule: the
+/// counts are the ones `allowance` reports for the shipped row.
+pub fn wash() -> Value {
+    let round = |v: &[f64], places: i32| -> Vec<f64> {
+        let f = 10f64.powi(places);
+        v.iter().map(|x| (x * f).round() / f).collect()
+    };
+    let p = Params::shipped();
+    let a = Some(Allowance::shipped());
+    let mut configs = Vec::new();
+    for (active, jobs) in [(16u32, 3u32), (64, 3), (16, 1), (64, 1)] {
+        let scale = Scale { active, jobs };
+        let mut cases = Vec::new();
+        for spores in [2, 3] {
+            for fee in FEES {
+                for k in KS_MILLI {
+                    for gain in GAINS {
+                        for v in VOLUMES_MILLI {
+                            let c = sweep_case("shipped", p, spores, fee, k, gain, v, a, scale);
+                            if c.in_range {
+                                cases.push(c);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let mut loops = Vec::new();
+        for spores in [2, 3] {
+            for v in VOLUMES_MILLI {
+                let group: Vec<&Case> = cases.iter().filter(|c| c.spores == spores && c.volume_milli == v).collect();
+                let default = group.iter().find(|c| !c.series.is_empty()).expect("the default fee, K and gain are in range");
+                loops.push(json!({
+                    "spores": spores,
+                    "loop_milli_near": v as u64,
+                    "cases": group.len(),
+                    "gate_pass": group.iter().filter(|c| c.pass()).count(),
+                    "loses_money": group.iter().filter(|c| c.net < 0.0).count(),
+                    "worst_net_near": group.iter().map(|c| c.net).fold(f64::NEG_INFINITY, f64::max),
+                    "worst_r_ratio": group.iter().map(|c| c.rep_vs_median()).fold(0.0, f64::max),
+                    "default": {
+                        "gate_pass": default.pass(),
+                        "net_near_worst": default.net,
+                        "attacker_max_rep": default.att_max_rep,
+                        "honest_median_rep": default.honest_median,
+                        "series": default.series.iter().map(|(seed, att, honest)| json!({
+                            "seed": seed,
+                            "attacker_r": round(&att.r_max, 3),
+                            "honest_r": round(&honest.r_median, 3),
+                            "attacker_money": round(&att.balance_delta, 6),
+                        })).collect::<Vec<_>>(),
+                    },
+                }));
+            }
+        }
+        configs.push(json!({
+            "active": active,
+            "jobs": jobs,
+            "cases": cases.len(),
+            "gate_pass": cases.iter().filter(|c| c.pass()).count(),
+            "loses_money": cases.iter().filter(|c| c.net < 0.0).count(),
+            "worst_net_near": cases.iter().map(|c| c.net).fold(f64::NEG_INFINITY, f64::max),
+            "worst_r_ratio": cases.iter().map(|c| c.rep_vs_median()).fold(0.0, f64::max),
+            "loops": loops,
+        }));
+    }
+
+    // Phase 1 as reported: 16 active, 3 jobs, no allowance, the whole grid.
+    let sweep = sweep(Scale::DEFAULT);
+    // The whole grid counts the blocked 1-spore row, as the report does; the in-range table doesn't.
+    let all: Vec<&Value> = sweep.json["cases"].as_array().unwrap().iter().filter(|c| c["variant"] == "shipped").collect();
+    let in_range: Vec<&&Value> = all.iter().filter(|c| c["k_in_gate_range"] == true && c["blocked"].is_null()).collect();
+    let count = |cs: &[&&Value], key: &str| cs.iter().filter(|c| c[key] == true).count();
+    let all_refs: Vec<&&Value> = all.iter().collect();
+    let out_of_range: Vec<Value> = all
+        .iter()
+        .filter(|c| c["k_in_gate_range"] == false && c["gate_pass"] == false)
+        .map(|c| {
+            json!({
+                "spores": c["attacker_spores"], "fee_bps": c["fee_bps"], "k_milli_near": c["k_milli_near"], "gain": c["gain"],
+                "loop_milli_near": c["loop_milli_near"], "net_near_worst": c["net_near_worst"],
+                "attacker_max_rep": c["attacker_max_rep"], "honest_median_rep": c["honest_median_rep"],
+            })
+        })
+        .collect();
+    let mut literal = Vec::new();
+    for spores in [2u64, 3] {
+        for v in VOLUMES_MILLI {
+            let group: Vec<&&Value> = in_range
+                .iter()
+                .copied()
+                .filter(|c| c["attacker_spores"] == spores && c["loop_milli_near"].as_str() == Some(v.to_string().as_str()))
+                .collect();
+            literal.push(json!({
+                "spores": spores,
+                "loop_milli_near": v as u64,
+                "cases": group.len(),
+                "literal_pass": count(&group, "literal_pass"),
+                "worst_rep_ratio": group.iter().filter_map(|c| c["rep_ratio_worst"].as_f64()).fold(0.0, f64::max),
+                "worst_tube_ratio": group.iter().filter_map(|c| c["tube_ratio_worst"].as_f64()).fold(0.0, f64::max),
+            }));
+        }
+    }
+    json!({
+        "epochs": SWEEP_EPOCHS,
+        "seeds": SWEEP_SEEDS,
+        "note": "per-epoch series: fee, K and gain at their shipped defaults; R in units of REP_ONE, money in NEAR. Phase 1 block: 16 active, 3 jobs, no allowance, as in phase1-report.md",
+        "configs": configs,
+        "phase1": {
+            "gate_in_range": { "pass": count(&in_range, "gate_pass"), "cases": in_range.len() },
+            "gate_all": { "pass": count(&all_refs, "gate_pass"), "cases": all.len() },
+            "literal_in_range": { "pass": count(&in_range, "literal_pass"), "cases": in_range.len() },
+            "literal": literal,
+            "out_of_range_failures": out_of_range,
+        },
+    })
 }

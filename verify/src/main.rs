@@ -11,16 +11,19 @@
 //! files with one transaction hash per line. Each close transaction is fetched
 //! by RPC, its `epoch_closed` event (the epoch's full input) is replayed with
 //! `spores_core::close_epoch` under the router's `config`, and the result is
-//! compared with the event and with the router's `fingerprint(epoch)` view.
+//! compared with the event (fingerprints, tube count, and the tubes where the
+//! event still lists them) and with the router's `fingerprint(epoch)` view.
 //! The closes must run from the router's first epoch (1) without gaps.
 //!
 //! `image` rebuilds the spore's state at the epoch of its `image_commit` from
 //! the replayed tubes, checks the committed state hash, renders it and
 //! compares the image hash.
 //!
-//! RPC: `NEAR_RPCS` (comma-separated) or FastNEAR, dRPC, then NEAR's archival
-//! node, which still has transactions the others have garbage-collected.
-//! Requests go through `curl`.
+//! RPC, through `curl`: close transactions go to the archival nodes first
+//! (`NEAR_ARCHIVAL_RPCS`, comma-separated, or FastNEAR's, then NEAR's), since
+//! regular nodes drop old ones and time out on them. Views go to the regular
+//! nodes first (`NEAR_RPCS`, or FastNEAR, then dRPC), so they don't use up the
+//! archival rate limit. Each list falls back to the other.
 
 use std::collections::BTreeMap;
 use std::process::{Command, ExitCode};
@@ -31,38 +34,65 @@ use serde_json::{json, Value};
 use spores_core::fingerprint::{hex, GENESIS};
 use spores_core::{close_epoch, Edge, EdgeMap, EpochInput, Params, PoolRule, RejectMap, SporeId};
 
-const DEFAULT_RPCS: [&str; 3] = [
-    "https://test.rpc.fastnear.com",
-    "https://near-testnet.drpc.org",
-    "https://archival-rpc.testnet.near.org",
-];
+const DEFAULT_RPCS: [&str; 2] = ["https://test.rpc.fastnear.com", "https://near-testnet.drpc.org"];
+const ARCHIVAL_RPCS: [&str; 2] = ["https://archival-rpc.testnet.fastnear.com", "https://archival-rpc.testnet.near.org"];
 
 struct Rpc {
-    urls: Vec<String>,
+    views: Vec<String>,
+    txs: Vec<String>,
+}
+
+fn url_list(value: Option<String>, default: &[&str]) -> Vec<String> {
+    let urls: Vec<String> = value.iter().flat_map(|s| s.split(',')).map(|u| u.trim().to_string()).filter(|u| !u.is_empty()).collect();
+    if urls.is_empty() {
+        default.iter().map(|s| s.to_string()).collect()
+    } else {
+        urls
+    }
+}
+
+/// `first`, then the urls of `second` not already in it.
+fn in_order(first: &[String], second: &[String]) -> Vec<String> {
+    let mut urls: Vec<String> = Vec::new();
+    for u in first.iter().chain(second) {
+        if !urls.contains(u) {
+            urls.push(u.clone());
+        }
+    }
+    urls
 }
 
 impl Rpc {
+    fn new(regular: Option<String>, archival: Option<String>) -> Self {
+        let regular = url_list(regular, &DEFAULT_RPCS);
+        let archival = url_list(archival, &ARCHIVAL_RPCS);
+        Rpc { views: in_order(&regular, &archival), txs: in_order(&archival, &regular) }
+    }
+
     fn from_env() -> Self {
-        let urls = std::env::var("NEAR_RPCS")
-            .ok()
-            .map(|s| s.split(',').map(|u| u.trim().to_string()).filter(|u| !u.is_empty()).collect::<Vec<_>>())
-            .filter(|v| !v.is_empty())
-            .unwrap_or_else(|| DEFAULT_RPCS.iter().map(|s| s.to_string()).collect());
-        Rpc { urls }
+        Rpc::new(std::env::var("NEAR_RPCS").ok(), std::env::var("NEAR_ARCHIVAL_RPCS").ok())
     }
 
     /// Tries each endpoint in turn; retries one endpoint with backoff on rate
-    /// limits and garbled responses, moves on for any other error (for example
-    /// a transaction a non-archival node no longer has).
-    fn call(&self, method: &str, params: Value) -> Result<Value, String> {
+    /// limits and garbled responses, moves on at once when it times out and for
+    /// any other error (for example a transaction a non-archival node no longer
+    /// has). The error names what each endpoint last said: the last one tried
+    /// is usually a regular node, not the cause.
+    fn call(&self, urls: &[String], method: &str, params: Value) -> Result<Value, String> {
         let body = json!({ "jsonrpc": "2.0", "id": "verify", "method": method, "params": params }).to_string();
-        let mut last = String::new();
-        for url in &self.urls {
+        let mut failures = Vec::new();
+        for url in urls {
+            let mut last = String::new();
             for attempt in 0..5u32 {
                 let out = Command::new("curl")
                     .args(["-s", "-m", "30", "-H", "content-type: application/json", "--data-binary", &body, url])
                     .output()
                     .map_err(|e| format!("cannot run curl: {e}"))?;
+                // curl's exit code for --max-time.
+                if out.status.code() == Some(28) {
+                    last = format!("{url}: no answer in 30 s");
+                    break;
+                }
                 let text = String::from_utf8_lossy(&out.stdout);
                 let Ok(v) = serde_json::from_str::<Value>(&text) else {
                     last = format!("{url}: unreadable response {:.80}", text.trim());
@@ -83,12 +113,14 @@ impl Rpc {
                 }
                 break;
             }
+            failures.push(last);
         }
-        Err(last)
+        Err(failures.join("; "))
     }
 
     fn view(&self, contract: &str, method: &str, args: Value) -> Result<Value, String> {
         let r = self.call(
+            &self.views,
             "query",
             json!({
                 "request_type": "call_function", "finality": "final", "account_id": contract,
@@ -105,7 +137,7 @@ impl Rpc {
     }
 
     fn tx(&self, hash: &str, signer: &str) -> Result<Value, String> {
-        self.call("tx", json!({ "tx_hash": hash, "sender_account_id": signer, "wait_until": "FINAL" }))
+        self.call(&self.txs, "tx", json!({ "tx_hash": hash, "sender_account_id": signer, "wait_until": "FINAL" }))
     }
 }
 
@@ -278,8 +310,12 @@ fn replay(rpc: &Rpc, router: &str, signer: &str, files: &[String]) -> Result<Rep
         if on_chain.as_str() != Some(fp.as_str()) {
             bad.push("stored fingerprint");
         }
-        if edge_map(&ev["tubes"])? != out.conductivity {
+        // Router4 logged the tubes up to epoch 16; later closes log only their count.
+        if ev.get("tubes").is_some() && edge_map(&ev["tubes"])? != out.conductivity {
             bad.push("tubes");
+        }
+        if ev["edges"].as_u64() != Some(out.conductivity.len() as u64) {
+            bad.push("tube count");
         }
         if bad.is_empty() {
             println!("epoch {e}: {fp} match ({} flows, {} tubes, close {hash})", flows.len(), out.conductivity.len());
@@ -407,6 +443,48 @@ fn main() -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const FN: &str = "https://test.rpc.fastnear.com";
+    const DRPC: &str = "https://near-testnet.drpc.org";
+    const FN_ARCHIVAL: &str = "https://archival-rpc.testnet.fastnear.com";
+    const NEAR_ARCHIVAL: &str = "https://archival-rpc.testnet.near.org";
+
+    #[test]
+    fn defaults_read_txs_from_archival_and_views_from_regular_nodes() {
+        let r = Rpc::new(None, None);
+        assert_eq!(r.txs, [FN_ARCHIVAL, NEAR_ARCHIVAL, FN, DRPC]);
+        assert_eq!(r.views, [FN, DRPC, FN_ARCHIVAL, NEAR_ARCHIVAL]);
+    }
+
+    // scripts/phase6-testnet.sh sets NEAR_RPCS to regular nodes for the agents,
+    // and run.ts runs verify over every close under that environment.
+    #[test]
+    fn near_rpcs_replaces_only_the_regular_nodes() {
+        let r = Rpc::new(Some("https://a, https://b,".into()), None);
+        assert_eq!(r.txs, [FN_ARCHIVAL, NEAR_ARCHIVAL, "https://a", "https://b"]);
+        assert_eq!(r.views, ["https://a", "https://b", FN_ARCHIVAL, NEAR_ARCHIVAL]);
+    }
+
+    #[test]
+    fn near_archival_rpcs_replaces_the_archival_nodes() {
+        let r = Rpc::new(None, Some("https://mine".into()));
+        assert_eq!(r.txs, ["https://mine", FN, DRPC]);
+        assert_eq!(r.views, [FN, DRPC, "https://mine"]);
+    }
+
+    #[test]
+    fn empty_lists_fall_back_to_the_defaults() {
+        let r = Rpc::new(Some(" , ".into()), Some(String::new()));
+        assert_eq!(r.txs, [FN_ARCHIVAL, NEAR_ARCHIVAL, FN, DRPC]);
+    }
+
+    // The S10 workaround, NEAR_RPCS set to an archival node, must not try that node twice.
+    #[test]
+    fn an_endpoint_in_both_lists_is_tried_once_in_its_first_place() {
+        let r = Rpc::new(Some(NEAR_ARCHIVAL.into()), None);
+        assert_eq!(r.txs, [FN_ARCHIVAL, NEAR_ARCHIVAL]);
+        assert_eq!(r.views, [NEAR_ARCHIVAL, FN_ARCHIVAL]);
+    }
 
     #[test]
     fn base64_matches_known_answers() {

@@ -1,0 +1,593 @@
+/* Activity (Design §6.E) and receipts (§6.G). Tokens only. The 52 px row and
+   40 px header are the Design's sizes and EventFeed's window constants. */
+
+.tone-agent { color: var(--agent); }
+.tone-growth { color: var(--growth); }
+.tone-value { color: var(--value); }
+.tone-warn { color: var(--warn); }
+.tone-caution { color: var(--caution); }
+.tone-muted { color: var(--text-3); }
+.tone-slime { color: var(--slime); }
+.money { color: var(--value); }
+.derived { color: var(--text-3); margin-right: var(--s-1); }
+
+.activity-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-4);
+  margin-bottom: var(--s-4);
+}
+.activity-figure {
+  color: var(--text-2);
+}
+.activity-note {
+  margin: var(--s-3) 0;
+  color: var(--text-2);
+  max-width: var(--prose-max);
+}
+.activity-primary {
+  color: var(--text);
+}
+.activity-count {
+  margin-top: var(--s-5);
+  max-width: none;
+  color: var(--text-3);
+}
+
+/* Filter bar: sticky under the top bar */
+.activity-bar {
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.activity-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  min-width: 0;
+}
+.activity-bar-mobile {
+  display: none;
+}
+.activity-head-right {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+.ev-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--text-2);
+}
+.ev-field select,
+.ev-field input {
+  min-height: var(--s-6);
+  padding: 0 var(--s-1);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  color: var(--text);
+}
+.ev-field input {
+  width: var(--s-8);
+}
+.activity-filters .chips {
+  gap: var(--s-1);
+}
+.activity-filters .chip {
+  min-height: var(--s-6);
+  padding: 0 var(--s-3);
+}
+.activity-filters .chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+/* What the decision bars mean */
+.hire-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-4);
+  margin: var(--s-3) 0;
+  color: var(--text-2);
+}
+.hire-key span:not([class]) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+span.hire-key-sample {
+  display: block;
+  width: var(--s-9);
+}
+
+/* Epoch groups */
+.ev-group {
+  position: relative;
+}
+.ev-header {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--activity-bar-h, 0px));
+  z-index: calc(var(--z-sticky) - 1);
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--s-3);
+  height: calc(var(--s-6) + var(--s-2));
+  margin: 0;
+  overflow: hidden;
+  background: var(--surface);
+  padding: 0 var(--s-3);
+  white-space: nowrap;
+}
+.ev-header a {
+  color: var(--text);
+}
+.ev-header-rest {
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A row: a button (time, glyph, summary, word) and, beside it, its links */
+.ev-row {
+  border-bottom: 1px solid var(--line);
+}
+.ev-row.is-fresh {
+  animation: ev-in var(--t-ui) var(--ease-out) both;
+}
+@keyframes ev-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.ev-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--s-2);
+}
+.ev-toggle {
+  display: grid;
+  grid-template-columns: calc(var(--s-8) + var(--s-1)) var(--s-4) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  min-height: calc(var(--s-7) + var(--s-1) - 1px);
+  padding: var(--s-1) var(--s-3);
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.ev-row:hover .ev-line,
+.ev-row.is-open .ev-line {
+  background: var(--surface);
+}
+.ev-time {
+  color: var(--text-3);
+}
+.ev-glyph {
+  text-align: center;
+}
+.ev-summary {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ev-word {
+  white-space: nowrap;
+}
+.ev-tx,
+.ev-verify {
+  min-width: var(--s-6);
+  padding: var(--s-2) var(--s-1);
+  text-align: center;
+}
+.ev-verify {
+  white-space: nowrap;
+}
+.ev-detail {
+  padding: var(--s-3) var(--s-4) var(--s-5);
+  background: var(--surface);
+}
+.ev-expanded,
+.decision-entry {
+  display: grid;
+  gap: var(--s-3);
+}
+.kind-unreadable .ev-toggle {
+  background: var(--warn-dim);
+}
+
+/* A decision drawn as bars (HireRow): one 24 px line per quote, 8 px padding */
+.ev-toggle.is-hire {
+  /* Fixed outer columns, so bars and numbers line up from row to row. */
+  grid-template-columns: calc(var(--s-9) * 2.5) minmax(0, 1fr) calc(var(--s-9) * 2.5);
+  align-items: start;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-3);
+}
+.hire-head {
+  display: grid;
+  grid-template-columns: calc(var(--s-8) + var(--s-1)) minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--s-2);
+}
+.hire-meta,
+.hire-tag {
+  grid-column: 2;
+  color: var(--text-2);
+}
+.hire-bars {
+  display: grid;
+  min-width: 0;
+}
+.hire-bar {
+  display: grid;
+  grid-template-columns: calc(var(--s-8) + var(--s-1)) minmax(0, 1fr) 34ch;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--s-5);
+  color: var(--text-2);
+}
+.hire-bar.is-winner {
+  color: var(--text);
+}
+.hire-id {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+.hire-win {
+  width: var(--s-3);
+  text-align: center;
+}
+/* Taller than its 24 px line, so a flare's halo isn't cut; rows don't grow. */
+.hire-tube {
+  display: block;
+  width: 100%;
+  height: calc(var(--s-5) + var(--s-2));
+  margin: calc(var(--s-1) * -1) 0;
+}
+.hire-was {
+  color: var(--text-3);
+}
+.hire-end {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: var(--s-5);
+}
+
+/* The job at a glance: one glyph per stage, then the outcome */
+.job-rail {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1);
+  font-family: var(--font-mono);
+}
+.job-rail-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+.job-rail-stage + .job-rail-stage::before {
+  content: '';
+  width: var(--s-2);
+  height: 1px;
+  margin-right: var(--s-0);
+  background: var(--line-strong);
+}
+.job-rail.is-labelled {
+  gap: var(--s-1) var(--s-2);
+}
+.job-rail.is-labelled .job-rail-stage .label {
+  color: var(--text-2);
+}
+.job-rail .ev-word {
+  margin-left: var(--s-2);
+  font-family: var(--font-sans);
+}
+
+/* DecisionEntry */
+.decision-summary {
+  max-width: var(--prose-max);
+  margin: 0;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.candidates,
+.mini-table {
+  border-collapse: collapse;
+}
+.candidates {
+  width: 100%;
+}
+.candidates th,
+.candidates td,
+.mini-table th,
+.mini-table td {
+  padding: var(--s-1) var(--s-3);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.candidates th,
+.mini-table th {
+  color: var(--text-2);
+}
+.candidates .num {
+  text-align: right;
+}
+.candidates .is-winner td:first-child {
+  box-shadow: inset 2px 0 0 var(--agent);
+}
+.winner-word {
+  margin-left: var(--s-2);
+}
+.spore-link {
+  text-decoration: none;
+}
+.decision-rule {
+  margin: 0;
+  color: var(--text-2);
+}
+.decision-checks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2) var(--s-5);
+}
+.check-details summary {
+  cursor: pointer;
+}
+
+/* JobTimeline */
+.job-timeline {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.job-step {
+  display: grid;
+  grid-template-columns: var(--s-4) minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-1) 0;
+  border-bottom: 1px solid var(--line);
+}
+.job-step-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+  min-width: 0;
+}
+.job-step-err,
+.job-step-note {
+  flex-basis: 100%;
+  overflow-wrap: anywhere;
+}
+.job-step-note {
+  color: var(--text-2);
+}
+.job-step-time {
+  color: var(--text-3);
+}
+.job-step-tx {
+  white-space: nowrap;
+}
+.job-timeline.is-scene .job-step {
+  padding: var(--s-2) 0;
+}
+
+/* TransactionReceipt: one layout for every kind (§6.G) */
+.receipt {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-2);
+  border-radius: var(--r-2);
+}
+.receipt.is-refusal {
+  background: var(--warn-dim);
+}
+.receipt p {
+  margin: 0;
+}
+.receipt-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-4);
+}
+.receipt-evidence {
+  font-weight: 600;
+}
+.receipt-epoch,
+.receipt-tube {
+  margin-left: auto;
+}
+.receipt-note {
+  flex-basis: 100%;
+  color: var(--text-2);
+}
+.receipt-meta {
+  color: var(--text-2);
+}
+.receipt-fetch {
+  min-height: var(--s-6);
+  margin-left: auto;
+  padding: 0 var(--s-3);
+}
+
+/* Technical */
+.ev-detail .technical summary {
+  cursor: pointer;
+  color: var(--text-2);
+}
+.tech-list {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-1) var(--s-3);
+  margin: var(--s-2) 0;
+}
+.tech-list dd {
+  margin: 0;
+}
+.raw-line {
+  margin: var(--s-1) 0;
+  padding: var(--s-2);
+  overflow-x: auto;
+  background: var(--bg);
+  border-radius: var(--r-1);
+  color: var(--text-2);
+  white-space: pre;
+}
+
+/* Compact feed (Spore page, Overview) */
+.event-feed-compact {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ev-compact-row {
+  display: grid;
+  grid-template-columns: calc(var(--s-8) + var(--s-1)) var(--s-4) minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: var(--s-1) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Mobile: rows wrap to two lines; filters collapse into a sheet (§6.E) */
+@media (max-width: 767px) {
+  .activity-bar {
+    align-items: center;
+  }
+  .activity-bar-mobile {
+    display: block;
+  }
+  .activity-filters {
+    display: none;
+  }
+  .activity-filters .chip,
+  .ev-field select,
+  .ev-field input {
+    min-height: 40px;
+  }
+  .activity-bar.is-sheet-open .activity-filters {
+    position: fixed;
+    right: 0;
+    bottom: var(--bottombar-h);
+    left: 0;
+    z-index: var(--z-drawer);
+    display: flex;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: var(--s-4) var(--page-pad);
+    background: var(--surface);
+    box-shadow: var(--shadow-float);
+    border-radius: var(--r-2);
+    animation: sheet-in var(--t-panel) var(--ease-out) both;
+  }
+  .ev-toggle {
+    grid-template-columns: var(--s-4) minmax(0, 1fr) auto;
+    grid-template-areas:
+      'glyph summary summary'
+      'glyph time word';
+    padding: var(--s-2);
+  }
+  .ev-toggle .ev-glyph { grid-area: glyph; }
+  .ev-toggle .ev-summary { grid-area: summary; }
+  .ev-toggle .ev-time { grid-area: time; }
+  .ev-toggle .ev-word { grid-area: word; }
+  .ev-toggle.is-hire {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+    gap: var(--s-1);
+    padding: var(--s-2);
+  }
+  /* The tx link leaves the row's width to the bars: top right, beside the time. */
+  .ev-line:has(.is-hire) {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ev-line:has(.is-hire) .ev-tx {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  .hire-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--s-2);
+    padding-right: var(--s-6);
+  }
+  .hire-head .ev-time {
+    order: 1;
+    margin-left: auto;
+  }
+  .hire-tag {
+    order: 2;
+    flex-basis: 100%;
+  }
+  .hire-bar {
+    grid-template-columns: calc(var(--s-8) + var(--s-1)) minmax(0, 1fr);
+    row-gap: 0;
+  }
+  .hire-num {
+    grid-column: 2;
+    white-space: nowrap;
+  }
+  .ev-detail {
+    padding: var(--s-3) var(--s-2) var(--s-4);
+  }
+  .job-step {
+    grid-template-columns: var(--s-4) minmax(0, 1fr) auto;
+  }
+  .job-step-time {
+    display: none;
+  }
+  .receipt-epoch,
+  .receipt-tube,
+  .receipt-fetch {
+    margin-left: 0;
+  }
+  .ev-compact-row {
+    grid-template-columns: var(--s-4) minmax(0, 1fr) auto auto;
+  }
+  .ev-compact-row .ev-time {
+    display: none;
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(var(--s-5));
+    opacity: 0;
+  }
+}

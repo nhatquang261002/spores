@@ -5,7 +5,10 @@
 // exit criteria. Writes everything to out/agents/<run>/ and exits non-zero if
 // a check fails.
 //
-//   node src/run.ts --spores 0-8 --epochs 8 --seed 1 [--run NAME] [--shocks raise@4,cut@5,kill@6,sale@3] [--sale-spore N]
+//   node src/run.ts --spores 0-8 --epochs 8 --seed 1 [--run NAME] [--shocks raise@4,cut@5,kill@6,sale@3] [--sale-spore N] [--per-process N]
+//
+// --per-process N runs N spores in each agent process (Phase 6: one process
+// for 64 spores shares its RPC reads); the default 1 is one process per spore.
 //
 // Shock epochs count from the epoch the run starts in. Targets follow sim:
 // kill the best-value provider (quality per cost), raise the runner-up's cost
@@ -18,30 +21,37 @@
 // buys it, the old operator key and the old owner are refused, the buyer
 // registers operator2 and a policy, and the spore's agent restarts under
 // operator2. The report then also runs `spores-verify` over every close of
-// the router and checks the sold spore's committed image.
+// the router and checks the sold spore's committed image. The spore is picked
+// when the run starts and named in run.json (`sale_spore`), so the app can
+// follow it from the first line, and the sale's own lines go to scene.jsonl.
 // Reads keys from the repo's .env; never prints them.
-import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
-import { createWriteStream, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { spawn, execFile, execFileSync, type ChildProcess } from 'node:child_process';
+import { cpus } from 'node:os';
+import { promisify } from 'node:util';
+import { appendFileSync, createWriteStream, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { nearToYocto } from 'near-api-js';
-import { appendJsonl, ensureDir, sleep, writeControl } from './common.ts';
-import { Caller, EXPLORER, rpc, txStatus, view, type TxResult } from './near.ts';
+import { appendJsonl, ensureDir, envKey, parseIds, sleep, tubesGrew, writeControl } from './common.ts';
+import { balanceOf, Caller, chainTimeNs, EXPLORER, rpc, txStatus, view } from './near.ts';
+import { newOwnerPolicy, runSale, type SaleChain, type SaleRole } from './scenes/sale.ts';
 import { profile } from './services.ts';
 import { applyShock } from './shock.ts';
 
 const ROOT = resolve(import.meta.dirname, '../..');
+const execFileAsync = promisify(execFile);
 const args = process.argv.slice(2);
+// Refuse anything unknown (`--help` once started a real run on the default router).
+const KNOWN = ['spores', 'epochs', 'seed', 'run', 'shocks', 'sale-spore', 'per-process'];
+for (let i = 0; i < args.length; i += 2) {
+  if (!args[i].startsWith('--') || !KNOWN.includes(args[i].slice(2)) || args[i + 1] === undefined) {
+    console.error(`usage: node src/run.ts ${KNOWN.map((k) => `[--${k} V]`).join(' ')} (ROUTER from the environment)`);
+    process.exit(2);
+  }
+}
 const opt = (name: string, dflt: string) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : dflt;
 };
-
-function parseIds(s: string): number[] {
-  return s.split(',').flatMap((part) => {
-    const [a, b] = part.split('-').map(Number);
-    return b === undefined ? [a] : Array.from({ length: b - a + 1 }, (_, k) => a + k);
-  });
-}
 
 function loadEnv(): Record<string, string> {
   const env: Record<string, string> = {};
@@ -59,6 +69,7 @@ const seed = opt('seed', '1');
 const runName = opt('run', new Date().toISOString().replace(/[:.]/g, '-'));
 const shockSpec = opt('shocks', 'raise@4,cut@5,kill@6');
 const saleSporeOpt = opt('sale-spore', '');
+const perProcess = Math.max(1, Number(opt('per-process', '1')));
 const SALE_PRICE = nearToYocto(process.env.SALE_PRICE ?? '0.5');
 const router = process.env.ROUTER ?? dotenv.PHASE4_ROUTER_ACCOUNT_ID ?? dotenv.ROUTER_ACCOUNT_ID;
 const runDir = join(ROOT, 'out/agents', runName);
@@ -117,12 +128,6 @@ function sh(cmd: string, argv: string[], cwd = ROOT): string {
 
 const sale: Record<string, any> = { scheduled: false };
 const saleNote = (kind: string, extra: object = {}) => appendJsonl(EVENTS, { at: new Date().toISOString(), spore: 'sale', kind, ...extra });
-function saleTx(step: string, method: string, r: TxResult) {
-  saleNote('tx', { step, method, hash: r.hash, ok: r.ok, err: r.err || undefined, gas_tgas: r.gasTgas });
-  console.log(`sale: ${step} ${r.ok ? 'ok' : 'FAILED'} ${r.hash}${r.ok ? '' : ` ${r.err}`}`);
-  return r;
-}
-const LOCKED = { paused: true, budget_per_epoch: '0', max_payment: '0', allow_all_spores: false, allowlist: [], external_allowlist: [] };
 
 async function saleSpore(targets: { star: number; runnerUp: number }): Promise<number> {
   if (saleSporeOpt) return Number(saleSporeOpt);
@@ -130,83 +135,81 @@ async function saleSpore(targets: { star: number; runnerUp: number }): Promise<n
   let bestRep = -1n;
   for (const id of spores) {
     if (id === targets.star || id === targets.runnerUp) continue;
-    const r = BigInt((await view(router, 'spore_summary', { spore_id: id })).reputation);
+    const s = await view(router, 'spore_summary', { spore_id: id });
+    // Only the seller's own spore can be sold (spore 5 on router4 went to the buyer in Phase 5).
+    if (s.owner_id !== dotenv.OWNER_ACCOUNT_ID) continue;
+    const r = BigInt(s.reputation);
     if (r > bestRep) [best, bestRep] = [id, r];
   }
+  if (best < 0) throw new Error(`none of spores ${spores.join(',')} can be sold: ${dotenv.OWNER_ACCOUNT_ID} owns none outside the shock targets`);
   return best;
 }
 
-async function runSale(targets: { star: number; runnerUp: number }, config: any) {
-  const X = await saleSpore(targets);
-  const owner = new Caller(dotenv.OWNER_ACCOUNT_ID, dotenv.OWNER_PRIVATE_KEY, router);
-  const buyer = new Caller(dotenv.BUYER_ACCOUNT_ID, dotenv.BUYER_PRIVATE_KEY, router);
-  const royaltyAccount = config.royalty_account ?? (await view(router, 'admin'));
-  const seller: string = (await view(router, 'spore_summary', { spore_id: X })).owner_id;
-  Object.assign(sale, { spore: X, seller, buyer: buyer.accountId, royalty_account: royaltyAccount, price: SALE_PRICE.toString(), royalty_bps: config.royalty_bps });
-  console.log(`sale: spore ${X} from ${seller} to ${buyer.accountId} for ${SALE_PRICE} yocto`);
-  sale.list = saleTx('list', 'list', await owner.call('list', { spore_id: X, price: SALE_PRICE.toString() }, 1n, 30)).hash;
-  const buy = saleTx('buy', 'buy', await buyer.call('buy', { spore_id: X }, SALE_PRICE, 100));
-  sale.buy = buy.hash;
-  sale.buy_ok = buy.ok;
-  sale.at = new Date().toISOString();
-  if (!buy.ok) return;
-
-  // State just before and just after the block that ran the buy receipt.
-  const st = await txStatus(buy.hash, buyer.accountId);
-  const first = st.transaction_outcome.outcome.receipt_ids[0];
-  const ro = st.receipts_outcome.find((o: any) => o.id === first);
-  const prevHash = (await rpc('block', { block_id: ro.block_hash })).result.header.prev_hash;
-  const before = await view(router, 'spore_summary', { spore_id: X }, prevHash);
-  const after = await view(router, 'spore_summary', { spore_id: X }, ro.block_hash);
-  const ev = (name: string) => buy.events.filter((e) => e.event === name).flatMap((e) => e.data);
-  const sold = ev('spore_sold')[0];
-  const refundsToX = ev('job_refunded').filter((d) => d.consumer === X).reduce((t, d) => t + BigInt(d.amount), 0n);
-  // The two payout transfers and whether each one succeeded.
-  const paid = (to: string) =>
-    (st.receipts ?? [])
-      .filter((r: any) => r.receiver_id === to && r.predecessor_id === router)
-      .flatMap((r: any) => (r.receipt?.Action?.actions ?? []).filter((a: any) => a.Transfer).map((a: any) => ({ id: r.receipt_id, deposit: BigInt(a.Transfer.deposit) })))
-      .map((t: any) => ({ ...t, ok: st.receipts_outcome.find((o: any) => o.id === t.id)?.outcome?.status?.SuccessValue !== undefined }));
-  const royalty = (SALE_PRICE * BigInt(config.royalty_bps)) / 10_000n;
-  const toSeller = paid(seller);
-  const toRoyalty = paid(royaltyAccount);
-  Object.assign(sale, {
-    block: ro.block_hash,
-    before: { owner: before.owner_id, operator: before.operator_id, operator_gen: before.operator_gen, balance: before.balance, age: before.age, reputation: before.reputation, connections: before.connections, policy: before.policy },
-    after: { owner: after.owner_id, operator: after.operator_id, operator_gen: after.operator_gen, balance: after.balance, age: after.age, reputation: after.reputation, connections: after.connections, policy: after.policy, listed_price: after.listed_price, sales: after.sales },
-    sold_event: sold,
-    refunds_to_spore: refundsToX.toString(),
-    payouts: { seller: toSeller.map((t: any) => ({ ...t, deposit: t.deposit.toString() })), royalty: toRoyalty.map((t: any) => ({ ...t, deposit: t.deposit.toString() })) },
-    payment_failed: ev('sale_payment_failed').length > 0,
-  });
-  sale.paid_ok =
-    after.owner_id === buyer.accountId && !!sold && BigInt(sold.price) === SALE_PRICE && BigInt(sold.royalty) === royalty &&
-    BigInt(sold.seller_amount) + BigInt(sold.royalty) === SALE_PRICE &&
-    toSeller.some((t: any) => t.ok && t.deposit === SALE_PRICE - royalty) && (royalty === 0n || toRoyalty.some((t: any) => t.ok && t.deposit === royalty)) && !sale.payment_failed;
-  sale.reset_ok = JSON.stringify(after.policy) === JSON.stringify(LOCKED) && after.operator_id === null && after.operator_gen === before.operator_gen + 1 && after.listed_price === null;
-  sale.intact_ok =
-    BigInt(after.balance) === BigInt(before.balance) + refundsToX && JSON.stringify(after.connections) === JSON.stringify(before.connections) && after.age === before.age && after.reputation === before.reputation;
-
-  // The old agent notices it lost control; then its key and the old owner are refused.
-  for (let i = 0; i < 10 && !readJsonl(EVENTS).some((e) => e.spore === X && e.kind === 'idle' && e.at > sale.at); i++) await sleep(2_000);
-  sale.old_agent_idle = readJsonl(EVENTS).some((e) => e.spore === X && e.kind === 'idle' && e.at > sale.at);
-  children.get(`agent-${X}`)?.kill('SIGTERM');
-  await sleep(1_500);
-  const oldKey = new Caller(dotenv.OPERATOR_ACCOUNT_ID, dotenv[`${process.env.KEY_PREFIX ?? ''}SPORE_${X}_FC_PRIVATE_KEY`], router);
-  const lock = saleTx('old operator key posts a job (must fail)', 'post_job', await oldKey.call('post_job', { spore_id: X, task: 'lockout check', max_price: '1' }));
-  sale.old_key_refused = !lock.ok && /not this spore's operator/.test(lock.err);
-  sale.old_key_tx = lock.hash;
-  const wd = saleTx('old owner withdraws (must fail)', 'withdraw', await owner.call('withdraw', { spore_id: X, amount: '1' }, 1n, 30));
-  sale.old_owner_refused = !wd.ok && /only the spore owner/.test(wd.err);
-  sale.old_owner_tx = wd.hash;
-
-  // The new owner takes over with its own operator; the agent resumes under it.
-  const op2 = dotenv.OPERATOR2_ACCOUNT_ID;
-  sale.register = saleTx('buyer registers operator2', 'register_operator', await buyer.call('register_operator', { spore_id: X, operator_id: op2 }, 1n, 30)).hash;
-  const policy = { paused: false, budget_per_epoch: nearToYocto('1.5').toString(), max_payment: nearToYocto('0.5').toString(), allow_all_spores: true, allowlist: [], external_allowlist: [dotenv.OUTSIDE_ACCOUNT_ID] };
-  sale.policy = saleTx('buyer sets a policy', 'set_policy', await buyer.call('set_policy', { spore_id: X, policy }, 1n, 30)).hash;
-  sale.resumed_at = new Date().toISOString();
-  start(`agent-${X}-operator2`, join(ROOT, 'agents/src/agent.ts'), { SPORE_ID: String(X), AGENT_OPERATOR_ACCOUNT_ID: op2, AGENT_FC_PRIVATE_KEY: dotenv.P5_OPERATOR2_FC_PRIVATE_KEY });
+/** The sale itself is `scenes/sale.ts`; here it runs among live agents, so the old one is stopped and a new one started. */
+async function runSaleShock(X: number) {
+  sale.spore = X;
+  console.log(`sale: spore ${X} to ${dotenv.BUYER_ACCOUNT_ID} for ${SALE_PRICE} yocto`);
+  const callers: Record<SaleRole, Caller | null> = {
+    seller: new Caller(dotenv.OWNER_ACCOUNT_ID, dotenv.OWNER_PRIVATE_KEY, router),
+    buyer: new Caller(dotenv.BUYER_ACCOUNT_ID, dotenv.BUYER_PRIVATE_KEY, router),
+    agent: new Caller(dotenv.OPERATOR_ACCOUNT_ID, envKey(`SPORE_${X}_FC_PRIVATE_KEY`, { ...dotenv, KEY_PREFIX: process.env.KEY_PREFIX })!, router),
+    'new agent': null,
+    keeper: null,
+  };
+  const chain: SaleChain = {
+    view: (method, a = {}, block) => view(router, method, a, block),
+    call: (role, method, a, deposit = 0n, gas) => callers[role]!.call(method, a, deposit, gas),
+    timeNs: chainTimeNs,
+    status: txStatus,
+    prevBlock: async (hash) => (await rpc('block', { block_id: hash })).result.header.prev_hash,
+    balanceOf,
+  };
+  const steps = new Map<string, string>();
+  const SCENE = join(runDir, 'scene.jsonl');
+  const started = Date.now();
+  let seq = 0;
+  const sceneLine = (e: object) => appendFileSync(SCENE, JSON.stringify({ seq: ++seq, at: new Date().toISOString(), t: Date.now() - started, ...e }) + '\n');
+  let exitCode = 1;
+  try {
+    const rec = await runSale(
+    chain,
+    (e: any) => {
+      sceneLine(e);
+      if (e.type === 'step') steps.set(e.id, e.action);
+      if (e.type === 'result') {
+        saleNote('tx', { step: steps.get(e.id), method: e.method, hash: e.tx, ok: e.ok, err: e.err || undefined, gas_tgas: e.gas_tgas });
+        console.log(`sale: ${steps.get(e.id)} ${e.ok ? 'ok' : 'FAILED'} ${e.tx}${e.ok ? '' : ` ${e.err}`}`);
+      }
+      if (e.type === 'check' && !e.ok) console.log(`sale: check ${e.name} failed: expected ${e.expected}, got ${e.actual}`);
+    },
+    {
+      run: runName,
+      router,
+      spore: X,
+      price: SALE_PRICE,
+      buyer: dotenv.BUYER_ACCOUNT_ID,
+      newOperator: dotenv.OPERATOR2_ACCOUNT_ID,
+      newPolicy: newOwnerPolicy(dotenv.OUTSIDE_ACCOUNT_ID),
+      probeAgent: false,
+      clearStale: false,
+      // The old agent notices it lost control; only then are its key and the old owner tried.
+      afterSold: async (r) => {
+        for (let i = 0; i < 10 && !readJsonl(EVENTS).some((e) => e.spore === X && e.kind === 'idle' && e.at > r.at!); i++) await sleep(2_000);
+        sale.old_agent_idle = readJsonl(EVENTS).some((e) => e.spore === X && e.kind === 'idle' && e.at > r.at!);
+        children.get(`agent-${X}`)?.kill('SIGTERM');
+        await sleep(1_500);
+      },
+      onResume: () => {
+        start(`agent-${X}-operator2`, join(ROOT, 'agents/src/agent.ts'), { SPORE_ID: String(X), AGENT_OPERATOR_ACCOUNT_ID: dotenv.OPERATOR2_ACCOUNT_ID, AGENT_FC_PRIVATE_KEY: dotenv.P5_OPERATOR2_FC_PRIVATE_KEY });
+      },
+    },
+    );
+    Object.assign(sale, rec);
+    exitCode = rec.ok ? 0 : 1;
+  } finally {
+    // Like the scene server's: "completed" needs a real exit line.
+    sceneLine({ type: 'exit', code: exitCode });
+  }
   saleNote('done', { spore: X });
 }
 
@@ -221,15 +224,21 @@ async function main() {
   }
   const startInfo = await view(router, 'epoch_info');
   const targets = shockTargets();
+  const saleX = /(^|,)sale@/.test(shockSpec) ? await saleSpore(targets) : null;
   writeFileSync(
     join(runDir, 'run.json'),
-    JSON.stringify({ run: runName, router, spores, epochs, seed, shocks: shockSpec, start_epoch: startInfo.epoch, shock_targets: targets, config, profiles: Object.fromEntries(spores.map((id) => [id, profile(BigInt(seed), id)])) }, (_, v) => (typeof v === 'bigint' ? v.toString() : v), 2),
+    JSON.stringify({ run: runName, router, spores, epochs, seed, shocks: shockSpec, start_epoch: startInfo.epoch, shock_targets: targets, sale_spore: saleX, config, profiles: Object.fromEntries(spores.map((id) => [id, profile(BigInt(seed), id)])) }, (_, v) => (typeof v === 'bigint' ? v.toString() : v), 2),
   );
 
   start('outside', join(ROOT, 'outside/src/server.ts'));
   await sleep(1_000);
   start('keeper', join(ROOT, 'agents/src/keeper.ts'));
-  for (const id of spores) start(`agent-${id}`, join(ROOT, 'agents/src/agent.ts'), { SPORE_ID: String(id) });
+  if (perProcess === 1) for (const id of spores) start(`agent-${id}`, join(ROOT, 'agents/src/agent.ts'), { SPORE_ID: String(id) });
+  else
+    for (let i = 0; i < spores.length; i += perProcess) {
+      const group = spores.slice(i, i + perProcess);
+      start(`agents-${group[0]}-${group[group.length - 1]}`, join(ROOT, 'agents/src/agent.ts'), { SPORE_IDS: group.join(',') });
+    }
 
   const pending = shockSpec
     ? shockSpec.split(',').map((s) => {
@@ -259,7 +268,7 @@ async function main() {
         sale.scheduled = true;
         sale.epoch = info.epoch;
         try {
-          await runSale(targets, config);
+          await runSaleShock(saleX!);
         } catch (e) {
           sale.error = (e as Error).message;
           console.log(`sale: error ${sale.error}`);
@@ -270,7 +279,7 @@ async function main() {
   }
   for (const p of children.values()) p.kill('SIGTERM');
   await sleep(1_000);
-  const ok = report(phase5);
+  const ok = await report(phase5);
   process.exit(ok ? 0 : 1);
 }
 
@@ -284,17 +293,29 @@ function readJsonl(file: string): any[] {
     .map((l) => JSON.parse(l));
 }
 
-/** Every run directory's events.jsonl for this router, oldest run first: verify needs every close since epoch 1. */
+/**
+ * The router's committed close list, then every run directory's events.jsonl for
+ * this router, oldest run first: verify needs every close since epoch 1, and a
+ * clean checkout has no earlier runs in out/. `spores-verify` drops duplicates.
+ */
 function routerEventFiles(): string[] {
   const base = join(ROOT, 'out/agents');
-  return readdirSync(base)
-    .filter((d) => existsSync(join(base, d, 'run.json')) && existsSync(join(base, d, 'events.jsonl')))
-    .filter((d) => JSON.parse(readFileSync(join(base, d, 'run.json'), 'utf8')).router === router)
-    .sort()
-    .map((d) => join(base, d, 'events.jsonl'));
+  const name = /router\d*/.exec(router)?.[0];
+  const list = name ? join(ROOT, 'docs', `${name}-closes.txt`) : '';
+  return [
+    ...(list && existsSync(list) ? [list] : []),
+    ...readdirSync(base)
+      .filter((d) => existsSync(join(base, d, 'run.json')) && existsSync(join(base, d, 'events.jsonl')))
+      .filter((d) => JSON.parse(readFileSync(join(base, d, 'run.json'), 'utf8')).router === router)
+      .sort()
+      .map((d) => join(base, d, 'events.jsonl')),
+  ];
 }
 
 function runVerify(argv: string[]): { ok: boolean; out: string } {
+  // Old close transactions may only be on the archival node.
+  const rpcs = process.env.NEAR_RPCS;
+  if (rpcs && !rpcs.includes('archival')) process.env.NEAR_RPCS = `${rpcs},https://archival-rpc.testnet.near.org`;
   try {
     return { ok: true, out: sh(join(ROOT, 'target/release/spores-verify'), argv).trim() };
   } catch (e: any) {
@@ -302,7 +323,7 @@ function runVerify(argv: string[]): { ok: boolean; out: string } {
   }
 }
 
-function report(phase5: boolean): boolean {
+async function report(phase5: boolean): Promise<boolean> {
   const snapDir = join(runDir, 'snapshots');
   const snaps = readdirSync(snapDir)
     .filter((f) => f.endsWith('.json'))
@@ -312,15 +333,21 @@ function report(phase5: boolean): boolean {
   ensureDir(renderDir);
   const renderer = join(ROOT, 'target/release/spores-render');
   const hashes: Record<string, Record<string, string>> = {};
-  for (const s of snaps) {
-    hashes[s.label] = {};
-    for (const id of spores) {
-      const input = join(renderDir, `${s.label}-spore-${id}.json`);
-      writeFileSync(input, JSON.stringify(s.spores[id].render_input));
-      const out = sh(renderer, ['state', input, join(renderDir, `${s.label}-spore-${id}.png`)]);
-      hashes[s.label][id] = out.match(/image_hash ([0-9a-f]+)/)![1];
-    }
-  }
+  // One renderer process per core: at 64 spores a report renders hundreds of images.
+  const todo = snaps.flatMap((s) => spores.map((id) => ({ label: s.label, id, input: s.spores[id].render_input })));
+  for (const s of snaps) hashes[s.label] = {};
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(cpus().length, todo.length) }, async () => {
+      while (next < todo.length) {
+        const t = todo[next++];
+        const input = join(renderDir, `${t.label}-spore-${t.id}.json`);
+        writeFileSync(input, JSON.stringify(t.input));
+        const { stdout } = await execFileAsync(renderer, ['state', input, join(renderDir, `${t.label}-spore-${t.id}.png`)], { encoding: 'utf8' });
+        hashes[t.label][t.id] = stdout.match(/image_hash ([0-9a-f]+)/)![1];
+      }
+    }),
+  );
   if (snaps.length === 0) {
     console.log('no snapshots: the keeper never recorded chain state');
     return false;
@@ -358,6 +385,19 @@ function report(phase5: boolean): boolean {
     }
   }
   const failedTx = txs.filter((t) => !t.ok);
+  // Each close: when it landed, seconds since the previous one, gas, log bytes, pairs named.
+  const closes = events.filter((e) => e.spore === 'keeper' && e.kind === 'tx' && e.method === 'close_epoch' && e.ok);
+  const closeStats = closes.map((c, i) => ({
+    epoch: c.closed, at: c.at, secs: i ? Math.round((Date.parse(c.at) - Date.parse(closes[i - 1].at)) / 100) / 10 : null,
+    gas_tgas: c.gas_tgas, log_bytes: c.log_bytes, active: c.active, pairs: c.pairs, hash: c.hash,
+  }));
+  // RPC requests per epoch, summed over the agent processes and the keeper.
+  const rpcByEpoch: Record<string, { requests: number; limited: number }> = {};
+  for (const e of events.filter((e) => e.kind === 'rpc' && !e.final)) {
+    const r = (rpcByEpoch[e.epoch] ??= { requests: 0, limited: 0 });
+    r.requests += e.requests;
+    r.limited += e.limited;
+  }
   const errors: Record<string, number> = {};
   for (const t of failedTx) {
     const k = `${t.method}: ${String(t.err).replace(/^Smart contract panicked: /, '').slice(0, 80)}`;
@@ -366,7 +406,8 @@ function report(phase5: boolean): boolean {
 
   const checks = [
     { name: `agents traded unattended for ${snaps.length - 1} epochs`, ok: snaps.length - 1 >= epochs && (outcomes.settled ?? 0) > 0 },
-    { name: 'tubes formed (edges after the run > at the start, and non-empty)', ok: last.edges.length > 0 && Math.max(...edgeCounts) > first.edges.length },
+    // Between the run's own spores: on a router with older tubes elsewhere, the total can fall while this run forms new ones (S13).
+    { name: 'tubes formed: a tube between the run\'s spores was born or grew at a close', ok: tubesGrew(snaps, spores) },
     { name: 'the rendered art changed between epochs', ok: changed.length > 0 },
     { name: 'every logged hire matches spores_core::hiring::pick', ok: replayOk && decisions.length > 0 },
     { name: 'ledger conserved at the end', ok: last.ledger.conserved === true },
@@ -375,10 +416,12 @@ function report(phase5: boolean): boolean {
   let verifyEpochs: { ok: boolean; out: string } | null = null;
   let verifyImage: { ok: boolean; out: string } | null = null;
   const commits = txs.filter((t) => t.method === 'commit_image');
+  // Commits the next close made stale (the keeper does not hold a close for them).
+  const skippedCommits = events.filter((e) => e.kind === 'skip' && e.method === 'commit_image');
   if (phase5) {
     const files = routerEventFiles();
     verifyEpochs = runVerify(['epochs', '--router', router, '--closes', ...files]);
-    checks.push({ name: 'the keeper committed an image for every active spore after each close', ok: commits.length > 0 && commits.every((t) => t.ok) && commits.length >= (snaps.length - 1) * spores.length });
+    checks.push({ name: 'the keeper committed an image for every active spore after each close, or logged it as skipped', ok: commits.length > 0 && commits.every((t) => t.ok) && commits.length + skippedCommits.length >= (snaps.length - 1) * spores.length });
     checks.push({ name: 'spores-verify reproduces every epoch fingerprint of the router from its close receipts', ok: verifyEpochs.ok && /: match$/m.test(verifyEpochs.out) });
     const imageSpore = sale.spore ?? spores[0];
     verifyImage = runVerify(['image', '--router', router, '--closes', ...files, '--spore', String(imageSpore)]);
@@ -412,7 +455,9 @@ function report(phase5: boolean): boolean {
     outside: { sold: sold.length, refused: refused.length, sales: sold.map((s) => ({ spore: s.spore_id, tx: s.tx_hash })) },
     tx: { total: txs.length, failed: failedTx.length, errors, gas_tgas: Object.fromEntries(Object.entries(gas).map(([m, g]) => [m, { calls: g.n, ok: g.ok, avg: g.ok ? +(g.total / g.ok).toFixed(2) : 0, max: g.max }])) },
     ledger: last.ledger,
-    image_commits: { total: commits.length, ok: commits.filter((t) => t.ok).length },
+    image_commits: { total: commits.length, ok: commits.filter((t) => t.ok).length, skipped: skippedCommits.length },
+    closes: closeStats,
+    rpc_per_epoch: rpcByEpoch,
     sale: sale.scheduled ? sale : undefined,
     verify: phase5 ? { epochs: verifyEpochs, image: verifyImage } : undefined,
     checks,
@@ -435,6 +480,10 @@ function report(phase5: boolean): boolean {
     `Art changed for spores: ${changed.join(', ') || 'none'}.`,
     `Ledger: ${JSON.stringify(last.ledger)}`,
     '',
+    '| Closed epoch | Seconds since previous close | Active | Pairs | Gas (Tgas) | Log bytes | RPC requests in epoch (rate-limited) |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
+    ...closeStats.map((c) => `| ${c.epoch} | ${c.secs ?? '-'} | ${c.active ?? '-'} | ${c.pairs ?? '-'} | ${c.gas_tgas} | ${c.log_bytes ?? '-'} | ${rpcByEpoch[c.epoch] ? `${rpcByEpoch[c.epoch].requests} (${rpcByEpoch[c.epoch].limited})` : '-'} |`),
+    '',
     '| Method | Calls | OK | Avg Tgas | Max Tgas |',
     '| --- | --- | --- | --- | --- |',
     ...Object.entries(out.tx.gas_tgas).map(([m, g]: any) => `| ${m} | ${g.calls} | ${g.ok} | ${g.avg} | ${g.max} |`),
@@ -450,11 +499,19 @@ function report(phase5: boolean): boolean {
           '',
         ]
       : []),
-    ...(phase5 ? [`Image commits: ${commits.length} (${commits.filter((t) => t.ok).length} ok).`, '', '```', verifyEpochs?.out ?? '', verifyImage?.out ?? '', '```'] : []),
+    ...(phase5 ? [`Image commits: ${commits.length} (${commits.filter((t) => t.ok).length} ok, ${skippedCommits.length} skipped because the next close came first).`, '', '```', verifyEpochs?.out ?? '', verifyImage?.out ?? '', '```'] : []),
   ];
   writeFileSync(join(runDir, 'report.md'), lines.join('\n') + '\n');
   console.log(lines.join('\n'));
   return checks.every((c) => c.ok);
+}
+
+// A stop from outside (Ctrl-C in scripts/demo.sh) takes the agents and the keeper with it.
+for (const sig of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(sig, () => {
+    for (const p of children.values()) p.kill('SIGTERM');
+    process.exit(130);
+  });
 }
 
 main().catch((e) => {

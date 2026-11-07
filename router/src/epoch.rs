@@ -2,11 +2,13 @@
 //! one call to `spores_core::close_epoch`, the function `sim` and `verify` run.
 //!
 //! The `epoch_closed` event carries the whole input (active set, flows,
-//! rejects, pool) and the resulting tubes, so `verify` can replay every
-//! fingerprint from the close receipts alone. Its size is bounded by the
-//! active cap: at 16 active spores it stays far under the 16 KiB log limit.
+//! rejects, pool) and the tube count, so `verify` can replay every
+//! fingerprint, and so every tube, from the close receipts alone. Phase 6
+//! dropped the tubes list (router4 logged it up to epoch 16): with 64 active
+//! it could pass NEAR's 16 KiB log limit, and an oversized log fails the
+//! close. The input's size is bounded by `MAX_EPOCH_PAIRS` (see `jobs.rs`).
 //! After the close each active spore's state hash for the new epoch is stored
-//! (latest only; older ones follow from the logged tubes).
+//! (latest only; older ones follow from the replayed tubes).
 
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
@@ -62,13 +64,12 @@ impl Router {
         let prev = std::mem::replace(&mut self.prev_fingerprint, out.fingerprint);
         let fp = hex(&out.fingerprint);
         let payouts: Vec<(u32, U128)> = out.distribution.payouts.iter().map(|(id, a)| (*id, U128(*a))).collect();
-        let tubes: Vec<(SporeId, SporeId, U128)> = self.edges.iter().map(|((a, b), d)| (*a, *b, U128(*d))).collect();
         emit(
             "epoch_closed",
             json!({
                 "epoch": self.epoch, "fingerprint": fp, "prev_fingerprint": hex(&prev),
                 "active": self.active, "flows": flows, "rejects": rejects, "pool": U128(pool),
-                "edges": tubes.len(), "tubes": tubes, "rebates": payouts, "treasury": U128(out.distribution.treasury),
+                "edges": self.edges.len(), "rebates": payouts, "treasury": U128(out.distribution.treasury),
             }),
         );
         self.epoch += 1;

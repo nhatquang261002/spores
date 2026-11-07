@@ -1,0 +1,584 @@
+/* Demo Lab (Design §6.H, §13 item 19). Tokens only. The specimen leads: the
+   stage takes the page, the docket annotates it, the proof waits underneath. */
+
+/* ---- index ---------------------------------------------------------------- */
+.lab-intro { margin: 0 0 var(--s-6); }
+.scene-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.scene-card { background: var(--surface); border-radius: var(--r-2); }
+.scene-card.is-off { background: none; outline: 1px dashed var(--line-strong); outline-offset: -1px; }
+.scene-card.is-off .title { color: var(--text-3); }
+.scene-card-link {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--s-5);
+  height: 100%;
+  padding: var(--s-5);
+  color: inherit;
+  text-decoration: none;
+  border-radius: inherit;
+  transition: background var(--t-micro) var(--ease-out);
+}
+a.scene-card-link:hover { background: var(--surface-2); }
+.scene-card-body { display: grid; align-content: start; gap: var(--s-2); justify-items: start; min-width: 0; }
+.scene-card-body p { margin: 0; }
+.scene-card-meta { color: var(--text-2); }
+.scene-card-go { margin-top: var(--s-1); }
+.mode-chip { padding: var(--s-0) var(--s-3); border-radius: var(--r-blob); border: 1px solid var(--line-strong); color: var(--text-2); }
+.mode-live { border-color: var(--growth); color: var(--growth); }
+.mode-simulation { border-style: dashed; }
+.mode-unavailable, .mode-unbuilt { border-style: dashed; color: var(--text-3); }
+
+.sketch { width: 96px; height: 96px; fill: none; stroke-linecap: round; }
+.sk-dish { fill: var(--bg); stroke: var(--line); }
+.sk-wall { stroke: var(--slime); stroke-width: 2.5; }
+.sk-pod { stroke: var(--agent); stroke-width: 3; }
+.sk-x { stroke: var(--warn); stroke-width: 3; }
+.sk-core { fill: var(--text-2); }
+.sk-tube { stroke: var(--text-2); stroke-width: 2; }
+.sk-money { stroke: var(--value); stroke-width: 3; }
+.sk-empty { stroke: var(--line-strong); stroke-dasharray: 3 4; }
+.sk-label { fill: var(--text); }
+.sk-loop { stroke: var(--warn); stroke-width: 3; }
+.sk-bead { fill: var(--value); }
+
+/* ---- scene ---------------------------------------------------------------- */
+.scene { margin-top: calc(-1 * var(--s-5)); }
+.scene-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-3); }
+/* Story on the left, the dish pinned on the right: it stays in view whatever the
+   docket grows to, so nobody scrolls away from the thing that is happening. */
+.scene-bench {
+  display: grid;
+  grid-template-columns: minmax(380px, 5fr) minmax(0, 7fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas: 'head stage' 'docket stage';
+  column-gap: var(--s-6);
+  row-gap: var(--s-4);
+  align-items: start;
+}
+.scene-head { grid-area: head; min-width: 0; }
+.scene-stage-slot { grid-area: stage; position: sticky; top: calc(var(--topbar-h) + var(--s-3)); min-width: 0; }
+.scene-docket { grid-area: docket; }
+.scene-q { margin: 0; font: 500 22px/26px var(--font-display); color: var(--text-2); }
+/* The one line the eye follows: what just happened. Remounted per line, so it enters on a real event. */
+.scene-narrator {
+  margin: 0;
+  font: 500 30px/34px var(--font-display);
+  color: var(--text);
+  animation: narrate-in var(--t-panel) var(--ease-grow) both;
+}
+/* Opacity only: stage notes are placed with transform. */
+@keyframes note-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes narrate-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.scene-say { min-height: 92px; margin-top: var(--s-2); }
+.scene-quote { margin: var(--s-1) 0 0; animation: note-in var(--t-panel) var(--ease-out) both; }
+.scene-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin: var(--s-3) 0 var(--s-4); min-height: 40px; }
+.scene-cta { display: inline-flex; align-items: center; text-decoration: none; }
+.scene-why { color: var(--text-2); }
+.scene-alt { color: var(--text-2); }
+.scene-running { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--text-2); }
+.pace { display: inline-flex; gap: var(--s-1); }
+.pace-btn {
+  min-height: 32px;
+  padding: 0 var(--s-3);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r-blob);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.pace-btn.is-on { border-color: var(--line-strong); color: var(--text); background: var(--surface-2); }
+
+/* ---- the stage ------------------------------------------------------------ */
+.stage { position: relative; width: 100%; height: clamp(460px, calc(100dvh - var(--topbar-h) - var(--s-9) - var(--s-5)), 860px); }
+.stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stage-notes { position: absolute; inset: 0; pointer-events: none; overflow: clip; }
+.stage-note {
+  position: absolute;
+  display: grid;
+  gap: 0;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: opacity var(--t-panel) var(--ease-out);
+}
+.stage-note.is-right { transform: translate(var(--s-1), -50%); justify-items: start; text-align: left; }
+.stage-note.is-left { transform: translate(calc(-100% - var(--s-1)), -50%); justify-items: end; text-align: right; }
+.stage-note.is-gone { color: var(--text-3); }
+.stage-note.is-gone > :first-child { text-decoration: line-through; }
+.stage-d { color: var(--text-3); }
+.stage-role { color: var(--text-3); }
+.stage-wall { color: var(--slime); }
+.stage-gate { color: var(--slime); animation: note-in var(--t-panel) var(--ease-out) both; }
+.stage-gate.is-hit { color: var(--text-2); }
+.stage-plate { position: absolute; left: 0; top: 0; display: grid; gap: var(--s-0); pointer-events: none; }
+.stage-escrow { color: var(--value); }
+
+/* The stamp: a word that lands on a final outcome. Glyph plus word, never colour alone. */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  justify-self: start;
+  padding: var(--s-0) var(--s-2);
+  border: 2px solid currentColor;
+  border-radius: var(--r-blob);
+  font: 700 14px/20px var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-variation-settings: var(--doodle-loud);
+  transform: rotate(-3deg);
+  animation: stamp-land var(--t-panel) var(--ease-grow) both;
+}
+.stamp.is-refused { color: var(--warn); }
+.stamp.is-allowed { color: var(--growth); transform: rotate(1.5deg); }
+.stamp.is-small { font-size: 11px; line-height: 16px; border-width: 1.5px; }
+@keyframes stamp-land {
+  from { opacity: 0; scale: 1.7; }
+  to { opacity: 1; scale: 1; }
+}
+
+/* ---- the docket ----------------------------------------------------------- */
+.scene-docket { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); min-width: 0; }
+.lanes-key { display: grid; grid-template-columns: minmax(0, 5fr) var(--s-4) minmax(0, 6fr); gap: var(--s-2); padding-bottom: var(--s-2); border-bottom: 1px solid var(--line); }
+.lanes-key > :last-child { grid-column: 3; }
+.lanes-scripted { text-decoration: underline dotted; text-underline-offset: 3px; }
+.attempts { display: grid; gap: var(--s-4); list-style: none; margin: var(--s-3) 0 0; padding: 0; }
+.attempt-head { display: flex; align-items: baseline; gap: var(--s-2); }
+.attempt-head h3 { margin: 0; }
+.attempt-n { color: var(--text-3); }
+.attempt-plan { margin: var(--s-1) 0 0; color: var(--text-3); }
+.attempt.is-future .heading { color: var(--text-3); }
+.attempt-row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) var(--s-4) minmax(0, 6fr);
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  animation: narrate-in var(--t-ui) var(--ease-out) both;
+}
+.lane { display: grid; gap: var(--s-1); align-content: start; min-width: 0; }
+.lane-agent { color: var(--text-2); padding-left: var(--s-2); border-left: 2px solid var(--agent); }
+.lane-arrow { color: var(--text-3); }
+.lane-error { color: var(--warn); overflow-wrap: anywhere; }
+.lane-note { color: var(--text-2); }
+.lane-evidence { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
+.lane-fetch { background: none; border: none; padding: 0; color: var(--text-2); text-decoration: underline; cursor: pointer; }
+
+.scene-verdict { display: grid; gap: var(--s-1); padding-bottom: var(--s-4); border-bottom: 1px solid var(--line); }
+.sv-figure { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
+.sv-line { margin: 0; overflow-wrap: anywhere; }
+.sv-diff { margin: 0; color: var(--text-2); }
+.scene-idle-note { margin: 0; color: var(--text-2); }
+
+/* ---- the act rail --------------------------------------------------------- */
+.act-rail {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--acts, 6), minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.act-rail::before, .act-rail::after {
+  content: '';
+  position: absolute;
+  left: calc(50% / var(--acts, 6));
+  right: calc(50% / var(--acts, 6));
+  top: 11px;
+  height: 2px;
+  background: var(--line);
+}
+.act-rail::after {
+  background: var(--slime);
+  transform-origin: left;
+  transform: scaleX(var(--rail-share, 0));
+  transition: transform var(--t-epoch) var(--ease-grow);
+}
+.act { position: relative; z-index: 1; display: grid; justify-items: center; }
+.act-btn { display: grid; justify-items: center; gap: var(--s-1); background: none; border: none; color: var(--text-3); padding: 0; font: inherit; text-align: center; }
+button.act-btn { cursor: pointer; }
+button.act-btn:hover { color: var(--text); }
+.act-dot { width: 14px; height: 14px; margin: var(--s-1) 0 0; border-radius: var(--r-full); background: var(--bg); border: 2px solid var(--line-strong); }
+.act.is-past .act-dot { background: var(--slime); border-color: var(--slime); }
+.act.is-past .act-btn { color: var(--text-2); }
+.act.is-now .act-btn { color: var(--text); }
+.act.is-now .act-dot { background: var(--slime); border-color: var(--slime); animation: act-swell var(--t-epoch) var(--ease-grow) both; }
+@keyframes act-swell {
+  from { scale: 2.4; }
+  to { scale: 1; }
+}
+
+/* ---- the decay strip ------------------------------------------------------ */
+.decay { margin-top: var(--s-7); }
+.decay .title { margin: 0; }
+.decay .body-l { margin: var(--s-1) 0 var(--s-4); }
+.plates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); list-style: none; margin: 0; padding: 0; }
+.plate { display: grid; gap: var(--s-2); align-content: start; animation: narrate-in var(--t-art) var(--ease-grow) both; min-width: 0; }
+.plate.is-waiting { min-height: 220px; align-content: center; justify-items: center; text-align: center; padding: var(--s-5); color: var(--text-3); outline: 1px dashed var(--line-strong); outline-offset: -1px; border-radius: var(--r-2); }
+.plate-head { display: flex; align-items: baseline; gap: var(--s-3); }
+.plate-r { margin-left: auto; }
+.plate-tubes { display: grid; gap: var(--s-1); list-style: none; margin: 0; padding: 0; }
+.plate-tubes li { display: grid; grid-template-columns: 4ch minmax(0, 1fr) 8ch; align-items: center; gap: var(--s-2); }
+.plate-tubes li > :last-child { text-align: right; }
+.plate-bar { display: block; height: 4px; background: var(--slime); border-radius: var(--r-full); transition: width var(--t-epoch) var(--ease-decay); }
+.plate-tubes .is-removed { grid-template-columns: 4ch minmax(0, 1fr); color: var(--text-3); }
+.plate-tubes .is-removed .mono-s { text-decoration: line-through; }
+.plate-tubes .is-removed > :last-child { text-align: left; }
+
+/* ---- the proof ------------------------------------------------------------ */
+.scene-proof { margin-top: var(--s-7); padding-top: var(--s-4); border-top: 1px solid var(--line); }
+.scene-proof summary { cursor: pointer; }
+.proof-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6); margin-top: var(--s-4); }
+.proof-grid h3 { margin: 0 0 var(--s-2); }
+.proof-gap { margin-top: var(--s-5) !important; }
+.proof-wide { grid-column: 1 / -1; }
+.proof-close { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.preconditions, .scene-checks { display: grid; gap: var(--s-1); list-style: none; margin: 0 0 var(--s-3); padding: 0; }
+.preconditions li, .scene-check { display: grid; grid-template-columns: 2ch minmax(0, 1fr) auto; column-gap: var(--s-2); align-items: baseline; }
+.precondition-why, .check-why { grid-column: 2 / -1; overflow-wrap: anywhere; color: var(--text-2); }
+.check-why { color: var(--warn); }
+.state-diff { width: 100%; border-collapse: collapse; }
+.state-diff th, .state-diff td { padding: var(--s-1) var(--s-2) var(--s-1) 0; text-align: left; border-bottom: 1px solid var(--line); font-weight: 400; }
+.state-diff thead th { color: var(--text-2); }
+.state-diff .is-changed td:last-child { color: var(--text); }
+.state-diff td { color: var(--text-2); }
+
+@media (max-width: 1199px) {
+  .scene-bench { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: 'head' 'stage' 'docket'; }
+  .scene-stage-slot { position: static; }
+  .stage { height: min(70vh, 620px); }
+}
+@media (max-width: 899px) {
+  .scene-cards, .plates, .proof-grid { grid-template-columns: minmax(0, 1fr); }
+  .scene-narrator, .scene-q { font-size: 22px; line-height: 26px; }
+  .scene-q { color: var(--text-3); }
+  .scene-say { min-height: 76px; }
+  .stage { height: 100vw; min-height: 340px; max-height: 620px; }
+  .stage-role, .stage-long { display: none; }
+  .stage-gate, .stage-wall { white-space: normal; max-width: 11ch; }
+  /* The ✕ on the wall stays; the stamp with its words is in the lanes just below. */
+  .stage-gate .stamp { display: none; }
+  /* No room beside the hole on a phone: the name sits above it. */
+  .stage-attacker { transform: translate(-50%, calc(-100% - var(--s-4))) !important; justify-items: center; }
+  .scene-top .source-detail { display: none; }
+  .act-rail { grid-template-columns: repeat(var(--acts, 6), minmax(52px, 1fr)); overflow-x: auto; }
+  .act-rail::before, .act-rail::after { display: none; }
+  .attempt-row, .lanes-key { grid-template-columns: minmax(0, 1fr); }
+  .lane-arrow, .lanes-key > :last-child { display: none; }
+  .scene-card-link { grid-template-columns: 64px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-4); }
+  .sketch { width: 64px; height: 64px; }
+}
+
+/* ---- the sale stage (S12) --------------------------------------------------- */
+/* The label on the dish: the one light thing on a dark stage, because it is the
+   one thing a sale changes. Sharpie on tape: reads as a lab label, not a card. */
+.dish-label-slot { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; pointer-events: none; }
+.dish-label-slot > * { grid-area: 1 / 1; }
+.dish-label {
+  display: grid;
+  justify-items: center;
+  padding: var(--s-1) var(--s-4);
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--r-1);
+  box-shadow: var(--shadow-float);
+  transform: rotate(-2deg);
+}
+.dish-label .eyebrow { color: var(--surface-3); }
+.dish-label-name { font: 500 22px/26px var(--font-display); white-space: nowrap; }
+.dish-label.is-landing { animation: label-land var(--t-art) var(--ease-grow) calc(var(--t-panel)) both; }
+.dish-label.is-peeling { animation: label-peel var(--t-grow) var(--ease-in) both; transform-origin: 8% 100%; }
+@keyframes label-land {
+  from { opacity: 0; transform: translateY(-46px) rotate(9deg) scale(1.5); }
+  to { opacity: 1; transform: rotate(-2deg) scale(1); }
+}
+@keyframes label-peel {
+  0% { opacity: 1; transform: rotate(-2deg); }
+  35% { opacity: 1; transform: rotate(-16deg) translate(-8px, -4px); }
+  100% { opacity: 0; transform: rotate(-38deg) translate(-90px, 60px); }
+}
+.price-tag {
+  z-index: 1;
+  align-self: start;
+  justify-self: end;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-1);
+  padding: var(--s-0) var(--s-2);
+  margin: calc(-1 * var(--s-5)) calc(-1 * var(--s-6)) 0 0;
+  white-space: nowrap;
+  background: var(--bg);
+  color: var(--value);
+  border: 1.5px solid var(--value);
+  border-radius: var(--r-blob);
+  transform: rotate(4deg);
+  animation: stamp-land var(--t-panel) var(--ease-grow) both;
+}
+.party { position: absolute; display: grid; gap: 0; max-width: 34%; pointer-events: none; }
+.party-seller { left: 0; bottom: 0; justify-items: start; }
+.party-buyer { right: 0; bottom: 0; justify-items: end; text-align: right; }
+.party-royalty { right: 0; top: 0; justify-items: end; text-align: right; animation: note-in var(--t-panel) var(--ease-out) both; }
+.party-role { color: var(--text-3); }
+.party-name { color: var(--text); }
+.party-delta { color: var(--value); animation: stamp-land var(--t-panel) var(--ease-grow) both; }
+.party-delta.is-spent { color: var(--text-2); }
+.party-agent { color: var(--agent); animation: note-in var(--t-panel) var(--ease-out) both; }
+.kept-row { display: inline-flex; align-items: baseline; gap: var(--s-2); white-space: nowrap; }
+.kept-mark { font: 500 12px/16px var(--font-sans); animation: stamp-land var(--t-panel) var(--ease-grow) both; }
+.sale-locked { color: var(--slime); animation: note-in var(--t-panel) var(--ease-out) both; }
+
+/* The 11 checks: filled in as the chain answers. Future rows wait in the third text colour. */
+.sale-steps { display: grid; gap: var(--s-1); list-style: none; margin: 0; padding: 0; }
+.sale-step { display: grid; grid-template-columns: var(--s-5) minmax(0, 1fr) auto; column-gap: var(--s-2); align-items: baseline; }
+.sale-n {
+  display: inline-grid;
+  place-items: center;
+  width: var(--s-5);
+  height: var(--s-5);
+  border-radius: var(--r-full);
+  border: 1px solid var(--line-strong);
+  color: var(--text-3);
+  align-self: center;
+}
+.sale-name { color: var(--text-3); min-width: 0; }
+.sale-step.is-ok .sale-name { color: var(--text); }
+.sale-step.is-ok .sale-n { background: var(--growth); border-color: var(--growth); color: var(--bg); animation: act-swell var(--t-epoch) var(--ease-grow) both; }
+.sale-step.is-failed .sale-name { color: var(--text); }
+.sale-step.is-failed .sale-n { border-color: var(--warn); color: var(--warn); }
+.sale-why { grid-column: 2 / -1; overflow-wrap: anywhere; }
+
+/* ---- the wash panel (S12) ---------------------------------------------------- */
+.wash-case { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); margin: var(--s-3) 0 var(--s-4); color: var(--text-2); }
+.wash-controls { display: grid; gap: var(--s-3); margin-bottom: var(--s-4); }
+.wash-slider { display: grid; gap: var(--s-1); color: var(--text-2); }
+.wash-slider input[type='range'] { width: 100%; margin: 0; height: 28px; background: none; appearance: none; cursor: pointer; }
+.wash-slider input[type='range']::-webkit-slider-runnable-track { height: 6px; border-radius: var(--r-full); background: var(--line); }
+.wash-slider input[type='range']::-moz-range-track { height: 6px; border-radius: var(--r-full); background: var(--line); }
+.wash-slider input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border-radius: var(--r-full);
+  border: 3px solid var(--bg);
+  background: radial-gradient(circle, var(--text) 0 22%, var(--value) 24%);
+  transition: scale var(--t-micro) var(--ease-out);
+}
+.wash-slider input[type='range']::-moz-range-thumb { width: 18px; height: 18px; border-radius: var(--r-full); border: 3px solid var(--bg); background: var(--value); }
+.wash-slider input[type='range']:active::-webkit-slider-thumb { scale: 1.15; }
+.wash-slider input[type='range']:focus-visible { outline: 2px solid var(--slime); outline-offset: 2px; border-radius: var(--r-1); }
+.wash-ticks { display: flex; justify-content: space-between; color: var(--text-3); }
+.wash-ticks .is-on { color: var(--value); }
+.wash-spores { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); color: var(--text-2); }
+.wash-replay { margin-left: auto; }
+.wash-note { margin: 0; color: var(--text-2); animation: note-in var(--t-panel) var(--ease-out) both; }
+.wash-figure { padding-top: var(--s-3); border-top: 1px solid var(--line); }
+.wash-figure .sv-figure .body { max-width: 34ch; color: var(--text-2); }
+.wash-config { margin: var(--s-2) 0 0; color: var(--text-2); }
+.wash-fixed { margin: var(--s-4) 0 0; padding-left: var(--s-3); border-left: 2px solid var(--slime); color: var(--text); }
+
+/* A simulation is never mistaken for the chain: a dashed outline, dashed series (§4.1). */
+.sim-panel { padding: var(--s-4); border-radius: var(--r-2); outline: 1px dashed var(--line-strong); outline-offset: -1px; }
+.sim-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-bottom: var(--s-3); }
+.sim-head .title { margin: 0; }
+.sim-clock { margin-left: auto; color: var(--text); }
+.sim-body { display: grid; grid-template-columns: minmax(180px, 2fr) minmax(0, 3fr); gap: var(--s-4); align-items: start; }
+.sim-loop { display: grid; gap: var(--s-1); min-width: 0; }
+.wash-loop { position: relative; width: 100%; aspect-ratio: 1; }
+.sim-burn { display: grid; margin: 0; color: var(--text-2); }
+.sim-legend { margin: 0; }
+.wash-chart { position: relative; min-width: 0; }
+.wash-chart svg { display: block; touch-action: pan-y; }
+.wc-grid { stroke: var(--line); stroke-width: 1; }
+.wc-window { stroke: var(--line-strong); stroke-width: 1; }
+.wc-cross { stroke: var(--text-3); stroke-width: 1; }
+.wc-tick { fill: var(--text-3); font: 400 11px/16px var(--font-mono); }
+.wc-end { fill: var(--text-2); font: 500 12px/16px var(--font-sans); }
+.wc-end-n { fill: var(--text); font: 400 12px/16px var(--font-mono); }
+.wc-attacker, .wc-honest { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wc-attacker { stroke: var(--warn); }
+.wc-honest { stroke: var(--text-2); }
+.wc-head { stroke: var(--surface); stroke-width: 2; }
+.wc-head-attacker { fill: var(--warn); }
+.wc-head-honest { fill: var(--text-2); }
+.wc-tip {
+  position: absolute;
+  top: 0;
+  display: grid;
+  padding: var(--s-1) var(--s-2);
+  transform: translateX(-50%);
+  background: var(--surface-3);
+  border-radius: var(--r-1);
+  box-shadow: var(--shadow-float);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.wc-key { margin: var(--s-1) 0 0; color: var(--text-2); }
+.wc-swatch { display: inline-block; width: var(--s-4); height: 2px; vertical-align: middle; }
+.wc-swatch-attacker { background: var(--warn); }
+.wc-swatch-honest { background: var(--text-2); }
+.traffic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-1) var(--s-3); margin-top: var(--s-3); }
+.traffic-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0 var(--s-2);
+  align-items: baseline;
+  padding: var(--s-1) var(--s-2);
+  text-align: left;
+  background: none;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  cursor: pointer;
+  transition: background var(--t-micro) var(--ease-out);
+}
+.traffic-row:hover { background: var(--surface-2); }
+.traffic-row.is-on { border-color: var(--slime); background: var(--surface-2); color: var(--text); }
+.traffic-name { min-width: 0; }
+.traffic-n { color: var(--text); }
+.traffic-bar { grid-column: 1 / -1; display: block; height: 3px; margin-top: var(--s-1); background: var(--warn); border-radius: var(--r-full); overflow: hidden; }
+.traffic-bar > span { display: block; height: 100%; background: var(--growth); transition: width var(--t-epoch) var(--ease-grow); }
+.wash-fails { margin-top: var(--s-7); }
+.fails-table { width: 100%; border-collapse: collapse; }
+.fails-table th, .fails-table td { padding: var(--s-2) var(--s-3) var(--s-2) 0; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--line); font-weight: 400; }
+.fails-table thead th { color: var(--text-2); }
+.fails-table tbody th { max-width: 26ch; color: var(--text); }
+.fails-table td.mono { white-space: nowrap; }
+.wash-files { margin: var(--s-2) 0; padding-left: var(--s-4); }
+.wash-table-scroll { max-height: 320px; overflow-y: auto; }
+
+/* After the rules they override: a media query has no extra weight. */
+@media (max-width: 1199px) {
+  /* Bands above and below the dish, so the plate and the parties never sit on it. */
+  .sale-stage { height: min(calc(70vh + 150px), 770px); }
+}
+@media (max-width: 899px) {
+  .sim-body, .traffic { grid-template-columns: minmax(0, 1fr); }
+  .sim-loop { justify-self: center; width: min(100%, 300px); }
+  .traffic-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .traffic-row .tone-muted { grid-row: 2; }
+  .traffic-n { grid-row: 1 / 3; grid-column: 2; align-self: center; }
+  .traffic-bar { grid-row: 3; }
+  .fails-table thead { display: none; }
+  .fails-table tr { display: grid; gap: var(--s-1); padding: var(--s-3) 0; border-bottom: 1px solid var(--line); }
+  .fails-table th, .fails-table td { padding: 0; border: none; }
+  .fails-table tbody th { max-width: none; }
+  .fails-table td.mono { white-space: normal; }
+
+  /* Story scenes on a phone: the line being said sits right above the dish it's about. */
+  .scene-bench:has(.act-rail) { row-gap: var(--s-2); grid-template-areas: none; grid-template-rows: none; }
+  .scene-bench:has(.act-rail) .scene-stage-slot, .scene-bench:has(.act-rail) .scene-docket { grid-area: auto; }
+  .scene-bench:has(.act-rail) .scene-head { display: contents; }
+  .scene-bench:has(.act-rail) .scene-head > * { order: 5; min-width: 0; }
+  .scene-bench:has(.act-rail) .scene-q { order: 1; }
+  .scene-bench:has(.act-rail) .scene-narrator { order: 2; min-height: 52px; }
+  .scene-bench:has(.act-rail) .scene-quote { order: 3; }
+  .scene-bench:has(.act-rail) .scene-stage-slot { order: 4; }
+  .scene-bench:has(.act-rail) .scene-controls { margin: 0; }
+  .scene-bench:has(.act-rail) .scene-docket { order: 7; margin-top: var(--s-3); }
+
+  .sale-stage { height: calc(100vw + 170px); min-height: 510px; max-height: 790px; }
+  .sale-stage .stage-plate { right: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-3); }
+  .sale-stage .stage-plate .display-s { flex: 1 0 100%; }
+  .sale-stage .stage-d, .kept-word { display: none; }
+  .kept-row { gap: var(--s-1); }
+  .party { max-width: 33%; }
+  .party-royalty { top: auto; right: auto; left: 50%; bottom: 0; transform: translateX(-50%); justify-items: center; text-align: center; }
+  .dish-label-name { font-size: 18px; line-height: 22px; }
+  .dish-label { padding: 0 var(--s-3); }
+  .price-tag { margin: calc(-1 * var(--s-4)) calc(-1 * var(--s-4)) 0 0; }
+  .sale-step .lane-evidence { grid-column: 2 / -1; }
+}
+:root[data-reduced-motion='true'] .scene-narrator,
+:root[data-reduced-motion='true'] .stamp,
+:root[data-reduced-motion='true'] .attempt-row,
+:root[data-reduced-motion='true'] .plate,
+:root[data-reduced-motion='true'] .stage-gate,
+:root[data-reduced-motion='true'] .act-dot,
+:root[data-reduced-motion='true'] .dish-label,
+:root[data-reduced-motion='true'] .price-tag,
+:root[data-reduced-motion='true'] .party-delta,
+:root[data-reduced-motion='true'] .party-royalty,
+:root[data-reduced-motion='true'] .party-agent,
+:root[data-reduced-motion='true'] .kept-mark,
+:root[data-reduced-motion='true'] .sale-locked,
+:root[data-reduced-motion='true'] .sale-n,
+:root[data-reduced-motion='true'] .wash-note {
+  animation: none;
+}
+:root[data-reduced-motion='true'] .traffic-bar > span { transition: none; }
+
+/* ---- the whole loop (S13) ------------------------------------------------- */
+.scene-card.is-wide { grid-column: 1 / -1; }
+
+/* Two stages on one spot: the hire, then the sale, in the same places. */
+.loop-stages { position: relative; }
+.loop-layer-top { position: absolute; inset: 0; }
+.loop-layer.is-off { visibility: hidden; }
+.loop-rim { animation: note-in var(--t-panel) var(--ease-out) both; }
+.loop-then { position: absolute; color: var(--text-3); white-space: nowrap; animation: note-in var(--t-art) var(--ease-out) both; }
+.loop-allow { animation: narrate-in var(--t-panel) var(--ease-grow) both; }
+.stage-d.is-grown { color: var(--growth); animation: note-in var(--t-panel) var(--ease-out) both; }
+
+/* Room for two lines always: the stops must not jump when a line is short. */
+.loop-scene .scene-narrator { min-height: 68px; }
+
+/* The eight stops: one vein down the page. */
+.loop-vein { position: relative; list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.vein-canvas { position: absolute; left: 0; top: 0; width: 44px; height: 100%; pointer-events: none; }
+.vein-row { display: flex; align-items: center; gap: var(--s-2); min-height: 40px; padding-left: 44px; }
+.vein-stop {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--s-2);
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  align-content: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.vein-stop { cursor: pointer; border-radius: var(--r-1); }
+button.vein-stop:hover .vein-word { color: var(--slime); }
+/* A dot only to be measured: the canvas draws the real one on the same row, in the gutter. */
+.vein-dot { position: absolute; left: 22px; width: 0; height: 0; align-self: center; }
+.vein-word { font: 600 15px/20px var(--font-sans); font-variation-settings: var(--doodle-loud); color: var(--text-3); transition: color var(--t-ui) var(--ease-out); }
+.vein-promise { color: var(--text-3); }
+.vein-fact { color: var(--text-2); animation: narrate-in var(--t-panel) var(--ease-out) both; overflow-wrap: anywhere; }
+.vein-row.is-past .vein-word { color: var(--text-2); }
+.vein-row.is-now .vein-word { color: var(--text); }
+.vein-row.is-now .vein-fact, .vein-row.is-now .vein-promise { color: var(--text); }
+.vein-tx { flex: none; }
+.loop-next { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: var(--s-3) 0 0; animation: narrate-in var(--t-panel) var(--ease-grow) both; }
+.loop-txs { display: grid; gap: var(--s-1); list-style: none; margin: 0; padding: 0; }
+@media (max-width: 899px) {
+  .loop-scene .scene-bench { row-gap: var(--s-2); grid-template-areas: none; grid-template-rows: none; }
+  .loop-scene .scene-stage-slot, .loop-scene .scene-docket { grid-area: auto; }
+  .loop-scene .scene-head { display: contents; }
+  .loop-scene .scene-head > * { order: 5; min-width: 0; }
+  .loop-scene .scene-q { order: 1; }
+  .loop-scene .scene-narrator { order: 2; min-height: 68px; }
+  .loop-scene .scene-quote { order: 3; }
+  .loop-scene .scene-stage-slot { order: 4; }
+  .loop-scene .scene-controls { margin: 0; }
+  .loop-scene .scene-docket { order: 7; margin-top: var(--s-3); }
+  .vein-stop { grid-template-columns: 84px minmax(0, 1fr); }
+}
+/* The rim runs behind the partners' notes: the words keep a halo of the dish's colour. */
+.loop-stage .stage-note { text-shadow: 0 0 3px var(--surface), 0 0 6px var(--surface), 0 0 6px var(--surface); }

@@ -66,6 +66,23 @@ pub struct Attack {
     pub payments: u32,
 }
 
+/// How many spores are active and how many jobs each honest spore posts per
+/// epoch. `Scale::DEFAULT` is the Phase 1 setting.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Scale {
+    pub active: u32,
+    pub jobs: u32,
+}
+
+impl Scale {
+    pub const DEFAULT: Scale = Scale { active: 16, jobs: 3 };
+
+    pub fn apply(self, cfg: &mut Config) {
+        cfg.active = self.active;
+        cfg.jobs_per_consumer = self.jobs;
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Config {
     pub params: Params,
@@ -133,6 +150,11 @@ pub struct EpochStats {
     pub fees: u128,
     pub rebates: u128,
     pub edges: usize,
+    /// Edges with settled flow, edges with rejects and spores paid a rebate:
+    /// the list lengths of the router's `epoch_closed` event.
+    pub flow_edges: usize,
+    pub reject_edges: usize,
+    pub rebated_spores: usize,
 }
 
 impl EpochStats {
@@ -211,6 +233,56 @@ impl Group {
     }
 }
 
+/// One group's per-epoch series, every epoch of the run. Money in NEAR, `R`
+/// in units of `REP_ONE`.
+#[derive(Clone, Debug, Default)]
+pub struct Series {
+    /// Group balance minus its starting balance, after the epoch's payouts.
+    pub balance_delta: Vec<f64>,
+    /// Fees paid on the group's own edges this epoch.
+    pub fees: Vec<f64>,
+    /// Pool payouts to the group's spores this epoch.
+    pub rebates: Vec<f64>,
+    /// Highest and median `R` among the group's spores after the close.
+    pub r_max: Vec<f64>,
+    pub r_median: Vec<f64>,
+}
+
+fn median(mut v: Vec<u128>) -> f64 {
+    if v.is_empty() {
+        return 0.0;
+    }
+    v.sort_unstable();
+    let n = v.len();
+    let m = if n % 2 == 1 {
+        v[n / 2] as f64
+    } else {
+        (v[n / 2 - 1] + v[n / 2]) as f64 / 2.0
+    };
+    m / REP_ONE as f64
+}
+
+impl Series {
+    fn push(
+        &mut self,
+        ids: &[SporeId],
+        start: u128,
+        balances: &BTreeMap<SporeId, u128>,
+        fees: u128,
+        rebates: u128,
+        rep: &BTreeMap<SporeId, u128>,
+    ) {
+        let held: u128 = ids.iter().map(|id| balances[id]).sum();
+        let delta = held as i128 - (start * ids.len() as u128) as i128;
+        let rs: Vec<u128> = ids.iter().map(|id| rep.get(id).copied().unwrap_or(0)).collect();
+        self.balance_delta.push(delta as f64 / NEAR as f64);
+        self.fees.push(fees as f64 / NEAR as f64);
+        self.rebates.push(rebates as f64 / NEAR as f64);
+        self.r_max.push(rs.iter().max().copied().unwrap_or(0) as f64 / REP_ONE as f64);
+        self.r_median.push(median(rs));
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Run {
     pub stats: Vec<EpochStats>,
@@ -218,6 +290,10 @@ pub struct Run {
     pub honest_group: Group,
     /// Rebates received minus fees paid on the attacker's loop, whole run, yocto.
     pub attacker_net: i128,
+    /// The same for the honest spores (fees on their own hires), whole run.
+    pub honest_net: i128,
+    pub attacker_series: Series,
+    pub honest_series: Series,
     /// Set when the attack could not run (a one-spore loop is a self-payment).
     pub attack_error: Option<String>,
     /// Fingerprint of the last epoch; it commits to the whole graph history.
@@ -289,6 +365,9 @@ pub fn run(cfg: &Config) -> Run {
     let mut attacker = Group::default();
     let mut honest_group = Group::default();
     let mut attacker_net: i128 = 0;
+    let mut honest_net: i128 = 0;
+    let mut attacker_series = Series::default();
+    let mut honest_series = Series::default();
     let (w_bps, norm) = cfg.mode.rule(&p);
 
     for t in 0..cfg.epochs {
@@ -417,12 +496,23 @@ pub fn run(cfg: &Config) -> Run {
         st.fees = pool;
         st.rebates = pool - out.distribution.treasury;
         st.edges = out.conductivity.len();
+        st.flow_edges = flows.len();
+        st.reject_edges = rejects.len();
+        st.rebated_spores = out.distribution.payouts.len();
 
         let attacker_rebates: u128 = attackers
             .iter()
             .map(|id| out.distribution.payouts.get(id).copied().unwrap_or(0))
             .sum();
         attacker_net += attacker_rebates as i128 - attack_fees as i128;
+        let honest_rebates: u128 = honest
+            .iter()
+            .map(|id| out.distribution.payouts.get(id).copied().unwrap_or(0))
+            .sum();
+        let honest_fees = pool - attack_fees;
+        honest_net += honest_rebates as i128 - honest_fees as i128;
+        attacker_series.push(&attackers, START_BALANCE, &balances, attack_fees, attacker_rebates, &out.reputation);
+        honest_series.push(&honest, START_BALANCE, &balances, honest_fees, honest_rebates, &out.reputation);
 
         if t >= cfg.epochs / 2 {
             let is_attacker = |id: SporeId| attackers.binary_search(&id).is_ok();
@@ -482,6 +572,9 @@ pub fn run(cfg: &Config) -> Run {
         attacker,
         honest_group,
         attacker_net,
+        honest_net,
+        attacker_series,
+        honest_series,
         attack_error,
         last_fingerprint: hex(&prev),
     }
@@ -521,6 +614,32 @@ mod tests {
         assert!(r.attack_error.unwrap().contains("cannot trade with itself"));
         assert_eq!(r.attacker_net, 0);
     }
+
+    #[test]
+    fn series_match_the_ledger() {
+        for active in [16, 64] {
+            let mut cfg = Config::new(Params::shipped(), SHIPPED_TEST_MODE, 2);
+            cfg.epochs = 10;
+            cfg.active = active;
+            cfg.attack = Some(Attack {
+                spores: 3,
+                volume: NEAR / 5,
+                payments: 4,
+            });
+            let r = run(&cfg);
+            for (s, net) in [(&r.attacker_series, r.attacker_net), (&r.honest_series, r.honest_net)] {
+                assert_eq!(s.fees.len(), 10);
+                let summed: f64 = s.rebates.iter().zip(&s.fees).map(|(r, f)| r - f).sum();
+                let net = net as f64 / NEAR as f64;
+                assert!((s.balance_delta[9] - net).abs() < 1e-9, "{active}: {} vs {net}", s.balance_delta[9]);
+                assert!((summed - net).abs() < 1e-9);
+            }
+            assert!(r.attacker_net < 0);
+            assert!(r.stats.iter().all(|s| s.edges <= (active * (active - 1) / 2) as usize));
+        }
+    }
+
+    const SHIPPED_TEST_MODE: Mode = Mode::TubesRelative { w_bps: 40_000 };
 
     #[test]
     fn shipped_rule_makes_every_loop_lose() {

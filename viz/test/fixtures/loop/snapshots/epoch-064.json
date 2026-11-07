@@ -1,0 +1,609 @@
+{
+  "label": "epoch-064",
+  "epoch": 64,
+  "block": 276474425,
+  "fingerprint": "cdbc303e4bbc83cc14cd9ade6f959f3f822010159c8ac461fa7f2d4aff7255dd",
+  "epoch_info": {
+    "epoch": 64,
+    "started_ns": "1793960400655258747",
+    "ends_ns": "1793960430655258747",
+    "prev_fingerprint": "cdbc303e4bbc83cc14cd9ade6f959f3f822010159c8ac461fa7f2d4aff7255dd",
+    "active": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "pool": "0",
+    "flows": [],
+    "rejects": []
+  },
+  "edges": [
+    [
+      6,
+      11,
+      "108176"
+    ],
+    [
+      10,
+      11,
+      "147681"
+    ],
+    [
+      10,
+      12,
+      "91800"
+    ],
+    [
+      15,
+      16,
+      "210225"
+    ]
+  ],
+  "ledger": {
+    "deposited": "16257424485000000000000000",
+    "withdrawn": "0",
+    "paid_out": "1840000000000000000000000",
+    "balances": "14067885143000000000000000",
+    "escrow": "198625000000000000000000",
+    "pool": "0",
+    "treasury": "150914342000000000000000",
+    "conserved": true
+  },
+  "spores": {
+    "0": {
+      "render_input": {
+        "spore_id": 0,
+        "epoch": 64,
+        "seed": "9edb3ce91e395f4bb3762d9a26907135fa8fd99e8527d824427b12e766cc1abd",
+        "age": 63,
+        "edges": []
+      },
+      "balance": "1102778374250000000000000",
+      "reputation": "0",
+      "degree": 0,
+      "owner_id": "owner.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "100000000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "b8add67370f85cd7b5cf9aac53cc03ddda1c690eb0cd1b18f002bb05ee7dce2b"
+      ],
+      "image": {
+        "epoch": 63,
+        "state_hash": "16fc6f00d8123ca0a248d5c8727eb2ab1763370c02ce9e7a0db8ce644e04d3be",
+        "image_hash": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+        "renderer_version": 1
+      }
+    },
+    "6": {
+      "render_input": {
+        "spore_id": 6,
+        "epoch": 64,
+        "seed": "ecae89a198843031137a9ccfc9280aad72abc8182b85239ac7a2ddd77c9dcd42",
+        "age": 63,
+        "edges": [
+          [
+            11,
+            108176
+          ]
+        ]
+      },
+      "balance": "303143021750000000000000",
+      "reputation": "328",
+      "degree": 1,
+      "owner_id": "buyer.spores-hack.testnet",
+      "operator_id": "operator2.spores-hack.testnet",
+      "operator_gen": 3,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "165600000000000000000000",
+      "listed_price": null,
+      "sales": 1,
+      "state": [
+        64,
+        "8f343e69fea1106d3112464116a369e7110f7e2d0a00b3db4ba21ec5025e42b8"
+      ],
+      "image": {
+        "epoch": 63,
+        "state_hash": "eb8d7af7149bc63b32b96f69d8bbf776ea139b203cbfc4d40ff52dbc86076c7d",
+        "image_hash": "bab313cbf0ad498dbd9f0c07730c030482f8843f715061352098e9a6b04b2ff7",
+        "renderer_version": 1
+      }
+    },
+    "7": {
+      "render_input": {
+        "spore_id": 7,
+        "epoch": 64,
+        "seed": "239f1dd3e6c020bad3fc2fe05bf30ba95a46df68c0be250054a31b96e2575c6f",
+        "age": 63,
+        "edges": []
+      },
+      "balance": "574414656250000000000000",
+      "reputation": "0",
+      "degree": 0,
+      "owner_id": "owner.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "100000000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "34c28d127f9a27bf0f9db76e89d8c181b49a8146c082e33051c19f2df799274d"
+      ],
+      "image": {
+        "epoch": 63,
+        "state_hash": "3eea7772bcf4f8860ddb5d7f07a7088c846e9f374144fbc828147f1f2676e0c2",
+        "image_hash": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+        "renderer_version": 1
+      }
+    },
+    "8": {
+      "render_input": {
+        "spore_id": 8,
+        "epoch": 64,
+        "seed": "c94c17faba7bb75ec20a1385ce8304ee8f10068cce882f4bdf46b88dd2664f9b",
+        "age": 63,
+        "edges": []
+      },
+      "balance": "508706214000000000000000",
+      "reputation": "0",
+      "degree": 0,
+      "owner_id": "owner.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "100000000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "127149f10200d28e78161550fcac58a7bdd21298a9b32d2ef63e7c3c6981fa5e"
+      ],
+      "image": {
+        "epoch": 57,
+        "state_hash": "d4e618fe9bbd4a964754b15c4776f5a66d2efdb1b1ebe707d4c34d1155320ea9",
+        "image_hash": "d74706c4a90de6858b689bccddda33bcae03685af684077517a8677e34e56a67",
+        "renderer_version": 1
+      }
+    },
+    "9": {
+      "render_input": {
+        "spore_id": 9,
+        "epoch": 64,
+        "seed": "c77bbd352a9d3139e0ab6011682c6764bba329c314fba0c57e9d7444aa0d5442",
+        "age": 47,
+        "edges": []
+      },
+      "balance": "323815310500000000000000",
+      "reputation": "0",
+      "degree": 0,
+      "owner_id": "deployer.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "100000000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "834b0e950ce8c9e3c7152a1af3f350bb9ee18c9a6f9ac260f28a2170c38f7a76"
+      ],
+      "image": {
+        "epoch": 62,
+        "state_hash": "036963ac0a4e66f6896fd664cd229c406cf8f775658ddf49abd23266fb39171c",
+        "image_hash": "325d243356e7813ebf5df767e92ed6a9cea5246a58b8b6e76e7d214e3ea0943c",
+        "renderer_version": 1
+      }
+    },
+    "10": {
+      "render_input": {
+        "spore_id": 10,
+        "epoch": 64,
+        "seed": "6c59349d4d0fc967e4932c8a217163c677b8362a6713f54b73f9d833e798c6d3",
+        "age": 47,
+        "edges": [
+          [
+            11,
+            147681
+          ],
+          [
+            12,
+            91800
+          ]
+        ]
+      },
+      "balance": "1657130329750000000000000",
+      "reputation": "686",
+      "degree": 2,
+      "owner_id": "deployer.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "237200000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "f4e79a7e9ab77a3159ba57d582abfa8df3c7adc958c75903de5a1ed6918cc12e"
+      ],
+      "image": {
+        "epoch": 62,
+        "state_hash": "9bc0a32cccddd8f0b29ff742d698006c298f8c1cebe0b4807a6f2ad2a174bc2e",
+        "image_hash": "5aac51d853a703650602e1515fe70635a77034fce85be3e7c1854b7333393cbc",
+        "renderer_version": 1
+      }
+    },
+    "11": {
+      "render_input": {
+        "spore_id": 11,
+        "epoch": 64,
+        "seed": "cd0d92458a86464602057d9935419f3006194038f3f25975a102b0144934689a",
+        "age": 47,
+        "edges": [
+          [
+            6,
+            108176
+          ],
+          [
+            10,
+            147681
+          ]
+        ]
+      },
+      "balance": "135632802750000000000000",
+      "reputation": "712",
+      "degree": 2,
+      "owner_id": "deployer.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "242400000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "f5179047c57611609ec5732841c4771f3025d58671fcc65d6b586e16758ebad9"
+      ],
+      "image": {
+        "epoch": 59,
+        "state_hash": "427cab38617bc475f49f2ef9e0f8e40b6447569151b7102c4054c0796446d4c9",
+        "image_hash": "f5501da9d0a7b348b55f4c9bafa6bac5fc96ea0821f8124b0124d35277c8f51f",
+        "renderer_version": 1
+      }
+    },
+    "12": {
+      "render_input": {
+        "spore_id": 12,
+        "epoch": 64,
+        "seed": "2c8d5d25fee6c4a38e51aba5e4247bd286f6982f644489b7eafe1bd54662f615",
+        "age": 47,
+        "edges": [
+          [
+            10,
+            91800
+          ]
+        ]
+      },
+      "balance": "143776042000000000000000",
+      "reputation": "302",
+      "degree": 1,
+      "owner_id": "deployer.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "160400000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "b099621a6a044c4c6ed350b3430d6c2fd69182b631fceb0024aef9cad63dcab4"
+      ],
+      "image": {
+        "epoch": 55,
+        "state_hash": "d8aa5384326532af3cb02f791f8461669fccce17427e48da1421ac7556af1cac",
+        "image_hash": "3ea5bcc7442bcc72c9aaa5a3add8c4fd20837ebc462f526a55ba783cea1656d3",
+        "renderer_version": 1
+      }
+    },
+    "13": {
+      "render_input": {
+        "spore_id": 13,
+        "epoch": 64,
+        "seed": "0e294a97d8b934da5bb50295d8567cbd22727b0b555f7235fa70d8e805b5173e",
+        "age": 47,
+        "edges": []
+      },
+      "balance": "400151302750000000000000",
+      "reputation": "0",
+      "degree": 0,
+      "owner_id": "deployer.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "100000000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "f286e9c271e8510e985aaf587ed8c2928eae0d34b4954bad65c2b218b6df1c75"
+      ],
+      "image": {
+        "epoch": 61,
+        "state_hash": "14cea49247c2d71bc4597b59d1b10b0bfc57506d3f1a29ce1bb014e4df977edb",
+        "image_hash": "54d3e853419fefeb7e2999384389fccb64602442fb0b0d673432913da10fd747",
+        "renderer_version": 1
+      }
+    },
+    "14": {
+      "render_input": {
+        "spore_id": 14,
+        "epoch": 64,
+        "seed": "f6005e22564a6db8d9e153f2e19fe6bf5e1837f83f187d86d99e3fe02f04d9fb",
+        "age": 47,
+        "edges": []
+      },
+      "balance": "277750000000000000000000",
+      "reputation": "0",
+      "degree": 0,
+      "owner_id": "deployer.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "100000000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "551e9b0e0960388e2ecd77646db1128c25c50d0e7692d9999de393b194df6d64"
+      ],
+      "image": {
+        "epoch": 61,
+        "state_hash": "503d19951e834d504b7d610bfb20edbb2c1700ba83bb1c52e4bebd25829b6a03",
+        "image_hash": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+        "renderer_version": 1
+      }
+    },
+    "15": {
+      "render_input": {
+        "spore_id": 15,
+        "epoch": 64,
+        "seed": "533cc86f83015b16cbea97db6fd600abf09ecf31ce4578064eb662d6bcfad565",
+        "age": 47,
+        "edges": [
+          [
+            16,
+            210225
+          ]
+        ]
+      },
+      "balance": "274550052500000000000000",
+      "reputation": "458",
+      "degree": 1,
+      "owner_id": "deployer.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "191600000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "d1e35cadff6db7e729aa4d6f7d4dae86b04b2960aecf456ac831d3ecff083c5e"
+      ],
+      "image": {
+        "epoch": 61,
+        "state_hash": "7167e28a32a901dfbc7509250f5aea3725932c141f5c0cd51809ef29560aa29a",
+        "image_hash": "0f41400d92eef76c2867afeee809ed83469d8c66444d23359994986eaa17f4db",
+        "renderer_version": 1
+      }
+    },
+    "16": {
+      "render_input": {
+        "spore_id": 16,
+        "epoch": 64,
+        "seed": "4f47ce398bc191b15f8c74a9297c24de9f8620fe578e0f16bb454e2b10f87b39",
+        "age": 47,
+        "edges": [
+          [
+            15,
+            210225
+          ]
+        ]
+      },
+      "balance": "405490655750000000000000",
+      "reputation": "458",
+      "degree": 1,
+      "owner_id": "deployer.spores-hack.testnet",
+      "operator_id": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "effective_budget": "191600000000000000000000",
+      "listed_price": null,
+      "sales": 0,
+      "state": [
+        64,
+        "8dcfb7977fc2e8eb1549dda7ad2951381f597fbd9afa9f588957cdd35ea0d13e"
+      ],
+      "image": {
+        "epoch": 61,
+        "state_hash": "9a3d60cc150919a789c1e728bfa2fa0dbc0392554a0fcfd6adf381eb371ef877",
+        "image_hash": "ce16d06ec3200055a6b4adc642db047cd2d3fab7d202c9a68361ade8f7188644",
+        "renderer_version": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "run": "sale-2026-11-06T04-37-53-129Z",
+  "scene": "sale",
+  "router": "spores-hack-router4.testnet",
+  "spores": [
+    2
+  ],
+  "start_epoch": 28,
+  "config": {
+    "supply_cap": 64,
+    "max_active": 64,
+    "epoch_len_ns": "30000000000",
+    "job_timeout_ns": "60000000000",
+    "min_activation_deposit": "100000000000000000000000",
+    "decay_bps": 2500,
+    "gain": "1000000",
+    "k": "100000000000000000000000",
+    "d_min": "50000",
+    "fee_bps": 100,
+    "rebate_bps": 5000,
+    "breadth_full": 4,
+    "reject_bps": 5000,
+    "base_budget": "100000000000000000000000",
+    "trust_gain": "200000000000000000000000",
+    "royalty_bps": 500,
+    "royalty_account": null
+  }
+}

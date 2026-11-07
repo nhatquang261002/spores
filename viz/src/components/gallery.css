@@ -1,0 +1,392 @@
+/* Collection gallery (Design §6.B, §3.3): header row, filter chips, the card grid and SporeCard.
+   Colours, sizes, radii and durations only from tokens.css. */
+
+.gallery-header {
+  display: grid;
+  gap: var(--s-4);
+  margin-bottom: var(--s-6);
+}
+.gallery-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+}
+.gallery-progress {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--text-3);
+}
+.stale-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--text-2);
+}
+.gallery-status {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-2);
+}
+
+/* Segmented control: the active item sits on --surface-3 (§3.1.1) */
+.segmented {
+  display: inline-flex;
+  padding: var(--s-0);
+  background: var(--surface);
+  border-radius: var(--r-blob);
+}
+.segmented a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 40px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-blob);
+  color: var(--text-2);
+  text-decoration: none;
+  font: 500 14px/22px var(--font-sans);
+  transition: background var(--t-micro) var(--ease-out);
+}
+.segmented a:hover,
+.segmented a[aria-current='page'] {
+  color: var(--text);
+}
+.segmented a[aria-current='page'] {
+  background: var(--surface-3);
+}
+
+.sort {
+  color: var(--text-2);
+}
+.sort select {
+  min-height: 40px;
+  margin-left: var(--s-1);
+  padding: 0 var(--s-2);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+}
+
+/* Filter chips (§3.4 blob shape); pressed = --surface-3 plus a stronger outline */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 40px;
+  padding: 0 var(--s-4);
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-blob);
+  color: var(--text-2);
+  cursor: pointer;
+  font: 500 14px/22px var(--font-sans);
+  transition:
+    background var(--t-micro) var(--ease-out),
+    border-radius var(--t-ui) var(--ease-grow),
+    transform var(--t-micro) var(--ease-out);
+}
+.chip:hover {
+  border-radius: var(--r-blob-2);
+  color: var(--text);
+}
+.chip:active {
+  transform: scale(0.97, 0.93);
+}
+.chip[aria-pressed='true'] {
+  background: var(--surface-3);
+  border-color: var(--text-2);
+  color: var(--text);
+}
+.chip .mono-s {
+  color: var(--text-3);
+}
+/* the 8 px identity swatch next to a palette name (§3.1.3) */
+.swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+}
+
+/* Grid (§3.3): auto-fill minmax(232px, 1fr), 24 px gap; 2 columns and 12 px below md */
+.gallery-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: var(--s-5);
+}
+
+/* SporeCard: the art dominates; one link per card */
+.spore-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.spore-card:focus-visible {
+  outline: none;
+}
+/* focus: 2 px --slime outside the art (§6.B, §9) */
+.spore-card:focus-visible .card-art {
+  outline: 2px solid var(--slime);
+  outline-offset: 3px;
+}
+.card-art {
+  position: relative;
+}
+.card-art .artwork-frame {
+  transition:
+    transform var(--t-micro) var(--ease-out),
+    box-shadow var(--t-art) var(--ease-out);
+}
+/* the glyph caption sits on the art, under the state marker, so nothing shifts when the render lands */
+.artwork-card .artwork-caption {
+  position: absolute;
+  top: calc(var(--s-4) + var(--s-5));
+  left: var(--s-4);
+  z-index: 3;
+  color: var(--text-2);
+}
+
+/* Overlays inside the art frame at 16 px, over scrims that keep the text legible on any art.
+   The scrim is at full strength across the text rows (stops 80% / 85%): measured on 34 renders
+   (vectors + router4), --text and --text-2 then stay >= 5:1 even on the brightest pixel, --text-3
+   does not (3.1:1), so muted words on the art use --text-2. */
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.card-overlay .tip-anchor {
+  pointer-events: auto;
+}
+.card-overlay::before,
+.card-overlay::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: -1;
+}
+.card-overlay::before {
+  top: 0;
+  height: 18%;
+  background: linear-gradient(to bottom, var(--scrim) 80%, transparent);
+}
+.card-overlay::after {
+  bottom: 0;
+  height: 30%;
+  background: linear-gradient(to top, var(--scrim) 85%, transparent);
+  transition: height var(--t-micro) var(--ease-out);
+}
+.card-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-1) var(--s-2);
+  padding: var(--s-4);
+}
+.card-bottom {
+  display: grid;
+  padding: var(--s-4);
+}
+.card-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--s-2);
+}
+/* epoch-close swell (§3.5): the name fattens when R grew, thins when it fell,
+   then settles back; off under reduced motion */
+.card-name[data-swell='grew'] {
+  animation: name-grow var(--t-epoch) var(--ease-grow);
+}
+.card-name[data-swell='decayed'] {
+  animation: name-decay var(--t-epoch) var(--ease-decay);
+}
+:root[data-reduced-motion='true'] .card-name {
+  animation: none;
+}
+@keyframes name-grow {
+  40% {
+    font-weight: 760;
+  }
+}
+@keyframes name-decay {
+  40% {
+    font-weight: 320;
+  }
+}
+/* palette colour is allowed on the card's epoch label (§3.1.3) */
+.card-epoch {
+  color: var(--accent);
+}
+.card-stats {
+  text-align: right;
+  color: var(--text-2);
+}
+.card-partners {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: var(--text-2);
+  transition: opacity var(--t-micro) var(--ease-out);
+}
+/* Hover (pointer) and keyboard focus: the art scales a little and the bottom scrim opens on the partner list */
+@media (hover: hover) {
+  .spore-card:hover .card-art .artwork-frame {
+    transform: scale(1.015);
+  }
+  .spore-card:hover .card-overlay::after {
+    height: 44%;
+  }
+  .spore-card:hover .card-partners {
+    max-height: var(--s-6);
+    opacity: 1;
+  }
+}
+.spore-card:focus-visible .card-overlay::after {
+  height: 44%;
+}
+.spore-card:focus-visible .card-partners {
+  max-height: var(--s-6);
+  opacity: 1;
+}
+
+/* StateMarker (§1.5): glyph + word, never colour alone */
+.state-marker {
+  white-space: nowrap;
+  color: var(--text);
+}
+.state-active .state-glyph {
+  color: var(--growth);
+}
+.state-dormant,
+.derived-mark {
+  color: var(--text-2);
+}
+.state-paused {
+  color: var(--text-2);
+}
+
+/* Image-hash badge (§6.B) */
+.image-badge {
+  white-space: nowrap;
+  color: var(--text-2);
+}
+.badge-match {
+  color: var(--growth);
+}
+.badge-mismatch {
+  color: var(--warn);
+}
+.badge-other-renderer {
+  color: var(--caution);
+}
+
+/* 36 px meta row below the art: owner, and the price when listed */
+.card-meta {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+.card-owner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-3);
+}
+.card-price {
+  white-space: nowrap;
+  color: var(--value);
+}
+
+/* Stale (§4.2): values stay, in --text-2 */
+.spore-card[data-stale] .display-s,
+.spore-card[data-stale] .card-price {
+  color: var(--text-2);
+}
+
+/* Reduced transparency (§9): scrims become solid --bg at 85% */
+@media (prefers-reduced-transparency: reduce) {
+  .card-overlay::before,
+  .card-overlay::after {
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+  }
+}
+
+/* Mobile (§6.B): 2 columns; the overlay keeps name and epoch, the meta row the price only */
+@media (max-width: 899px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-3);
+  }
+  .card-stats,
+  .card-owner {
+    display: none;
+  }
+  .card-meta {
+    justify-content: flex-end;
+  }
+  /* unlisted: the meta row would be empty */
+  .card-meta:not(:has(.card-price)) {
+    display: none;
+  }
+  /* at ~170 px the text covers more of the art: the state and the badge take two lines, so both
+     scrims are taller (measured as above at 173 px), and the caption sits below the two lines */
+  .card-overlay::before {
+    height: 36%;
+  }
+  .card-overlay::after {
+    height: 44%;
+  }
+  .artwork-card .artwork-caption {
+    top: calc(var(--s-4) + var(--s-7));
+  }
+  .gallery-progress {
+    margin-left: 0;
+  }
+}
+
+/* MarketplaceListing (§6.F): price and seller, then R, tubes, age and prior sales; Buy under the card */
+.card-meta-listing {
+  height: auto;
+  display: grid;
+  gap: 0;
+  padding: var(--s-2) 0 0;
+}
+.card-listing-line {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+.card-listing-stats {
+  margin: 0;
+  color: var(--text-2);
+}
+.card-action {
+  padding-top: var(--s-2);
+}
+.mine-line {
+  color: var(--text-2);
+  margin: 0 0 var(--s-5);
+}

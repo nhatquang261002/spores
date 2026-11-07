@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 use spores_core::{Edge, EdgeMap, EpochInput, RejectMap};
 
 use super::*;
-use crate::types::hex;
+use crate::types::{hex, MAX_EPOCH_PAIRS};
 
 const NEAR: u128 = spores_core::NEAR;
 const EPOCH: u64 = 1_000;
@@ -146,6 +146,8 @@ impl World {
             .map(|j| j.price.0)
             .sum();
         assert_eq!(escrowed, self.r.escrow, "escrow counter disagrees with jobs");
+        let with_provider = self.r.jobs.values().filter(|j| j.provider.is_some()).count() as u64;
+        assert_eq!(self.r.escrowed_jobs(), with_provider, "escrowed-job counter disagrees with jobs");
         for (id, s) in self.r.spores.iter().enumerate() {
             for j in &s.posted {
                 assert_eq!(self.r.jobs.get(j).map(|j| j.consumer), Some(id as u32), "dangling posted job");
@@ -155,6 +157,30 @@ impl World {
             }
         }
     }
+}
+
+/// 64 spores owned by `owner{i}.near`, the first `active` active with 2 NEAR
+/// and an open policy, under `max_active`. Starts from a fresh mocked chain:
+/// `testing_env!` keeps storage from the previous call on the thread.
+fn big_world(max_active: u32, active: u32) -> World {
+    near_sdk::env::set_blockchain_interface(near_sdk::MockedBlockchain::default());
+    testing_env!(World::context("admin.near", 0, 0));
+    let config = Config {
+        supply_cap: 64,
+        max_active,
+        epoch_len_ns: near_sdk::json_types::U64(EPOCH),
+        job_timeout_ns: near_sdk::json_types::U64(TIMEOUT),
+        base_budget: U128(1_000 * NEAR),
+        ..Config::shipped()
+    };
+    let mut w = World { r: Router::new(acc("admin.near"), Some(config)), now: 0 };
+    w.call("admin.near", 0).mint_genesis((0..64).map(|i| acc(&format!("owner{i}.near"))).collect());
+    for id in 0..active {
+        let owner = format!("owner{id}.near");
+        w.call(&owner, 2 * NEAR).activate(id, acc(&World::op(id)));
+        w.call(&owner, 1).set_policy(id, open_policy());
+    }
+    w
 }
 
 // ---- mint and ownership -------------------------------------------------------
@@ -228,6 +254,145 @@ fn activation_rules() {
     assert!(!w.view().is_operator(0, acc("op1.near")));
     assert!(!w.view().is_operator(3, acc("op3.near")));
     assert_eq!(w.view().epoch_info().active, vec![0, 1, 2]);
+}
+
+#[test]
+fn set_max_active_is_admin_only_raise_only_and_capped_by_supply() {
+    let mut w = big_world(16, 16);
+    assert_fails("too many active spores", || w.call("owner16.near", NEAR).activate(16, acc("op16.near")));
+    assert_fails("only the admin", || w.call("owner0.near", 1).set_max_active(64));
+    assert_fails("exactly 1 yoctoNEAR", || w.call("admin.near", 0).set_max_active(64));
+    assert_fails("can only be raised", || w.call("admin.near", 1).set_max_active(16));
+    assert_fails("can only be raised", || w.call("admin.near", 1).set_max_active(8));
+    assert_fails("cannot exceed supply_cap", || w.call("admin.near", 1).set_max_active(65));
+    assert_eq!(w.view().config().max_active, 16);
+
+    w.call("admin.near", 1).set_max_active(64);
+    let log = near_sdk::test_utils::get_logs().pop().unwrap();
+    assert!(log.contains(r#""event":"config_changed""#) && log.contains(r#""old":16,"new":64"#), "{log}");
+    assert_eq!(w.view().config().max_active, 64);
+    // The 17th spore can now start, and it trades.
+    w.call("owner16.near", NEAR).activate(16, acc("op16.near"));
+    w.call("owner16.near", 1).set_policy(16, open_policy());
+    w.trade(16, 3, NEAR / 10);
+    w.close();
+    assert_eq!(w.view().epoch_info().active.len(), 17);
+    assert!(w.view().spore_summary(16).unwrap().degree == 1);
+    w.assert_conserved();
+}
+
+#[test]
+fn set_max_active_recounts_the_escrowed_jobs() {
+    let mut w = big_world(16, 4);
+    w.hire(0, 1, NEAR / 10);
+    let j = w.hire(2, 3, NEAR / 10);
+    w.call("op3.near", 0).deliver(j, "h".into());
+    w.post(1, NEAR / 10);
+    // A router deployed before the counter existed reads it as absent (0).
+    w.r.set_escrowed_jobs(0);
+    w.call("admin.near", 1).set_max_active(17);
+    assert_eq!(w.r.escrowed_jobs(), 2, "open jobs hold no escrow");
+    w.assert_conserved();
+}
+
+/// Fills this epoch's flows with `n` pairs among spores 10..63, none touching 0..9.
+fn fill_pairs(w: &mut World, n: usize) {
+    let pairs = (10..64u32).flat_map(|a| (a + 1..64).map(move |b| (a, b)));
+    for k in pairs.take(n) {
+        w.r.flows.insert(k, NEAR / 100);
+    }
+    w.r.pool += NEAR * n as u128 / 10_000;
+    w.r.deposited += NEAR * n as u128 / 10_000;
+}
+
+#[test]
+fn the_pair_cap_refuses_a_new_pair_and_allows_an_existing_one() {
+    let mut w = big_world(64, 64);
+    fill_pairs(&mut w, MAX_EPOCH_PAIRS as usize - 2);
+    w.trade(0, 1, NEAR / 10); // a new pair: now cap - 1 pairs
+    let escrowed = w.hire(2, 3, NEAR / 10); // a new pair, escrowed: the cap is reached
+    let bal = w.balance(4);
+    let job = w.post(4, NEAR / 10);
+    w.call("op5.near", 0).quote(job, 5, U128(NEAR / 10));
+    assert_fails("epoch pair cap reached: try next epoch", || w.call("op4.near", 0).accept(job, 5));
+    assert_eq!(w.balance(4), bal, "a refused accept moves nothing");
+    assert_eq!(w.view().get_job(job).unwrap().status, JobStatus::Open);
+    // A pair already in the flows (or the rejects) is still allowed.
+    w.trade(1, 0, NEAR / 10);
+    let r = w.hire(10, 11, NEAR / 10);
+    w.call("op11.near", 0).deliver(r, "h".into());
+    w.call("op10.near", 0).reject(r);
+    // The escrowed job settles after the close and takes its pair into the next epoch.
+    w.call("op3.near", 0).deliver(escrowed, "h".into());
+    w.close();
+    let ev = epoch_closed_event();
+    assert_eq!(ev["flows"].as_array().unwrap().len() as u64, MAX_EPOCH_PAIRS - 1);
+    w.call("op2.near", 0).settle(escrowed);
+    assert_eq!(w.r.epoch_pairs(), 1);
+    // The next epoch has room again.
+    w.trade(4, 5, NEAR / 10);
+    w.assert_conserved();
+}
+
+/// Random hires, deliveries, settlements, rejections, timeouts and closes
+/// among 64 active spores, many per epoch: no close names more than
+/// `MAX_EPOCH_PAIRS` pairs, the cap is reached, and the counter stays right.
+#[test]
+fn no_close_names_more_pairs_than_the_cap() {
+    let mut w = big_world(64, 64);
+    let mut x: u64 = 0xD1B5_4A32_D192_ED03;
+    let mut rnd = move |n: u64| {
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        x % n
+    };
+    let (mut refused, mut busiest, mut fullest) = (0, 0u64, 0u64);
+    for step in 1..=6_000 {
+        let live: Vec<Job> = w.r.jobs.values().cloned().collect();
+        let job = (!live.is_empty()).then(|| live[rnd(live.len() as u64) as usize].clone());
+        let r = catch_unwind(AssertUnwindSafe(|| match (rnd(8), job) {
+            (0..=3, _) | (4..=6, None) => {
+                let a = rnd(64) as u32;
+                let b = (a + 1 + rnd(63) as u32) % 64;
+                w.hire(a, b, NEAR / 1_000);
+            }
+            (4..=6, Some(j)) => match j.status {
+                JobStatus::Open => w.call("anyone.near", 0).timeout_job(j.id),
+                JobStatus::Accepted => w.call(&World::op(j.provider.unwrap()), 0).deliver(j.id, "h".into()),
+                JobStatus::Delivered if rnd(4) > 0 => w.call(&World::op(j.consumer), 0).settle(j.id),
+                JobStatus::Delivered => w.call(&World::op(j.consumer), 0).reject(j.id),
+            },
+            (_, j) => {
+                w.now += 1 + rnd(5);
+                w.call("anyone.near", 0).timeout_job(j.map_or(0, |j| j.id))
+            }
+        }));
+        if let Err(e) = r {
+            refused += e.downcast_ref::<String>().is_some_and(|m| m.contains("epoch pair cap")) as u32;
+        }
+        // The pairs this epoch has, plus those escrowed jobs may still add
+        // (now or after a close), never exceed the cap.
+        let mut held: std::collections::BTreeSet<EdgeKey> = w.r.flows.keys().chain(w.r.rejects.keys()).copied().collect();
+        held.extend(w.r.jobs.values().filter_map(|j| j.provider.map(|p| edge_key(j.consumer, p))));
+        assert!(held.len() as u64 <= MAX_EPOCH_PAIRS, "{} pairs held", held.len());
+        fullest = fullest.max(w.r.epoch_pairs() + w.r.escrowed_jobs());
+        if step % 1_500 == 0 {
+            w.close();
+            let ev = epoch_closed_event();
+            let mut named: Vec<(u32, u32, u128)> = triples(&ev["flows"]);
+            named.extend(triples(&ev["rejects"]));
+            let mut pairs: Vec<(u32, u32)> = named.iter().map(|t| (t.0, t.1)).collect();
+            pairs.sort();
+            pairs.dedup();
+            assert!(pairs.len() as u64 <= MAX_EPOCH_PAIRS, "a close named {} pairs", pairs.len());
+            busiest = busiest.max(pairs.len() as u64);
+        }
+        w.assert_conserved();
+    }
+    // Escrowed jobs hold room, so a close names fewer pairs than the cap.
+    assert!(refused > 0 && fullest >= MAX_EPOCH_PAIRS, "the mix never reached the cap: {refused} refusals, fullest {fullest}");
+    assert!(busiest > MAX_EPOCH_PAIRS / 2, "the busiest close named only {busiest} pairs");
 }
 
 // ---- ledger ---------------------------------------------------------------------
@@ -566,6 +731,59 @@ fn epoch_close_matches_spores_core_byte_for_byte() {
     assert_eq!(w.r.treasury, expected.distribution.treasury);
     assert_eq!(w.view().epoch_info().prev_fingerprint, fp);
     w.assert_conserved();
+}
+
+/// NEAR's limit on the total log bytes of one receipt (`max_total_log_length`,
+/// testnet protocol 88, see `docs/verify-notes.md`). `close_epoch` writes one
+/// log, the `epoch_closed` event.
+const LOG_LIMIT: usize = 16_384;
+
+/// The `epoch_closed` log of a close with spores `0..active` active and `pairs`
+/// pairs that each hold a tube, settled volume and rejections. Pairs are taken
+/// from the highest ids down (mostly two-digit ids, and the first 63 touch
+/// every spore, so every spore gets a rebate) and values are long for their
+/// kind, so lengths are upper bounds for these counts: 27-digit flows (about
+/// 123 NEAR per pair per epoch), 1000 rejections per pair and a pool of 1% of
+/// the flows.
+fn epoch_closed_log(active: u32, pairs: usize) -> String {
+    assert!(pairs <= (active * (active - 1) / 2) as usize);
+    let mut w = big_world(active, active);
+    let all = (0..active).rev().flat_map(|b| (0..b).rev().map(move |a| (a, b)));
+    for k in all.take(pairs) {
+        w.r.edges.insert(k, 3_999_999);
+        w.r.flows.insert(k, 123_456_789_012_345_678_901_234_567);
+        w.r.rejects.insert(k, 1_000);
+    }
+    w.r.pool = w.r.flows.values().sum::<u128>() / 100;
+    w.r.deposited += w.r.pool;
+
+    // The mock enforces its own log limit; lift it so oversized events can be measured.
+    let mut vm = near_sdk::test_vm_config();
+    vm.limit_config.max_total_log_length = u64::MAX / 2;
+    w.now += EPOCH;
+    testing_env!(World::context("anyone.near", 0, w.now), vm, RuntimeFeesConfig::test());
+    w.r.close_epoch();
+    let logs = near_sdk::test_utils::get_logs();
+    assert_eq!(logs.len(), 1);
+    logs.into_iter().next().unwrap()
+}
+
+/// Phase 6: the trimmed `epoch_closed` (no tubes list) at 64 active fits NEAR's
+/// log limit with at least 10% to spare at `MAX_EPOCH_PAIRS`, and would not
+/// without a cap. Run with `--nocapture` for the sizes in `docs/phase6-plan.md`.
+#[test]
+fn epoch_closed_log_size_at_64_active() {
+    let len = |p: usize| epoch_closed_log(64, p).len();
+    let at_cap = len(MAX_EPOCH_PAIRS as usize);
+    let worst = len(2016);
+    let all: Vec<usize> = (1..=2016).collect();
+    let max_pairs = all.partition_point(|&p| len(p) <= LOG_LIMIT);
+    eprintln!(
+        "epoch_closed bytes (limit {LOG_LIMIT}), 64 active: at MAX_EPOCH_PAIRS={MAX_EPOCH_PAIRS} {at_cap}; \
+         every pair {worst}; most pairs that fit {max_pairs}"
+    );
+    assert!(at_cap * 10 <= LOG_LIMIT * 9, "under 10% margin at the cap: {at_cap} bytes");
+    assert!(worst > LOG_LIMIT, "no cap would be needed");
 }
 
 // ---- art from chain state ------------------------------------------------------------
@@ -1150,8 +1368,9 @@ fn the_epoch_closed_event_alone_replays_every_fingerprint() {
         .unwrap();
         assert_eq!(hex(&out.fingerprint), fp);
         assert_eq!(ev["fingerprint"].as_str().unwrap(), fp);
-        let tubes: EdgeMap = triples(&ev["tubes"]).into_iter().map(edge).collect();
-        assert_eq!(tubes, out.conductivity);
+        // Phase 6 logs the tube count only; the tubes come from the replay.
+        assert!(ev.get("tubes").is_none());
+        assert_eq!(ev["edges"].as_u64().unwrap() as usize, out.conductivity.len());
         assert_eq!(w.view().fingerprint(ev["epoch"].as_u64().unwrap()), Some(fp));
         d = out.conductivity;
         prev = out.fingerprint;
@@ -1160,30 +1379,12 @@ fn the_epoch_closed_event_alone_replays_every_fingerprint() {
 
 #[test]
 fn the_largest_epoch_closed_event_fits_the_log_limit() {
-    // 16 active spores, every pair trading, rejecting and holding a tube, with
-    // 27-digit amounts: the worst case the active cap allows.
-    testing_env!(World::context("admin.near", 0, 0));
-    let config = Config { supply_cap: 16, max_active: 16, epoch_len_ns: near_sdk::json_types::U64(EPOCH), ..Config::shipped() };
-    let mut w = World { r: Router::new(acc("admin.near"), Some(config)), now: 0 };
-    w.call("admin.near", 0).mint_genesis(vec![acc("alice.near"); 16]);
-    for id in 0..16 {
-        w.call("alice.near", NEAR).activate(id, acc(&World::op(id)));
-    }
-    let big = 123_456_789_012_345_678_901_234_567u128;
-    for a in 0..16 {
-        for b in a + 1..16 {
-            w.r.flows.insert((a, b), big);
-            w.r.rejects.insert((a, b), 1_000);
-            w.r.edges.insert((a, b), 4_000_000);
-        }
-    }
-    w.r.pool = big;
-    w.r.deposited += big;
-    w.close();
-    let logs = near_sdk::test_utils::get_logs();
-    let total: usize = logs.iter().map(|l| l.len()).sum();
+    // 64 active spores and the most pairs a close can name, each trading,
+    // rejecting and holding a tube, with 27-digit amounts.
+    let log = epoch_closed_log(64, MAX_EPOCH_PAIRS as usize);
     // Live testnet limits (EXPERIMENTAL_protocol_config, protocol 88).
-    assert!(total < 16_384 && logs.len() <= 100, "{total} bytes in {} logs", logs.len());
+    assert!(log.len() < LOG_LIMIT, "{} bytes", log.len());
+    assert!(!log.contains(r#""tubes""#));
 }
 
 // ---- treasury --------------------------------------------------------------------------------

@@ -28,6 +28,7 @@ Instructions for the AI coding agent helping a team take part in NEAR HACKATHON.
 | NEAR AI credits and API key (see Q-000) | https://cloud.near.ai |
 | More ecosystem resources | https://nearbuilders.org/build |
 | NEAR Discord | https://discord.gg/nearprotocol |
+| NEAR builders chat on Telegram | https://t.me/nearbuilderschat |
 | X | https://x.com/NEARProtocol |
 | This file, live | https://nearhackathon.com/HACKATHON.md |
 
@@ -214,6 +215,12 @@ Partner tools and their documentation. Read the docs before integrating anything
 | OutLayer | Secure transactions for AI agents | https://app.outlayer.ai/docs/getting-started | https://outlayer.ai/ | https://github.com/out-layer/outlayer |
 | GoMining | Bitcoin mining superapp | https://docs.gomining.com/ | https://gomining.com/ |  |
 | Agent Market | Marketplace for AI agents | https://docs.market.near.ai/ | https://market.near.ai/ |  |
+| NEAR Builders | Builder community | https://nearbuilders.org/build | https://nearbuilders.org/ | https://github.com/nearbuilders |
+
+### Partner notes
+
+- Rhea (rhea.finance): NEAR's DEX and lending protocol. Looking for something to build? Consider CLMM and AMM pools, the cross-chain swap API or vaults on top of its lending. SDKs and API docs: https://github.com/rhea-finance/rhea-sdk-docs. CLI: https://guide.rhea.finance/developers-1/cli-trading
+- Agent Market (market.near.ai): a marketplace where AI agents get hired and paid by the job, by people and by other agents. List the agent you build so it can earn: https://docs.market.near.ai/list-your-agent. Hire agents from Claude or other MCP clients: https://docs.market.near.ai/guides/claude-desktop
 
 ## Community
 
@@ -222,5 +229,6 @@ Where the team finds collaborators, asks questions and follows updates.
 | Channel | Link | What it is for |
 | --- | --- | --- |
 | NEAR Discord | https://discord.gg/nearprotocol | Questions about building on NEAR, finding teammates |
+| Telegram | https://t.me/nearbuilderschat | Questions about building on NEAR, finding teammates |
 | X | https://x.com/NEARProtocol | Hackathon announcements and updates |
 

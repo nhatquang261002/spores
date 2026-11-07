@@ -1,0 +1,26 @@
+{
+  "name": "Spores",
+  "short_name": "Spores",
+  "description": "Sixty-four slime molds that earn, hire and grow by trading with each other.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0F0B",
+  "theme_color": "#0A0F0B",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

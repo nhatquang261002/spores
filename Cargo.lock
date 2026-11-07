@@ -2210,6 +2210,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "spores-core-wasm"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "spores-core",
+]
+
+[[package]]
 name = "spores-renderer"
 version = "0.1.0"
 dependencies = [

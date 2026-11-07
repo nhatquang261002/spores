@@ -1,0 +1,939 @@
+/* Network explorer (Design §6.C). Tokens only (§3); the canvas reads the same
+   values through tokens.ts. */
+
+/* Full-bleed: the map fills the viewport below the top bar (§3.3 lets Network go full-bleed). */
+.page:has(> .network-page) {
+  max-width: none;
+  padding: 0;
+  min-height: 0;
+}
+.network-page {
+  --inspector-w: 380px;
+  --scrub-h: 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--inspector-w);
+  grid-template-rows: minmax(0, 1fr) var(--scrub-h);
+  grid-template-areas:
+    'stage inspector'
+    'scrub inspector';
+  height: calc(100dvh - var(--topbar-h));
+  min-height: 560px;
+}
+.recorded-banner + .page .network-page {
+  height: calc(100dvh - var(--topbar-h) - 28px);
+}
+.network-page.is-message {
+  display: block;
+  height: auto;
+  min-height: 0;
+  padding: var(--s-7) var(--page-pad);
+}
+/* ≥ md the footer stays in the frame: the map takes the wheel (zoom) and the
+   inspector scrolls on its own, so a footer below the fold could not be reached.
+   The app is one viewport-high column; the page takes what the bars leave. */
+@media (min-width: 900px) {
+  #root:has(> .page > .network-page:not(.is-message)) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 640px;
+  }
+  #root:has(> .page > .network-page:not(.is-message)) > .page {
+    flex: 1;
+  }
+  #root:has(> .page > .network-page:not(.is-message)) > .footer {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding-block: var(--s-3);
+  }
+  .network-page,
+  .recorded-banner + .page .network-page {
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+.network-stage {
+  grid-area: stage;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+/* The header and the map controls sit above the map, never over it. */
+.network-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5) 0;
+}
+.network-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.network-canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: grab;
+}
+.network-canvas[data-hover] {
+  cursor: pointer;
+}
+.network-canvas:active {
+  cursor: grabbing;
+}
+.network-canvas:focus-visible {
+  outline: 2px solid var(--slime);
+  outline-offset: -4px;
+}
+.network-canvas canvas {
+  display: block;
+}
+.network-hover {
+  position: absolute;
+  z-index: var(--z-popover);
+  transform: translate(14px, 14px);
+  padding: var(--s-1) var(--s-2);
+  background: var(--surface-2);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-float);
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.network-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+.network-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--s-2);
+}
+.btn-icon {
+  min-width: 40px;
+  padding: 0;
+  justify-content: center;
+}
+.segmented button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--s-4);
+  background: none;
+  border: 0;
+  border-radius: var(--r-blob);
+  color: var(--text-2);
+  cursor: pointer;
+  font: 500 14px/22px var(--font-sans);
+  transition: background var(--t-micro) var(--ease-out);
+}
+.segmented button:hover,
+.segmented button[aria-pressed='true'] {
+  color: var(--text);
+}
+.segmented button[aria-pressed='true'] {
+  background: var(--surface-3);
+}
+
+.network-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--text-2);
+  pointer-events: none;
+}
+.network-playing {
+  position: absolute;
+  right: var(--s-4);
+  bottom: var(--s-4);
+  margin: 0;
+  color: var(--text-2);
+}
+
+/* Legend (bottom-left, collapsible) */
+.network-legend {
+  position: absolute;
+  left: var(--s-5);
+  bottom: var(--s-4);
+  z-index: var(--z-sticky);
+  max-width: 248px;
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface);
+  border-radius: var(--r-2);
+}
+.legend-toggle {
+  min-height: 32px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.legend-list {
+  display: grid;
+  gap: var(--s-1);
+  margin: var(--s-1) 0 0;
+}
+.legend-list div {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.legend-list dt {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  flex: none;
+}
+.legend-list dd {
+  margin: 0;
+  color: var(--text-2);
+}
+/* A keyed spore: bright nucleus, accent body, fading out like the art on the dish. */
+.lg-node {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-full);
+  background: radial-gradient(circle, var(--text) 0 14%, var(--pal-aqua-accent) 30%, var(--pal-aqua-mid) 52%, transparent 72%);
+}
+.lg-paused,
+.lg-sweep {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--pal-aqua-accent);
+}
+.lg-paused {
+  border-style: dashed;
+  border-color: var(--text-2);
+}
+.lg-sweep {
+  width: 12px;
+  height: 12px;
+  border-color: var(--slime);
+}
+/* A tube: thin where it leaves the art's vein, √D wide on the way to the partner. */
+.lg-tube {
+  width: 16px;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--pal-aqua-accent), var(--pal-ember-accent));
+  clip-path: polygon(0 35%, 30% 0, 100% 0, 100% 100%, 30% 100%, 0 65%);
+}
+.lg-dormant {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: var(--text-3);
+  opacity: 0.6;
+}
+.lg-listed {
+  width: 2px;
+  height: 7px;
+  background: var(--value);
+}
+.lg-grew {
+  width: 16px;
+  height: 1px;
+  background: var(--growth);
+}
+.lg-dropped {
+  width: 16px;
+  border-top: 1px dashed var(--text-3);
+}
+.lg-bead {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: var(--value);
+}
+
+/* Inspector (380 px ≥ lg, 340 px md, a bottom sheet below md) */
+.network-inspector {
+  grid-area: inspector;
+  z-index: var(--z-inspector);
+  display: grid;
+  align-content: start;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  overflow-y: auto;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+}
+.network-inspector:focus {
+  outline: none;
+}
+.network-inspector > * {
+  margin: 0;
+}
+.sheet-handle {
+  display: none;
+}
+.inspector-back {
+  justify-self: start;
+}
+.inspector-primary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin: 0;
+}
+.inspector-primary .label,
+.inspector-line {
+  color: var(--text-2);
+}
+.inspector-line,
+.inspector-note {
+  margin: 0;
+}
+.inspector-note {
+  color: var(--text-3);
+}
+.inspector-h {
+  margin: var(--s-3) 0 0;
+}
+.inspector-open {
+  justify-self: start;
+  margin-top: var(--s-2);
+}
+.evidence-ok {
+  color: var(--growth);
+}
+.evidence-bad {
+  color: var(--warn);
+}
+.value {
+  color: var(--value);
+}
+.feed-empty {
+  margin: 0;
+  color: var(--text-3);
+}
+.link-button {
+  min-height: 24px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.spore-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+.identity-text {
+  display: grid;
+  gap: var(--s-1);
+}
+.identity-text h2 {
+  margin: 0;
+}
+.identity-owner {
+  margin: 0;
+  color: var(--text-3);
+}
+.identity-blank {
+  width: 96px;
+  aspect-ratio: 1;
+  background: var(--art-bg);
+}
+.spore-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+.spore-ref.is-button {
+  min-height: 40px;
+  padding: 0 var(--s-1);
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.spore-ref.is-button:hover .mono {
+  text-decoration: underline;
+}
+.edge-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin: 0;
+}
+
+.tube-list,
+.settle-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.settle-list li {
+  padding: var(--s-1) 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+}
+.tube-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--s-1);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+}
+.tube-row:hover {
+  background: var(--surface-2);
+}
+.conductivity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.conductivity-bar {
+  position: relative;
+  display: inline-block;
+  width: 64px;
+  height: 1px;
+  background: var(--line);
+}
+.conductivity-bar > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: var(--text-2);
+}
+
+.sparkline {
+  width: 100%;
+  height: 48px;
+}
+.spark-base {
+  stroke: var(--line);
+}
+.spark-line {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.5;
+}
+.spark-gap {
+  fill: var(--text-3);
+}
+.spark-at {
+  stroke: var(--slime);
+}
+
+.flows-table,
+.net-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.flows-table th,
+.net-table th {
+  text-align: left;
+  color: var(--text-3);
+  padding: var(--s-1) var(--s-2) var(--s-1) 0;
+  border-bottom: 1px solid var(--line);
+}
+.flows-table td,
+.net-table td {
+  padding: var(--s-1) var(--s-2) var(--s-1) 0;
+  border-bottom: 1px solid var(--line);
+}
+.net-table tr[aria-selected='true'] {
+  background: var(--surface-2);
+}
+.network-table-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: var(--s-5);
+}
+.network-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--s-6);
+  align-items: start;
+}
+
+/* Semantic tones for steps (§3.1.2: each also has a glyph and a word) */
+.tone-agent {
+  --tone: var(--agent);
+  --tone-dim: var(--agent-dim);
+}
+.tone-growth {
+  --tone: var(--growth);
+  --tone-dim: var(--growth-dim);
+}
+.tone-warn {
+  --tone: var(--warn);
+  --tone-dim: var(--warn-dim);
+}
+.tone-value {
+  --tone: var(--value);
+  --tone-dim: var(--value-dim);
+}
+.tone-muted {
+  --tone: var(--text-3);
+  --tone-dim: var(--surface-2);
+}
+.tone-slime {
+  --tone: var(--slime);
+  --tone-dim: var(--slime-dim);
+}
+span.tone-agent,
+span.tone-growth,
+span.tone-warn,
+td.tone-growth {
+  color: var(--tone);
+}
+
+/* The loop rail */
+.loop-rail {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+.loop-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: var(--s-2);
+}
+.loop-step {
+  display: inline-flex;
+  align-items: center;
+}
+.loop-arrow {
+  padding: 0 var(--s-1);
+  color: var(--text-3);
+}
+.loop-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 28px;
+  padding: 0 var(--s-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-blob);
+  color: var(--text-2);
+}
+.loop-glyph {
+  color: var(--tone);
+}
+.loop-count {
+  color: var(--text);
+}
+/* A step just fired: the chip swells once in its own colour (Design §3.5 "Step playback"). */
+.loop-chip.is-firing {
+  animation: rail-fire var(--t-epoch) var(--ease-out);
+}
+@keyframes rail-fire {
+  from {
+    background: var(--tone-dim);
+    border-color: var(--tone);
+    transform: scale(1.08);
+  }
+  to {
+    background: transparent;
+    border-color: var(--line);
+    transform: none;
+  }
+}
+.loop-side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin: 0;
+  color: var(--text-2);
+}
+.loop-side > span > span {
+  color: var(--tone);
+}
+
+/* Step feed: each new row slides in 8 px with a fade (Design §3.5 "Settlement in feed") */
+.step-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.feed-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: var(--s-1) 0;
+  border-bottom: 1px solid var(--line);
+  animation: feed-in var(--t-ui) var(--ease-out) both;
+}
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.feed-glyph {
+  color: var(--tone);
+}
+.feed-text {
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.feed-text .mono {
+  color: var(--text);
+}
+.feed-text .err {
+  color: var(--warn);
+}
+.feed-tx {
+  color: var(--text-3);
+}
+
+/* Step monitor: lanes of ticks on the epoch's log time, an activity trace, a
+   playhead on the last step played, one readout line. Watched, not read. */
+.monitor {
+  --monitor-lane: calc(var(--s-4) + var(--s-0));
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  background: var(--art-bg);
+  border-radius: var(--r-2);
+}
+.monitor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  color: var(--text-3);
+}
+.monitor-state {
+  color: var(--text-3);
+}
+.monitor.is-play .monitor-state,
+.monitor.is-live .monitor-state {
+  color: var(--slime);
+}
+.monitor-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'labels plot'
+    '. axis';
+  column-gap: var(--s-2);
+}
+.monitor-labels {
+  grid-area: labels;
+  display: flex;
+  flex-direction: column;
+  color: var(--text-2);
+}
+.monitor-trace-label {
+  display: flex;
+  align-items: flex-end;
+  height: var(--s-6);
+  color: var(--text-3);
+}
+.monitor-lane-label {
+  height: var(--monitor-lane);
+  display: grid;
+  grid-template-columns: var(--s-3) auto minmax(var(--s-5), auto);
+  align-items: center;
+  gap: var(--s-1);
+}
+.monitor-glyph {
+  color: var(--tone);
+}
+.monitor-n {
+  justify-self: end;
+  color: var(--text);
+}
+.monitor-plot {
+  grid-area: plot;
+  position: relative;
+  display: grid;
+  cursor: crosshair;
+}
+.monitor-trace {
+  display: block;
+  width: 100%;
+  height: var(--s-6);
+}
+.monitor-trace path {
+  fill: var(--slime-dim);
+  stroke: var(--slime);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.monitor-lanes {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.monitor-rule {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.monitor-tick {
+  fill: var(--tone);
+  opacity: 0.75;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.monitor-tick.is-new,
+.monitor-tick.is-hover {
+  opacity: 1;
+}
+/* The step that just played lands with a swell (Design §3.5 "Step playback"). */
+.monitor.is-play .monitor-tick.is-new,
+.monitor.is-live .monitor-tick.is-new {
+  animation: tick-land var(--t-epoch) var(--ease-grow);
+}
+@keyframes tick-land {
+  from {
+    transform: scale(2.5, 1.6);
+  }
+}
+.monitor-playhead,
+.monitor-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+}
+.monitor-playhead {
+  background: var(--slime);
+  transition: left var(--t-ui) var(--ease-out);
+}
+.monitor-cursor {
+  background: var(--text-2);
+}
+.monitor-axis {
+  grid-area: axis;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding-top: var(--s-1);
+  color: var(--text-3);
+}
+.monitor-readout {
+  display: grid;
+  grid-template-columns: var(--s-3) minmax(0, 1fr);
+  gap: var(--s-2);
+  align-items: baseline;
+  margin: 0;
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line);
+}
+.monitor-at {
+  color: var(--text-3);
+}
+.monitor-log-toggle {
+  justify-self: start;
+  color: var(--text-2);
+}
+.monitor-log {
+  max-height: calc(5 * var(--s-8));
+  overflow-y: auto;
+}
+
+/* Scrubber (72 px, 56 px below md) */
+.network-scrubber {
+  grid-area: scrub;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+.scrubber {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: 100%;
+  padding: 0 var(--s-4);
+}
+.scrub-main {
+  flex: 1;
+  display: grid;
+  gap: var(--s-0);
+  min-width: 0;
+}
+.scrub-track {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 32px;
+  cursor: pointer;
+  touch-action: none;
+}
+.scrub-track:focus-visible {
+  outline: 2px solid var(--slime);
+  outline-offset: 2px;
+}
+.scrub-tick {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+}
+.scrub-bar {
+  width: 100%;
+  background: var(--line-strong);
+  border-radius: var(--r-0);
+  transition: height var(--t-ui) var(--ease-out);
+}
+.scrub-tick.is-hollow .scrub-bar {
+  background: none;
+  border: 1px solid var(--line);
+}
+.scrub-tick.is-current .scrub-bar {
+  background: var(--slime);
+}
+.scrub-tick.is-hollow.is-current .scrub-bar {
+  background: none;
+  border-color: var(--slime);
+}
+.scrub-readout {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.scrub-readout-mid {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+}
+.scrub-play {
+  min-width: 40px;
+  justify-content: center;
+}
+.btn[aria-pressed='true'].scrub-live {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+@media (max-width: 1199px) {
+  .network-page {
+    --inspector-w: 340px;
+  }
+}
+
+/* Mobile (§6.C): full-screen canvas, the inspector a bottom sheet (peek 120 px, half, full),
+   the scrubber a 56 px strip above the tab bar. */
+@media (max-width: 899px) {
+  .network-page {
+    --scrub-h: 56px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) var(--scrub-h);
+    grid-template-areas:
+      'stage'
+      'scrub';
+    height: calc(100dvh - var(--topbar-h) - var(--bottombar-h));
+    min-height: 420px;
+  }
+  .page:has(> .network-page) {
+    padding-bottom: var(--bottombar-h);
+  }
+  .network-inspector {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--bottombar-h) + var(--scrub-h) + env(safe-area-inset-bottom));
+    z-index: var(--z-drawer);
+    height: 120px;
+    padding-top: var(--s-2);
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-radius: var(--r-2);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: var(--shadow-float);
+    transition: height var(--t-panel) var(--ease-out);
+  }
+  .sheet-half .network-inspector {
+    height: 50dvh;
+  }
+  .sheet-full .network-inspector {
+    height: calc(100dvh - var(--topbar-h) - var(--bottombar-h) - var(--scrub-h));
+  }
+  .sheet-handle {
+    display: grid;
+    place-items: center;
+    justify-self: center;
+    width: 64px;
+    min-height: 44px;
+    margin: 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .sheet-handle span {
+    width: 40px;
+    height: 4px;
+    border-radius: var(--r-full);
+    background: var(--line-strong);
+  }
+  .network-bar {
+    padding: var(--s-3) var(--s-4) 0;
+  }
+  /* One row that scrolls sideways; pinch zooms on touch, so the −/+ buttons go. */
+  .network-controls {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: var(--s-1);
+  }
+  .network-controls > * {
+    flex: none;
+  }
+  .network-controls .btn-icon {
+    display: none;
+  }
+  .network-head .segmented button {
+    min-height: 44px;
+  }
+  /* The map centres in what the peeking sheet leaves visible. */
+  .network-area {
+    margin-bottom: 120px;
+  }
+  .network-legend {
+    display: none;
+  }
+  .network-playing {
+    bottom: calc(120px + var(--s-8) + var(--s-4));
+  }
+  .scrubber {
+    padding: 0 var(--s-2);
+    gap: var(--s-2);
+  }
+  .scrub-readout {
+    display: none;
+  }
+}

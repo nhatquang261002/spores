@@ -1,0 +1,773 @@
+{
+  "run": "demo-20261106T101440Z",
+  "router": "spores-hack-router4.testnet",
+  "epochs": [
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64
+  ],
+  "fingerprints": [
+    "4e9e099ead6a2aeee6e017a6589e040619a9f4294568af14d6da4e249eec9778",
+    "8ba5b28918402160edf9c030ffab9f6148d99f429fb226eeed6885cdf3c7514c",
+    "14eea1fb254c79ea3bb39c79ba8d3075e3f719853c2b4f5685a1afa6f71171cb",
+    "319a2a678c2445b75c5101855526cd02310e184ae02166be972839e48bf831a4",
+    "3b265bc5448cb5e4ce3b9685c87bd7d7be090b03b5287b830f4c07d0410207a4",
+    "7a5b0f3f3e11124dd7b98dbdd14e9420b72fbb696ae6d5782d5e3bcdcec951ad",
+    "8795ee0dda35c91499dc691a292e873f64e2e07f8f4df9003a4057b7def7e4c4",
+    "56156fcd1737edf93bdd3bd9f9c46b10b19da6329778796335dbd2896369799b",
+    "ad449c43b042fcc70a59604b29de3af5bccc5d2d905472a530074597e2e917be",
+    "cdbc303e4bbc83cc14cd9ade6f959f3f822010159c8ac461fa7f2d4aff7255dd"
+  ],
+  "edge_counts": [
+    5,
+    8,
+    7,
+    7,
+    8,
+    9,
+    8,
+    5,
+    4,
+    4
+  ],
+  "total_d": [
+    "1140658",
+    "1321289",
+    "948769",
+    "1637650",
+    "1647518",
+    "1642666",
+    "1137154",
+    "819925",
+    "574551",
+    "557882"
+  ],
+  "final_edges": [
+    [
+      6,
+      11,
+      "108176"
+    ],
+    [
+      10,
+      11,
+      "147681"
+    ],
+    [
+      10,
+      12,
+      "91800"
+    ],
+    [
+      15,
+      16,
+      "210225"
+    ]
+  ],
+  "image_hashes": {
+    "start": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "c898c7f40337f14feb454b93fc92cb899406ecc6d094c0b89bc5d83a15720dfb",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "042fce744314f2d995d4082f4cd613ce04c0e180d5e7f19f25f2c4b089896fcd",
+      "9": "325d243356e7813ebf5df767e92ed6a9cea5246a58b8b6e76e7d214e3ea0943c",
+      "10": "f20c04a5c630e545d7ec40cfa587b3776fd19b99ce2929871c9f8dbc38ecb91c",
+      "11": "49af7f751fe15ec35d07ce6c55a7d783c46046181d8aad55d4902e5e25e9df7b",
+      "12": "3ea5bcc7442bcc72c9aaa5a3add8c4fd20837ebc462f526a55ba783cea1656d3",
+      "13": "c9ef99aeffbe06ac30b0faaa7db9f88532eaa453f9ef7dcf54f9f1cbc06e5661",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "0f41400d92eef76c2867afeee809ed83469d8c66444d23359994986eaa17f4db",
+      "16": "8fb09422bec34b3c7c587f6ac302cbba5e90d20648e29f1507f7d4d8ae5c393a"
+    },
+    "epoch-056": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "70d1e1d1f65441c8d0a66a217e03924d18d9deea6f5cd9ba4afb119eb65b275d",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "4629e9eb5d594db14aac4fb29f59b2e48956b8b678e806532bc36041406c2250",
+      "9": "efc2ccb6696f85fd1fc27c563205bc042157135a7063d355ebac351be867bda4",
+      "10": "4dfd89c85178e74eb5cd0d839dc81deabc83555d9a52dbace9f1b4444c95b4a1",
+      "11": "0d28b901b9fefb62f73ec55d6e2a7f9977d2c4c09ab16249e6178ddac2843a2f",
+      "12": "129f0f3d1dfb94563ecaa2e5147c507870c8834099f2f7fa3fe6bf222d1bfd14",
+      "13": "3fa2eac3bf83fd50f780b6158d7a401e2b9b9a9bd45f7d19ef9a45d009e7b2c7",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "0f41400d92eef76c2867afeee809ed83469d8c66444d23359994986eaa17f4db",
+      "16": "8fb09422bec34b3c7c587f6ac302cbba5e90d20648e29f1507f7d4d8ae5c393a"
+    },
+    "epoch-057": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "85a15174c9978bae5031105413bbdd8443e21cb4918a399116e8c2af6523e4d7",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "d74706c4a90de6858b689bccddda33bcae03685af684077517a8677e34e56a67",
+      "9": "eb8fca3dc68fa8f6d162feac4b4ca5e9253739c37f4655bc20b4fb92e6a49241",
+      "10": "c73dab831f91e6dadde43e62e5a79c6ddb9b48492e87582b2ef2e4772067784d",
+      "11": "af2fb85930df587793bf5fa561defc866911a85ffc12991b3835edc9d89f61d4",
+      "12": "b47e62ae3dabc79efafef29ea5eca83bd481f1cd35783796f05d1c2a8bcd3776",
+      "13": "99acc6652143d216cb07536ce5a911bf7eb08c68606da08c1fd173a0f2ee1fa1",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "0f41400d92eef76c2867afeee809ed83469d8c66444d23359994986eaa17f4db",
+      "16": "8fb09422bec34b3c7c587f6ac302cbba5e90d20648e29f1507f7d4d8ae5c393a"
+    },
+    "epoch-058": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "f5dae4b256c49ab6ec884228d5795e77edf20f94628cd23666419d0846ae3457",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "adc82b84f28621f240460a0f6f5a75ad2e90dc79f0762c384f9aaa3eff774cfb",
+      "9": "1f69f5d9f1bb52f26823a6e7b29365aa03a51b9e71dad38c51961ebdc0d6fbbe",
+      "10": "53e95ac5666e06b1e595a60a51c22beb0a4f75a024a8c83f322e4bbcb8087bc1",
+      "11": "4d875f3998eef4538d4fe7cfdd262ceabd0f00cafad03e1be4dda7dd3a829df7",
+      "12": "5ecb6b9e7d7643bf15753cdaae7f575fde8b6995d07f669c9dbf9083828261e8",
+      "13": "618f35121c4ffd0268efa42d6f19e22676c03527973f95f50a9eb3d1b460e3e9",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "0f41400d92eef76c2867afeee809ed83469d8c66444d23359994986eaa17f4db",
+      "16": "8fb09422bec34b3c7c587f6ac302cbba5e90d20648e29f1507f7d4d8ae5c393a"
+    },
+    "epoch-059": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "fe3b3f9ee915efc35a2a0f25b4057f2cb270d107ce4f462b898ec4bcd7755646",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "adc82b84f28621f240460a0f6f5a75ad2e90dc79f0762c384f9aaa3eff774cfb",
+      "9": "ae013c09b52d0684a010b2789d584317a1057f892640ead8eca8678673843e97",
+      "10": "68a70d6b2d627ff0cdaf1e2c5ae4ae87e21810c7e9140023efcf6067bb7dfd9a",
+      "11": "f5501da9d0a7b348b55f4c9bafa6bac5fc96ea0821f8124b0124d35277c8f51f",
+      "12": "de3cfaf6d34856ee35d5d5308eecd144036520feea054f0ee39153c7c4161234",
+      "13": "b36a8c14cbf85379cfbb2a70a8630debbc55dcbd07f7ba0b8ca2a00fb1ae9a17",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "0f41400d92eef76c2867afeee809ed83469d8c66444d23359994986eaa17f4db",
+      "16": "a275b2320e8ca9eb0fdbedc2df3a1140657c4a2785bad4a8a7cc1ddb5345a231"
+    },
+    "epoch-060": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "a3ec93f15a95677227f1e9a406c36afe7c40e24957f6314756e8c754ed09b22e",
+      "7": "19ed190721d2a04c392ac81a68c59945278cce8532c5c0249b238db1e7a495a8",
+      "8": "adc82b84f28621f240460a0f6f5a75ad2e90dc79f0762c384f9aaa3eff774cfb",
+      "9": "90bfe898f2c396742511cacf5d001e475969f670b82774c13f4bee61049f33a7",
+      "10": "2b8d9e95ff24ae2f42b75d3efb989a010b9b5a997b7c78ffdff851d363fc6eb5",
+      "11": "8ca45b973d750d74110f2f9e49ba7257c9b6e38be82757bea094a9af393ca642",
+      "12": "e8dc571cce1830317e1ab5162c2a212330a56e1235003da28d7c7c0eca4adcc7",
+      "13": "0ab3008932462f8f6c77b5a1590bde34bf20a250c0cd4621bfeae7d47416acd0",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "0f41400d92eef76c2867afeee809ed83469d8c66444d23359994986eaa17f4db",
+      "16": "2b07db74edcb12d625500dfd5282ce7bcb92e8e66790f46bd50f4ccc4fcd1925"
+    },
+    "epoch-061": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "f2d9939c7c87195a459a4a534c4fdbd3a416d1d57378e06bda5fd0b90c2e9377",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "adc82b84f28621f240460a0f6f5a75ad2e90dc79f0762c384f9aaa3eff774cfb",
+      "9": "0625bf02b71e38874d039b7a77c4c40aab047349e5d8807e760b521f3ca139d6",
+      "10": "211cf3ec79c16a27678fde803e978093cc01556ffcd7e14fa00a513a4831e7dc",
+      "11": "28f91233d6142707454782e1109984382398f1696fa7a7d2e637d1c4cd51a9e0",
+      "12": "4c8507604c5a4dc5bfb428a737234ee8c4e00a588909f50790c3aa7d0b734028",
+      "13": "54d3e853419fefeb7e2999384389fccb64602442fb0b0d673432913da10fd747",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "0f41400d92eef76c2867afeee809ed83469d8c66444d23359994986eaa17f4db",
+      "16": "ce16d06ec3200055a6b4adc642db047cd2d3fab7d202c9a68361ade8f7188644"
+    },
+    "epoch-062": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "43f1d1d3e9b153a7bcfcbfeca7b14610afb0c3d54f8e215160ef87240f0a48c5",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "adc82b84f28621f240460a0f6f5a75ad2e90dc79f0762c384f9aaa3eff774cfb",
+      "9": "325d243356e7813ebf5df767e92ed6a9cea5246a58b8b6e76e7d214e3ea0943c",
+      "10": "5aac51d853a703650602e1515fe70635a77034fce85be3e7c1854b7333393cbc",
+      "11": "d5f8019091179f0ab01cfa915008f6d466aeed8ef1b033d254feb6ae98ef74eb",
+      "12": "3d6359309a07c79e3f089e3b1e9b7b74ccc346bd292a1081fa47cfe978c51d85",
+      "13": "8860e402e2de240d3a297763bd4e730b9ec5db2604c783380662a4b90dac0772",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "2d3e095fb3060a214eb6aa6785a702848101e7d2a0dbbafeb61efff524f956b3",
+      "16": "d3fa6b9986bba6e71ff814027fae8a8427a47164732e8ba3b17d715547434687"
+    },
+    "epoch-063": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "bab313cbf0ad498dbd9f0c07730c030482f8843f715061352098e9a6b04b2ff7",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "adc82b84f28621f240460a0f6f5a75ad2e90dc79f0762c384f9aaa3eff774cfb",
+      "9": "325d243356e7813ebf5df767e92ed6a9cea5246a58b8b6e76e7d214e3ea0943c",
+      "10": "46a7f88f11575b9ac32d093a777bc5441b5778123592ca16db76fc8e13d5dd1b",
+      "11": "6d38bfa4388947dce0f366e865743c6741b5acaa61801f30ce5262eccc7ce347",
+      "12": "958d26f7e5cb919a1e3957972660bf6107799fa1ea435bbbc470cd860ec65e6a",
+      "13": "1e9c1cbd069a8a4ca327575c4c32346999b6ff1cb1a2649b10948abed6e3e8e0",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "9bce90912280cbebc95ac9f95b748cf5c7ee670aecf716ea3f4b249b300dc9df",
+      "16": "52f40569e96a8616e3f3d7013911edada90798fa0a4f5d1a78db40e869aef7fd"
+    },
+    "epoch-064": {
+      "0": "bdec652362487e68e80a093b9c1723258e1939d946853d7a1e1e6e5db03cf695",
+      "6": "76322f33cc827184bde0a0e4a9ff15778ac446fdfd6aa8fc1fc6b2f6da2d4276",
+      "7": "13da3ed8d5101067ced844f94d2006e3ad01668408557051cd61b340d1436a68",
+      "8": "adc82b84f28621f240460a0f6f5a75ad2e90dc79f0762c384f9aaa3eff774cfb",
+      "9": "325d243356e7813ebf5df767e92ed6a9cea5246a58b8b6e76e7d214e3ea0943c",
+      "10": "91cdad6e6566ae6ffd6a5b3a0cf2aa21217605eed16b85ebe14699ca88efced3",
+      "11": "ff229fe98be07c81948906f3a13befdc640f8a96636b7c09d0622ea0678d3096",
+      "12": "de3594492f88d63769ed3470562f9eb04ef6e5778dc7f22d611036b1cd3ddbf2",
+      "13": "1e9c1cbd069a8a4ca327575c4c32346999b6ff1cb1a2649b10948abed6e3e8e0",
+      "14": "0c13278aca4284d74080409c700f324eda480fbf7ab8ba2be5c49b94a424edc1",
+      "15": "db16668779e8c07029caf790b70ac485c2ae006464211afb48cbf0f72247044f",
+      "16": "6345cb27f4f19534499447f3a9b5f7a1a59ed92a2a649cb8a0e0b161961c50da"
+    }
+  },
+  "art_changed": [
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16
+  ],
+  "decisions": 30,
+  "outcomes": {
+    "over_budget": 11,
+    "settled": 12,
+    "rejected": 4,
+    "timeout": 1,
+    "settle_failed": 1,
+    "accept_failed": 1
+  },
+  "replay": "replayed 30 decisions: 30 match, 0 differ",
+  "outside": {
+    "sold": 21,
+    "refused": 0,
+    "sales": [
+      {
+        "spore": 11,
+        "tx": "FRBwPmT7cXetzxQfx8KatELw2MPj7KKKXGZyXkg7eGkU"
+      },
+      {
+        "spore": 15,
+        "tx": "8hPmYC4V41WXJDEWedXSHvtrfreovFkFZdfGWS9gU6XY"
+      },
+      {
+        "spore": 7,
+        "tx": "A7mfgGJJTo6gGoc8TzuAKrDyoCjiwNuk8uVbo7Js5RCx"
+      },
+      {
+        "spore": 16,
+        "tx": "6gqDcVkyfDSDc5KK2KKbbSqSCx825hj8y5XDbN5d8osu"
+      },
+      {
+        "spore": 0,
+        "tx": "CtawHpsGL6MTd5pMxnkp82ZMFU4kCGcCTf4frJJnjpaQ"
+      },
+      {
+        "spore": 12,
+        "tx": "3DrgNNh9BE24bQ25RjSG8NmXYpdLJNw8nQEG6ffiGEsj"
+      },
+      {
+        "spore": 9,
+        "tx": "Bqpu72oF3ud5kArprLd7wH7CqtRCwDUztpfjN2UeiaRY"
+      },
+      {
+        "spore": 10,
+        "tx": "hEBSnD75NxV8RHBps1VxKSngJSz5qzq6WgHRrCwiXvw"
+      },
+      {
+        "spore": 6,
+        "tx": "6qEcQw31oWeKkaVp51A61oTSjzC4TYC3xFLihQfSvHmX"
+      },
+      {
+        "spore": 14,
+        "tx": "DRxQPnZpWeL7aWWMMHz89m3zsR8uj4pimruVXFGJRR62"
+      },
+      {
+        "spore": 7,
+        "tx": "5Cc1XSQzqMTpVu7KWpSxXJVqMkuQ4DMba6TYenJaTZ9q"
+      },
+      {
+        "spore": 15,
+        "tx": "FpK31FgrmTE5tV9oeXGTAytpxAEcbD92szNm8eciCnCz"
+      },
+      {
+        "spore": 11,
+        "tx": "ApJzxeqDHWRs5fiBzxwM6CvFvdykyBYxQm4ay3YJdo8q"
+      },
+      {
+        "spore": 16,
+        "tx": "ADNdgLpZcsoqQiXKNarXdgfgJApWcCe7szJsj92SR1Kf"
+      },
+      {
+        "spore": 9,
+        "tx": "95tayghoRWadsVYcszvGzv3UtuFvTrtSA6yzbwHvQybc"
+      },
+      {
+        "spore": 6,
+        "tx": "8qDUF9EvKnA8Q8FxGvTCuNDijBqzS6u34b2d5nTdVBQp"
+      },
+      {
+        "spore": 7,
+        "tx": "GXo85dtwaMLVesi9fhZJ8jqSnHaVcD3APh2JJxAvFZk8"
+      },
+      {
+        "spore": 15,
+        "tx": "2urpUm856tnsD6Z18pBVuwqeHE7tcDrAurCXBBAHBnBH"
+      },
+      {
+        "spore": 12,
+        "tx": "DDiwSqVXaA29ZLmXxfAVA4Dd3DykiwfxkiKmdpJTgTX1"
+      },
+      {
+        "spore": 8,
+        "tx": "CdLgceAzwA7eDde1AonaSqm9kJu4PLahv9vb6hbGZcFK"
+      },
+      {
+        "spore": 16,
+        "tx": "CXeqeANzpmzRZ74zpwVusPjm7ryzGw2a47gj38A66N6P"
+      }
+    ]
+  },
+  "tx": {
+    "total": 295,
+    "failed": 20,
+    "errors": {
+      "post_job: {\"message\":\"Request timeout on the free plan, please upgrade to paid plan\",\"code": 1,
+      "quote: job has timed out": 2,
+      "quote: job is not open": 4,
+      "post_job: too many unfinished jobs": 6,
+      "post_job: caller is not this spore's operator": 1,
+      "withdraw: only the spore owner can do this": 1,
+      "quote: \"Timeout\"": 1,
+      "post_job: \"Timeout\"": 1,
+      "settle: {\"message\":\"Request timeout on the free plan, please upgrade to paid plan\",\"code": 1,
+      "pay_service: policy: epoch budget exceeded": 1,
+      "accept: {\"message\":\"Request timeout on the free plan, please upgrade to paid plan\",\"code": 1
+    },
+    "gas_tgas": {
+      "pay_service": {
+        "calls": 22,
+        "ok": 21,
+        "avg": 5.78,
+        "max": 5.96
+      },
+      "post_job": {
+        "calls": 55,
+        "ok": 46,
+        "avg": 2.92,
+        "max": 3.14
+      },
+      "close_epoch": {
+        "calls": 9,
+        "ok": 9,
+        "avg": 20.48,
+        "max": 20.69
+      },
+      "quote": {
+        "calls": 93,
+        "ok": 86,
+        "avg": 2.61,
+        "max": 2.8
+      },
+      "commit_image": {
+        "calls": 36,
+        "ok": 36,
+        "avg": 2.62,
+        "max": 2.8
+      },
+      "timeout_job": {
+        "calls": 16,
+        "ok": 16,
+        "avg": 3.47,
+        "max": 3.95
+      },
+      "accept": {
+        "calls": 23,
+        "ok": 22,
+        "avg": 3.27,
+        "max": 3.48
+      },
+      "deliver": {
+        "calls": 19,
+        "ok": 19,
+        "avg": 2.61,
+        "max": 2.79
+      },
+      "settle": {
+        "calls": 13,
+        "ok": 12,
+        "avg": 3.84,
+        "max": 4.04
+      },
+      "reject": {
+        "calls": 4,
+        "ok": 4,
+        "avg": 3.77,
+        "max": 3.79
+      },
+      "list": {
+        "calls": 1,
+        "ok": 1,
+        "avg": 2.79,
+        "max": 2.79
+      },
+      "buy": {
+        "calls": 1,
+        "ok": 1,
+        "avg": 12.16,
+        "max": 12.16
+      },
+      "withdraw": {
+        "calls": 1,
+        "ok": 0,
+        "avg": 0,
+        "max": 0
+      },
+      "register_operator": {
+        "calls": 1,
+        "ok": 1,
+        "avg": 2.78,
+        "max": 2.78
+      },
+      "set_policy": {
+        "calls": 1,
+        "ok": 1,
+        "avg": 2.88,
+        "max": 2.88
+      }
+    }
+  },
+  "ledger": {
+    "deposited": "16257424485000000000000000",
+    "withdrawn": "0",
+    "paid_out": "1840000000000000000000000",
+    "balances": "14067885143000000000000000",
+    "escrow": "198625000000000000000000",
+    "pool": "0",
+    "treasury": "150914342000000000000000",
+    "conserved": true
+  },
+  "image_commits": {
+    "total": 36,
+    "ok": 36,
+    "skipped": 72
+  },
+  "closes": [
+    {
+      "epoch": 55,
+      "at": "2026-11-06T10:14:57.839Z",
+      "secs": null,
+      "gas_tgas": 20.6,
+      "log_bytes": 803,
+      "active": 64,
+      "pairs": 5,
+      "hash": "CERb87BZAX1XzcwtHdkjzkGeFb6CVu45X2QJwgAXtkQD"
+    },
+    {
+      "epoch": 56,
+      "at": "2026-11-06T10:15:35.136Z",
+      "secs": 37.3,
+      "gas_tgas": 20.39,
+      "log_bytes": 528,
+      "active": 64,
+      "pairs": 0,
+      "hash": "BNzcLhN5y5v1pEvdej74T5dYg6dbXvsA8Eey4HAQj6Gz"
+    },
+    {
+      "epoch": 57,
+      "at": "2026-11-06T10:16:15.962Z",
+      "secs": 40.8,
+      "gas_tgas": 20.58,
+      "log_bytes": 845,
+      "active": 64,
+      "pairs": 4,
+      "hash": "12EtJGwjcrmTAeqLt9oktEUHsJAoHgSrd4GjjEq9eP9N"
+    },
+    {
+      "epoch": 58,
+      "at": "2026-11-06T10:16:46.645Z",
+      "secs": 30.7,
+      "gas_tgas": 20.53,
+      "log_bytes": 752,
+      "active": 64,
+      "pairs": 2,
+      "hash": "13vb2fuREokeNhno3QmN7s1jPBdQsxDNdJDtea8QPoTm"
+    },
+    {
+      "epoch": 59,
+      "at": "2026-11-06T10:17:33.852Z",
+      "secs": 47.2,
+      "gas_tgas": 20.69,
+      "log_bytes": 848,
+      "active": 64,
+      "pairs": 3,
+      "hash": "Hpgri9wYYy7uLvrVyTaHP4Wtj6khEd8GUwZVK9BWiSXa"
+    },
+    {
+      "epoch": 60,
+      "at": "2026-11-06T10:18:08.374Z",
+      "secs": 34.5,
+      "gas_tgas": 20.45,
+      "log_bytes": 584,
+      "active": 64,
+      "pairs": 2,
+      "hash": "43cYmShBtY8n5AcxAXMMZEXQXvrKXfFuBfNqgErN7AZr"
+    },
+    {
+      "epoch": 61,
+      "at": "2026-11-06T10:18:53.900Z",
+      "secs": 45.5,
+      "gas_tgas": 20.43,
+      "log_bytes": 661,
+      "active": 64,
+      "pairs": 1,
+      "hash": "99Sn6FH7yReC5yoknP6yRGqSvqDUv6swJTp6hGf8wPyQ"
+    },
+    {
+      "epoch": 62,
+      "at": "2026-11-06T10:19:33.389Z",
+      "secs": 39.5,
+      "gas_tgas": 20.31,
+      "log_bytes": 570,
+      "active": 64,
+      "pairs": 0,
+      "hash": "B3Ck64bQ7UTqUwADWk1mKmah7BMUXrjZe7HnZNnpNteD"
+    },
+    {
+      "epoch": 63,
+      "at": "2026-11-06T10:20:03.346Z",
+      "secs": 30,
+      "gas_tgas": 20.38,
+      "log_bytes": 660,
+      "active": 64,
+      "pairs": 1,
+      "hash": "Ak78KstwD6FuEWgE6i7PfydhqkgzBguqbVYUbuVGFunw"
+    }
+  ],
+  "rpc_per_epoch": {
+    "55": {
+      "requests": 57,
+      "limited": 0
+    },
+    "56": {
+      "requests": 127,
+      "limited": 0
+    },
+    "57": {
+      "requests": 135,
+      "limited": 0
+    },
+    "58": {
+      "requests": 131,
+      "limited": 0
+    },
+    "59": {
+      "requests": 128,
+      "limited": 3
+    },
+    "60": {
+      "requests": 115,
+      "limited": 21
+    },
+    "61": {
+      "requests": 85,
+      "limited": 6
+    },
+    "62": {
+      "requests": 92,
+      "limited": 7
+    },
+    "63": {
+      "requests": 113,
+      "limited": 21
+    }
+  },
+  "sale": {
+    "scheduled": true,
+    "epoch": 60,
+    "spore": 6,
+    "old_agent_idle": false,
+    "seller": "owner.spores-hack.testnet",
+    "buyer": "buyer.spores-hack.testnet",
+    "royalty_account": "deployer.spores-hack.testnet",
+    "price": "500000000000000000000000",
+    "royalty_bps": 500,
+    "ok": true,
+    "passed": 10,
+    "total": 10,
+    "list": "CAfDTKonvZQD8MnbjwDw1mGYxHGDcKgpqHadBQR7CFpM",
+    "buy": "HZNJeWxy19uDQam1kmWcJ2dsd6zL4HzWN7H6tVj3sSh3",
+    "buy_ok": true,
+    "at": "2026-11-06T10:17:55.083Z",
+    "block": "Df5HtwcyPF3ovkEBR9hvT2u3skfM5Zjx8tuGgauXHJRo",
+    "before": {
+      "owner": "owner.spores-hack.testnet",
+      "operator": "operator.spores-hack.testnet",
+      "operator_gen": 1,
+      "balance": "413943021750000000000000",
+      "age": 59,
+      "reputation": "1136",
+      "connections": [
+        [
+          10,
+          "74795"
+        ],
+        [
+          11,
+          "341888"
+        ],
+        [
+          13,
+          "78120"
+        ]
+      ],
+      "policy": {
+        "paused": false,
+        "budget_per_epoch": "1500000000000000000000000",
+        "max_payment": "500000000000000000000000",
+        "allow_all_spores": true,
+        "allowlist": [],
+        "external_allowlist": [
+          "outside.spores-hack.testnet"
+        ]
+      },
+      "listed_price": "500000000000000000000000",
+      "sales": 0
+    },
+    "after": {
+      "owner": "buyer.spores-hack.testnet",
+      "operator": null,
+      "operator_gen": 2,
+      "balance": "413943021750000000000000",
+      "age": 59,
+      "reputation": "1136",
+      "connections": [
+        [
+          10,
+          "74795"
+        ],
+        [
+          11,
+          "341888"
+        ],
+        [
+          13,
+          "78120"
+        ]
+      ],
+      "policy": {
+        "paused": true,
+        "budget_per_epoch": "0",
+        "max_payment": "0",
+        "allow_all_spores": false,
+        "allowlist": [],
+        "external_allowlist": []
+      },
+      "listed_price": null,
+      "sales": 1
+    },
+    "sold_event": {
+      "spore_id": 6,
+      "seller": "owner.spores-hack.testnet",
+      "buyer": "buyer.spores-hack.testnet",
+      "price": "500000000000000000000000",
+      "seller_amount": "475000000000000000000000",
+      "royalty": "25000000000000000000000",
+      "royalty_account": "deployer.spores-hack.testnet"
+    },
+    "refunds_to_spore": "0",
+    "payouts": {
+      "seller": [
+        {
+          "id": "HqXSLwERNrLGAXuJGaoacr7tpmeC1uM1Xj54jU5CCFVa",
+          "deposit": "475000000000000000000000",
+          "ok": true
+        }
+      ],
+      "royalty": [
+        {
+          "id": "3DjxdhrGJV5Wjtvqj9McNkuzPARNjBu6xeem2ucziG2h",
+          "deposit": "25000000000000000000000",
+          "ok": true
+        }
+      ]
+    },
+    "payment_failed": false,
+    "paid_ok": true,
+    "reset_ok": true,
+    "intact_ok": true,
+    "old_key_refused": true,
+    "old_key_tx": "DY9sTYpeWz6Szy82nMkZRjBnE6SHtwKmErzrhQSvJcz6",
+    "old_owner_refused": true,
+    "old_owner_tx": "6qbJKSMdTXz23U1QAFzgXaGC51v6Usr8QAUGn28q869x",
+    "register": "E1wzGyd58ptTfj4zjn9bFFGQ2v3xEwEZd5Tq88TYiLaK",
+    "policy": "72oxHXp42MxZ6qVYLXDAVibfFhcXf9nb8Xt3mntcahnf",
+    "resumed_at": "2026-11-06T10:18:57.408Z",
+    "resumed_txs": 7
+  },
+  "verify": {
+    "epochs": {
+      "ok": true,
+      "out": "epoch 1: 7443bb0e682b8c894f5f5baf2f0bed2bf84bda82cc45cca970fccff02e0f34dd match (0 flows, 0 tubes, close 6P3B59GSFVDsHT6pX3Aa2jAsdRmqSHo6ufK7W6NaU42Q)\nepoch 2: 7f9581c5d70508b73bf3bbde1cbb64a7c0865f8ce128613fc00d44c0e40a6c49 match (3 flows, 3 tubes, close CuFJQEeHmqitvaTB9nL1oWieGdEQkEYUiF3TJBkoNm4w)\nepoch 3: f2b4bd3e07ede296c8b8ac26508a169d9366e9e96fe197a2153b271436030a61 match (7 flows, 8 tubes, close 7bMid8m5soiDtEoZMfq6Wf1vAKYCKDT6c2dVtVnfR7Dr)\nepoch 4: c631f531b27072a877762330ec0d1e172237d9f737ec1cf93e58e6d89d6bba23 match (9 flows, 13 tubes, close 8HEvoqX1uYxxxGvRMZ9jvD8Fk57n9X8RGUgUhyCjCHe9)\nepoch 5: ca8c26780f37d43e7f6d8119096b490c5e8ee9f147e3889e2b009f7c8115cac7 match (5 flows, 15 tubes, close 3LoaRprcNoVQwU9xrLFu36FkEujaj1cek2rSzoKhGWe1)\nepoch 6: c2075345e7d641736d7e69a7823097432db799a2e89ca7a946016dd5f815e850 match (6 flows, 14 tubes, close 6cNgDmPkeuTTVYWXzzDYQywTthGKQThgLp5N4Tos9pJj)\nepoch 7: 9d0a712e0b9c093bad6541bc8fb27ff9d7b013d0d2d252a49472f06cc9b31124 match (9 flows, 17 tubes, close CxVn8VNEFwrD4zNypnkzgpzGsmKZCdvETfsQKXesE1oW)\nepoch 8: 1297d58fb5c4d0d95c62e7b0a62be2b475441bc3964eae67dbf25cbfc7905da4 match (8 flows, 17 tubes, close DwYR9Eepicaz7nMbNspGJTLMw5kgkvd6mSHVX2nwfcmt)\nepoch 9: dcf6b86d2c47abf755b623d1d5bf79963fc7c37e9ae8959ad8da4ca1257a21f2 match (6 flows, 18 tubes, close 7i3zS2VtWfLbCman41SPcLQCBonyjiFsC8s6kCkWvbBY)\nepoch 10: b12850cd603cd96aa4cdda09162d25c6da5788f2b5830967bcb341a9f627e223 match (7 flows, 17 tubes, close GRAinaS1WrE85dJFkV9EAdib35tcg9CizpEuLnQFhPFt)\nepoch 11: 675d42d7f8549d471000ccc6651e62779ee73451440cb676016a974bdd840c73 match (7 flows, 19 tubes, close 5mTrJnwFZAzi6Hre9vpxuMbUnmvDDYCPu3d95YEDnGGF)\nepoch 12: 59af3afee9fdf37c2fea89d993d5c4329d0364a28572d3b8ca29fd3987e7b28b match (8 flows, 19 tubes, close 3FQ1wnNFRtbwk7G5jgtHaTGLNfGBhp4jmeLs7DJE3QWa)\nepoch 13: d64371761a097caf7123d97417d89040b88a47e9ace65a4d7daa990f07c1855e match (8 flows, 19 tubes, close HKS5rZZWchB5ZZtHfVWtgTYycTvWw535S5G4GVVnwowu)\nepoch 14: e799f18238efb9b281d44f65e9af6b38198f3399c974b16019d16600b7e061e8 match (4 flows, 19 tubes, close 3PqTijwXpGgm63p4vphjGzH2CWtXSHyPYHF5DAg5EQaP)\nepoch 15: 5524047f9fa9b69324d32fd9fe57e8ff093d04d5ff4dcd47abe96d6c1948f387 match (6 flows, 19 tubes, close 2wR1R8f4DnHPUZkWamgBinhFvgR9cC938gpnRjZtmtcy)\nepoch 16: 8b6b2614f402c9bfd88701b0e3bde05b48fc1765ac2d47dcdf2f121bbedec27e match (6 flows, 19 tubes, close EjREyG5hVGpnJGtKtCraFxtg9eSUPhPe37qsNPWuMLvv)\nepoch 17: 6ce86e8c45a3df2a2a0faa3d0f48202de3a4bd6ca8404fbb9dbc621e3cc98708 match (4 flows, 18 tubes, close 7MmEETQTPpYkf4fPSQhkS74vwo115ufvAfeWqfbBmhsJ)\nepoch 18: 8333120edca21c42a9f76b832732b0a26951b6aab6b2878f93da732eb59d5736 match (0 flows, 15 tubes, close 6ywVudX4EKy7aXVd2ydMmbY19aF1xXQjwGbqQXUVTEC1)\nepoch 19: 61d85b7fe5d9763c0160937d7931d28aaf88d3884086ea8859916ea529f9368a match (0 flows, 13 tubes, close 7yJ2UAECsP3pz6oyYfGafsmPR5R4WuSLche1phsnoWcM)\nepoch 20: b5b7f9c00a523f9c129084bb723510e8457125560eae0a6948373afa834e8be8 match (21 flows, 30 tubes, close 7N5FjLy4WERiwGeM6rypsxp5bDdwWDCu8Tt3sM2v16KH)\nepoch 21: dc35d2b6f25f453f281bd757176a259f42119367248304ee3545c08326d279b5 match (0 flows, 30 tubes, close ArP6h43TL8TsL3bBb4oQUipfGTTWT5d3zceknqvcB6Mb)\nepoch 22: 045f2a56ff82c94c13cf876fbd38b4acbacf2c443bcf99e9f8bb2898c99d9083 match (3 flows, 30 tubes, close 5cMTXKw5qH3dR5wW1WpHE5515LXieEYLNv61Ma948ZEe)\nepoch 23: e18501fe668e012fc12e88ebacba7029d51d2feb4cbb4e056a6ce7decb502509 match (4 flows, 25 tubes, close Ck4REwaBEX841kYi2akaPhL6Ns1yHWdE4TVdpjqx3oBB)\nepoch 24: 92fcf0cb46c047ac02506fc2347ced2f6c154c52d06f4e4cb0b1c679184ff524 match (3 flows, 24 tubes, close HGaRB8H8VbtkanzucQR8om4QiXcQ2YgW7yU8Rs8fvEkP)\nepoch 25: 3d38ff8998acec301bc9dae950ff7e7c1bacd605c259426002b8f597f92cc76a match (12 flows, 29 tubes, close FRWTL2pYpNFiMkF3vNEcfUUMFdduKVstC4UpXKniDd28)\nepoch 26: 5089c35bcf2210154f20c2bf3a982b561265b5021db84af82e2558d0e4b04d0c match (6 flows, 26 tubes, close AaAjg91znD4P8YaB5mkE9GhzR1qRqdnyREcRUH5TTCbo)\nepoch 27: e92f3db36067f87bfd37791b10309c1de58381ea54b0c10a420f560c8115e69e match (0 flows, 20 tubes, close C8D38ApJuke7jEoqokXUmzVmHefUn2xwK8SAVai3gtaM)\nepoch 28: 7658fbb563d030caf94229c67e46dbdcf75b1df9ad9858feb6b494ac3975dc02 match (0 flows, 13 tubes, close D9q3BCkx4iu5zrBfKcgWF2hrbwYm7Ggx7p2cNcpAC53q)\nepoch 29: 8b920e6300d275e6bfcfb71fa2aaafc1581825f8b55d4d0cba227b8c3cff30a4 match (4 flows, 10 tubes, close 37Lm2kLtStiYn1TFXavW8K8Z5pkSX9FKeeuUUAoEPpuC)\nepoch 30: 50587afaa0f58b237e21757a3755ff0c1c6506484a8f2c4772a9a451bd82b4b0 match (3 flows, 9 tubes, close Ffz4TUJt6BKt7gCbnNPSvntHob4vsx21Dw8n84VCxtpU)\nepoch 31: 76b1d7b033fd48ee4d137ca770ce72a046d32ee2c070be2a3c064de85cc737e7 match (2 flows, 10 tubes, close 22dpSGD3F7q9bbhdHm3vuEC8WknvWZJSRcPNz5uvrpPG)\nepoch 32: f602f57242c9ff6c1ff859d3493f336a64ee139689acb158133e326ad84c3361 match (2 flows, 10 tubes, close 83UsYeRnEsZptSgnzB8QkC9cRqGZz5x29b1Gk3hzqqWh)\nepoch 33: b0ff34d71e68429daa83a75e060eacd4b89102a84785597501c9cc4468bad9d1 match (3 flows, 8 tubes, close 6K1GndwCXkkZCYByzwT3E1pe7N8vqXeA8pbhoFwswYXP)\nepoch 34: 03a4fd48b55421c8f618decb01dc6e2a6ea2bdfc2119798afc0208f28eb108c2 match (3 flows, 8 tubes, close 7fEvvQWfohd7jYgtLBRpFqr9uUGQjSfz2ox58YZZBH8J)\nepoch 35: 522fe00e3a02c3fbbcb3cf5755a784772712d6dabd1432db2a38e65f6dcd7e62 match (0 flows, 7 tubes, close E5tV31iTtodc5AaqHZYm9PM461v1rK4ouWhW5HhvBXqf)\nepoch 36: 2f6b54451975c4f22e2fd23b18217244b988d08db4e08d4aa0bf1ac0897ba8fb match (4 flows, 10 tubes, close 3vBsfXiz7Xw2ZLxPnjVrfXPCNcy9xceLfLJ8R41KiNt1)\nepoch 37: d858471f69a87baa337b0222ee7bd7b887b6f3f7f026915451995b3f9f4209ab match (1 flows, 8 tubes, close 6WP6a7r3MZzidKk7Srvsq5LVxMqcsJMD2aGbcBjbC4bG)\nepoch 38: ee076c9b8d16d75dc072d3a55627df79a5daa82dcd8bfe2a50994d8ac906b3bc match (2 flows, 6 tubes, close 3UM5J3YXtNt3KCteFUPfYARhMbWPPQs5AtNrhHGEP6YJ)\nepoch 39: 85bd79f5ba548000d03361488ae5932641eb845e236dbea3dbc87f112e80c5f4 match (0 flows, 6 tubes, close GumcZ3LjQGbmmjjb9hoeSZdeznCoUgmouT3qPjNTmFwR)\nepoch 40: 773d7b435cade84d3a3cac46dbb9318a7d7bf807b10120445dafa9d2d5867fc9 match (0 flows, 5 tubes, close 5x2N1qgvRREfwidyqGgTwnBy1Vufkr5sG9SLvxXdcauk)\nepoch 41: 8a424b44a2d6418a39af7d7e2a048f3475fff10d04981172f0feca6564470e42 match (0 flows, 4 tubes, close 9CbfTwFA9yLrAZ9gQMYXnJNUGUnxYL64EHiGwm19rcNJ)\nepoch 42: 8510b9237cb51588ff081c28d09b707aa8f576feda562bfa75977c9720d52f7f match (0 flows, 3 tubes, close 2wRZPM2fEKwuVF4Th1byRLPXBqWvemy54Fdfd8ygfdgd)\nepoch 43: 4c6d56470e3da73cc269d4e43210aec12c36630721c629faf58a24a6aaeda1bb match (2 flows, 3 tubes, close HmekkpwQPMEDQZq8XhD4YUViSd4VzWesjGTnwLHXviN9)\nepoch 44: 8558a8bb5e79e9cfc6a2662208f617cbbc5f34c41f9fc6489ab43a49c9aa254d match (0 flows, 3 tubes, close 8c4hgyVjBMQcCrpQDRAdLtTKEHCkWCZZGuhWVQhRFHtr)\nepoch 45: b122d908bc852882f99d13aa42e79ff6d85a90aef36fc4a60adb5867d20591ab match (1 flows, 3 tubes, close 7KFPMb2aroQejrJgwB2jCfuQR9vC8dkaTMxbGJyKv5kN)\nepoch 46: 53019bb307b7907e88cbcc7011d268971d66890a0409fd9b3f43f865942d6c49 match (1 flows, 3 tubes, close 7eAiwaNYPW8fccKCYLHnyrRpd72qL9YDkz1QbB3kESJy)\nepoch 47: 77c4674c30d68a0a9d0dfaa738ffc0217eabb454eced0833883dafffcff1d77e match (0 flows, 2 tubes, close 4HQyZg99noSwaVRgmfiNNLSMV48HoScAJUEUSDtSZx2b)\nepoch 48: 1c7f7701d2c07f28a46718b7fe4ec9ef117a09b334693c0bc7031b815ce0dec1 match (0 flows, 2 tubes, close Ax8rMrbvdprfERsp32ji1Lnek16PHovTb4G6R8CefqED)\nepoch 49: a96be667ec160eb37e0bb386e0f26504ac865dc9be61811c5ead66993eb3ee0d match (0 flows, 1 tubes, close 4yc7sUY4eftrVEzeUL5s26kjarBPhkFea7ZWQtFx21Zi)\nepoch 50: 34c2196d667699357007cbd3a17f594af9a5b0eef6833dbe24471c7896a71c84 match (2 flows, 3 tubes, close 98beM8sF9tW6h6v3vVM65H1r1hbwgY1q7UeKVFK7Q6dv)\nepoch 51: bfd0098f29ff23613c136e5bd0edb8065462b7791ae37c4d5f602813d5ee6990 match (4 flows, 6 tubes, close 522nzSWbqHVCwdXNZQtBbDzAg3PxY93CLEXi6wEC1ZE)\nepoch 52: 5412091580f2b15369d797f4627e143fb71b9d9ef4d52b2caf9f9f7dd683b8d3 match (1 flows, 6 tubes, close DhsNqm8Xqqa3FSBFaJHUAmCJWjNgq8QYzPTjaXhrvvKd)\nepoch 53: 588d216ea89d0a57aed4df545e46f014f6b78a7c8c52dd84ae1eac2438903c86 match (3 flows, 5 tubes, close 2vUTwL5rLtRCBiLGy5TuqV9rYAibUEjrsep73zk3xQNy)\nepoch 54: 4e9e099ead6a2aeee6e017a6589e040619a9f4294568af14d6da4e249eec9778 match (1 flows, 5 tubes, close JBpcZgyqS4kVizQLEJAtHS2gu4PYVh8uEjSwuKa9WAxw)\nepoch 55: 8ba5b28918402160edf9c030ffab9f6148d99f429fb226eeed6885cdf3c7514c match (3 flows, 8 tubes, close CERb87BZAX1XzcwtHdkjzkGeFb6CVu45X2QJwgAXtkQD)\nepoch 56: 14eea1fb254c79ea3bb39c79ba8d3075e3f719853c2b4f5685a1afa6f71171cb match (0 flows, 7 tubes, close BNzcLhN5y5v1pEvdej74T5dYg6dbXvsA8Eey4HAQj6Gz)\nepoch 57: 319a2a678c2445b75c5101855526cd02310e184ae02166be972839e48bf831a4 match (4 flows, 7 tubes, close 12EtJGwjcrmTAeqLt9oktEUHsJAoHgSrd4GjjEq9eP9N)\nepoch 58: 3b265bc5448cb5e4ce3b9685c87bd7d7be090b03b5287b830f4c07d0410207a4 match (2 flows, 8 tubes, close 13vb2fuREokeNhno3QmN7s1jPBdQsxDNdJDtea8QPoTm)\nepoch 59: 7a5b0f3f3e11124dd7b98dbdd14e9420b72fbb696ae6d5782d5e3bcdcec951ad match (3 flows, 9 tubes, close Hpgri9wYYy7uLvrVyTaHP4Wtj6khEd8GUwZVK9BWiSXa)\nepoch 60: 8795ee0dda35c91499dc691a292e873f64e2e07f8f4df9003a4057b7def7e4c4 match (0 flows, 8 tubes, close 43cYmShBtY8n5AcxAXMMZEXQXvrKXfFuBfNqgErN7AZr)\nepoch 61: 56156fcd1737edf93bdd3bd9f9c46b10b19da6329778796335dbd2896369799b match (1 flows, 5 tubes, close 99Sn6FH7yReC5yoknP6yRGqSvqDUv6swJTp6hGf8wPyQ)\nepoch 62: ad449c43b042fcc70a59604b29de3af5bccc5d2d905472a530074597e2e917be match (0 flows, 4 tubes, close B3Ck64bQ7UTqUwADWk1mKmah7BMUXrjZe7HnZNnpNteD)\nepoch 63: cdbc303e4bbc83cc14cd9ade6f959f3f822010159c8ac461fa7f2d4aff7255dd match (1 flows, 4 tubes, close Ak78KstwD6FuEWgE6i7PfydhqkgzBguqbVYUbuVGFunw)\nverified 63 epochs on spores-hack-router4.testnet: match"
+    },
+    "image": {
+      "ok": true,
+      "out": "epoch 1: 7443bb0e682b8c894f5f5baf2f0bed2bf84bda82cc45cca970fccff02e0f34dd match (0 flows, 0 tubes, close 6P3B59GSFVDsHT6pX3Aa2jAsdRmqSHo6ufK7W6NaU42Q)\nepoch 2: 7f9581c5d70508b73bf3bbde1cbb64a7c0865f8ce128613fc00d44c0e40a6c49 match (3 flows, 3 tubes, close CuFJQEeHmqitvaTB9nL1oWieGdEQkEYUiF3TJBkoNm4w)\nepoch 3: f2b4bd3e07ede296c8b8ac26508a169d9366e9e96fe197a2153b271436030a61 match (7 flows, 8 tubes, close 7bMid8m5soiDtEoZMfq6Wf1vAKYCKDT6c2dVtVnfR7Dr)\nepoch 4: c631f531b27072a877762330ec0d1e172237d9f737ec1cf93e58e6d89d6bba23 match (9 flows, 13 tubes, close 8HEvoqX1uYxxxGvRMZ9jvD8Fk57n9X8RGUgUhyCjCHe9)\nepoch 5: ca8c26780f37d43e7f6d8119096b490c5e8ee9f147e3889e2b009f7c8115cac7 match (5 flows, 15 tubes, close 3LoaRprcNoVQwU9xrLFu36FkEujaj1cek2rSzoKhGWe1)\nepoch 6: c2075345e7d641736d7e69a7823097432db799a2e89ca7a946016dd5f815e850 match (6 flows, 14 tubes, close 6cNgDmPkeuTTVYWXzzDYQywTthGKQThgLp5N4Tos9pJj)\nepoch 7: 9d0a712e0b9c093bad6541bc8fb27ff9d7b013d0d2d252a49472f06cc9b31124 match (9 flows, 17 tubes, close CxVn8VNEFwrD4zNypnkzgpzGsmKZCdvETfsQKXesE1oW)\nepoch 8: 1297d58fb5c4d0d95c62e7b0a62be2b475441bc3964eae67dbf25cbfc7905da4 match (8 flows, 17 tubes, close DwYR9Eepicaz7nMbNspGJTLMw5kgkvd6mSHVX2nwfcmt)\nepoch 9: dcf6b86d2c47abf755b623d1d5bf79963fc7c37e9ae8959ad8da4ca1257a21f2 match (6 flows, 18 tubes, close 7i3zS2VtWfLbCman41SPcLQCBonyjiFsC8s6kCkWvbBY)\nepoch 10: b12850cd603cd96aa4cdda09162d25c6da5788f2b5830967bcb341a9f627e223 match (7 flows, 17 tubes, close GRAinaS1WrE85dJFkV9EAdib35tcg9CizpEuLnQFhPFt)\nepoch 11: 675d42d7f8549d471000ccc6651e62779ee73451440cb676016a974bdd840c73 match (7 flows, 19 tubes, close 5mTrJnwFZAzi6Hre9vpxuMbUnmvDDYCPu3d95YEDnGGF)\nepoch 12: 59af3afee9fdf37c2fea89d993d5c4329d0364a28572d3b8ca29fd3987e7b28b match (8 flows, 19 tubes, close 3FQ1wnNFRtbwk7G5jgtHaTGLNfGBhp4jmeLs7DJE3QWa)\nepoch 13: d64371761a097caf7123d97417d89040b88a47e9ace65a4d7daa990f07c1855e match (8 flows, 19 tubes, close HKS5rZZWchB5ZZtHfVWtgTYycTvWw535S5G4GVVnwowu)\nepoch 14: e799f18238efb9b281d44f65e9af6b38198f3399c974b16019d16600b7e061e8 match (4 flows, 19 tubes, close 3PqTijwXpGgm63p4vphjGzH2CWtXSHyPYHF5DAg5EQaP)\nepoch 15: 5524047f9fa9b69324d32fd9fe57e8ff093d04d5ff4dcd47abe96d6c1948f387 match (6 flows, 19 tubes, close 2wR1R8f4DnHPUZkWamgBinhFvgR9cC938gpnRjZtmtcy)\nepoch 16: 8b6b2614f402c9bfd88701b0e3bde05b48fc1765ac2d47dcdf2f121bbedec27e match (6 flows, 19 tubes, close EjREyG5hVGpnJGtKtCraFxtg9eSUPhPe37qsNPWuMLvv)\nepoch 17: 6ce86e8c45a3df2a2a0faa3d0f48202de3a4bd6ca8404fbb9dbc621e3cc98708 match (4 flows, 18 tubes, close 7MmEETQTPpYkf4fPSQhkS74vwo115ufvAfeWqfbBmhsJ)\nepoch 18: 8333120edca21c42a9f76b832732b0a26951b6aab6b2878f93da732eb59d5736 match (0 flows, 15 tubes, close 6ywVudX4EKy7aXVd2ydMmbY19aF1xXQjwGbqQXUVTEC1)\nepoch 19: 61d85b7fe5d9763c0160937d7931d28aaf88d3884086ea8859916ea529f9368a match (0 flows, 13 tubes, close 7yJ2UAECsP3pz6oyYfGafsmPR5R4WuSLche1phsnoWcM)\nepoch 20: b5b7f9c00a523f9c129084bb723510e8457125560eae0a6948373afa834e8be8 match (21 flows, 30 tubes, close 7N5FjLy4WERiwGeM6rypsxp5bDdwWDCu8Tt3sM2v16KH)\nepoch 21: dc35d2b6f25f453f281bd757176a259f42119367248304ee3545c08326d279b5 match (0 flows, 30 tubes, close ArP6h43TL8TsL3bBb4oQUipfGTTWT5d3zceknqvcB6Mb)\nepoch 22: 045f2a56ff82c94c13cf876fbd38b4acbacf2c443bcf99e9f8bb2898c99d9083 match (3 flows, 30 tubes, close 5cMTXKw5qH3dR5wW1WpHE5515LXieEYLNv61Ma948ZEe)\nepoch 23: e18501fe668e012fc12e88ebacba7029d51d2feb4cbb4e056a6ce7decb502509 match (4 flows, 25 tubes, close Ck4REwaBEX841kYi2akaPhL6Ns1yHWdE4TVdpjqx3oBB)\nepoch 24: 92fcf0cb46c047ac02506fc2347ced2f6c154c52d06f4e4cb0b1c679184ff524 match (3 flows, 24 tubes, close HGaRB8H8VbtkanzucQR8om4QiXcQ2YgW7yU8Rs8fvEkP)\nepoch 25: 3d38ff8998acec301bc9dae950ff7e7c1bacd605c259426002b8f597f92cc76a match (12 flows, 29 tubes, close FRWTL2pYpNFiMkF3vNEcfUUMFdduKVstC4UpXKniDd28)\nepoch 26: 5089c35bcf2210154f20c2bf3a982b561265b5021db84af82e2558d0e4b04d0c match (6 flows, 26 tubes, close AaAjg91znD4P8YaB5mkE9GhzR1qRqdnyREcRUH5TTCbo)\nepoch 27: e92f3db36067f87bfd37791b10309c1de58381ea54b0c10a420f560c8115e69e match (0 flows, 20 tubes, close C8D38ApJuke7jEoqokXUmzVmHefUn2xwK8SAVai3gtaM)\nepoch 28: 7658fbb563d030caf94229c67e46dbdcf75b1df9ad9858feb6b494ac3975dc02 match (0 flows, 13 tubes, close D9q3BCkx4iu5zrBfKcgWF2hrbwYm7Ggx7p2cNcpAC53q)\nepoch 29: 8b920e6300d275e6bfcfb71fa2aaafc1581825f8b55d4d0cba227b8c3cff30a4 match (4 flows, 10 tubes, close 37Lm2kLtStiYn1TFXavW8K8Z5pkSX9FKeeuUUAoEPpuC)\nepoch 30: 50587afaa0f58b237e21757a3755ff0c1c6506484a8f2c4772a9a451bd82b4b0 match (3 flows, 9 tubes, close Ffz4TUJt6BKt7gCbnNPSvntHob4vsx21Dw8n84VCxtpU)\nepoch 31: 76b1d7b033fd48ee4d137ca770ce72a046d32ee2c070be2a3c064de85cc737e7 match (2 flows, 10 tubes, close 22dpSGD3F7q9bbhdHm3vuEC8WknvWZJSRcPNz5uvrpPG)\nepoch 32: f602f57242c9ff6c1ff859d3493f336a64ee139689acb158133e326ad84c3361 match (2 flows, 10 tubes, close 83UsYeRnEsZptSgnzB8QkC9cRqGZz5x29b1Gk3hzqqWh)\nepoch 33: b0ff34d71e68429daa83a75e060eacd4b89102a84785597501c9cc4468bad9d1 match (3 flows, 8 tubes, close 6K1GndwCXkkZCYByzwT3E1pe7N8vqXeA8pbhoFwswYXP)\nepoch 34: 03a4fd48b55421c8f618decb01dc6e2a6ea2bdfc2119798afc0208f28eb108c2 match (3 flows, 8 tubes, close 7fEvvQWfohd7jYgtLBRpFqr9uUGQjSfz2ox58YZZBH8J)\nepoch 35: 522fe00e3a02c3fbbcb3cf5755a784772712d6dabd1432db2a38e65f6dcd7e62 match (0 flows, 7 tubes, close E5tV31iTtodc5AaqHZYm9PM461v1rK4ouWhW5HhvBXqf)\nepoch 36: 2f6b54451975c4f22e2fd23b18217244b988d08db4e08d4aa0bf1ac0897ba8fb match (4 flows, 10 tubes, close 3vBsfXiz7Xw2ZLxPnjVrfXPCNcy9xceLfLJ8R41KiNt1)\nepoch 37: d858471f69a87baa337b0222ee7bd7b887b6f3f7f026915451995b3f9f4209ab match (1 flows, 8 tubes, close 6WP6a7r3MZzidKk7Srvsq5LVxMqcsJMD2aGbcBjbC4bG)\nepoch 38: ee076c9b8d16d75dc072d3a55627df79a5daa82dcd8bfe2a50994d8ac906b3bc match (2 flows, 6 tubes, close 3UM5J3YXtNt3KCteFUPfYARhMbWPPQs5AtNrhHGEP6YJ)\nepoch 39: 85bd79f5ba548000d03361488ae5932641eb845e236dbea3dbc87f112e80c5f4 match (0 flows, 6 tubes, close GumcZ3LjQGbmmjjb9hoeSZdeznCoUgmouT3qPjNTmFwR)\nepoch 40: 773d7b435cade84d3a3cac46dbb9318a7d7bf807b10120445dafa9d2d5867fc9 match (0 flows, 5 tubes, close 5x2N1qgvRREfwidyqGgTwnBy1Vufkr5sG9SLvxXdcauk)\nepoch 41: 8a424b44a2d6418a39af7d7e2a048f3475fff10d04981172f0feca6564470e42 match (0 flows, 4 tubes, close 9CbfTwFA9yLrAZ9gQMYXnJNUGUnxYL64EHiGwm19rcNJ)\nepoch 42: 8510b9237cb51588ff081c28d09b707aa8f576feda562bfa75977c9720d52f7f match (0 flows, 3 tubes, close 2wRZPM2fEKwuVF4Th1byRLPXBqWvemy54Fdfd8ygfdgd)\nepoch 43: 4c6d56470e3da73cc269d4e43210aec12c36630721c629faf58a24a6aaeda1bb match (2 flows, 3 tubes, close HmekkpwQPMEDQZq8XhD4YUViSd4VzWesjGTnwLHXviN9)\nepoch 44: 8558a8bb5e79e9cfc6a2662208f617cbbc5f34c41f9fc6489ab43a49c9aa254d match (0 flows, 3 tubes, close 8c4hgyVjBMQcCrpQDRAdLtTKEHCkWCZZGuhWVQhRFHtr)\nepoch 45: b122d908bc852882f99d13aa42e79ff6d85a90aef36fc4a60adb5867d20591ab match (1 flows, 3 tubes, close 7KFPMb2aroQejrJgwB2jCfuQR9vC8dkaTMxbGJyKv5kN)\nepoch 46: 53019bb307b7907e88cbcc7011d268971d66890a0409fd9b3f43f865942d6c49 match (1 flows, 3 tubes, close 7eAiwaNYPW8fccKCYLHnyrRpd72qL9YDkz1QbB3kESJy)\nepoch 47: 77c4674c30d68a0a9d0dfaa738ffc0217eabb454eced0833883dafffcff1d77e match (0 flows, 2 tubes, close 4HQyZg99noSwaVRgmfiNNLSMV48HoScAJUEUSDtSZx2b)\nepoch 48: 1c7f7701d2c07f28a46718b7fe4ec9ef117a09b334693c0bc7031b815ce0dec1 match (0 flows, 2 tubes, close Ax8rMrbvdprfERsp32ji1Lnek16PHovTb4G6R8CefqED)\nepoch 49: a96be667ec160eb37e0bb386e0f26504ac865dc9be61811c5ead66993eb3ee0d match (0 flows, 1 tubes, close 4yc7sUY4eftrVEzeUL5s26kjarBPhkFea7ZWQtFx21Zi)\nepoch 50: 34c2196d667699357007cbd3a17f594af9a5b0eef6833dbe24471c7896a71c84 match (2 flows, 3 tubes, close 98beM8sF9tW6h6v3vVM65H1r1hbwgY1q7UeKVFK7Q6dv)\nepoch 51: bfd0098f29ff23613c136e5bd0edb8065462b7791ae37c4d5f602813d5ee6990 match (4 flows, 6 tubes, close 522nzSWbqHVCwdXNZQtBbDzAg3PxY93CLEXi6wEC1ZE)\nepoch 52: 5412091580f2b15369d797f4627e143fb71b9d9ef4d52b2caf9f9f7dd683b8d3 match (1 flows, 6 tubes, close DhsNqm8Xqqa3FSBFaJHUAmCJWjNgq8QYzPTjaXhrvvKd)\nepoch 53: 588d216ea89d0a57aed4df545e46f014f6b78a7c8c52dd84ae1eac2438903c86 match (3 flows, 5 tubes, close 2vUTwL5rLtRCBiLGy5TuqV9rYAibUEjrsep73zk3xQNy)\nepoch 54: 4e9e099ead6a2aeee6e017a6589e040619a9f4294568af14d6da4e249eec9778 match (1 flows, 5 tubes, close JBpcZgyqS4kVizQLEJAtHS2gu4PYVh8uEjSwuKa9WAxw)\nepoch 55: 8ba5b28918402160edf9c030ffab9f6148d99f429fb226eeed6885cdf3c7514c match (3 flows, 8 tubes, close CERb87BZAX1XzcwtHdkjzkGeFb6CVu45X2QJwgAXtkQD)\nepoch 56: 14eea1fb254c79ea3bb39c79ba8d3075e3f719853c2b4f5685a1afa6f71171cb match (0 flows, 7 tubes, close BNzcLhN5y5v1pEvdej74T5dYg6dbXvsA8Eey4HAQj6Gz)\nepoch 57: 319a2a678c2445b75c5101855526cd02310e184ae02166be972839e48bf831a4 match (4 flows, 7 tubes, close 12EtJGwjcrmTAeqLt9oktEUHsJAoHgSrd4GjjEq9eP9N)\nepoch 58: 3b265bc5448cb5e4ce3b9685c87bd7d7be090b03b5287b830f4c07d0410207a4 match (2 flows, 8 tubes, close 13vb2fuREokeNhno3QmN7s1jPBdQsxDNdJDtea8QPoTm)\nepoch 59: 7a5b0f3f3e11124dd7b98dbdd14e9420b72fbb696ae6d5782d5e3bcdcec951ad match (3 flows, 9 tubes, close Hpgri9wYYy7uLvrVyTaHP4Wtj6khEd8GUwZVK9BWiSXa)\nepoch 60: 8795ee0dda35c91499dc691a292e873f64e2e07f8f4df9003a4057b7def7e4c4 match (0 flows, 8 tubes, close 43cYmShBtY8n5AcxAXMMZEXQXvrKXfFuBfNqgErN7AZr)\nepoch 61: 56156fcd1737edf93bdd3bd9f9c46b10b19da6329778796335dbd2896369799b match (1 flows, 5 tubes, close 99Sn6FH7yReC5yoknP6yRGqSvqDUv6swJTp6hGf8wPyQ)\nepoch 62: ad449c43b042fcc70a59604b29de3af5bccc5d2d905472a530074597e2e917be match (0 flows, 4 tubes, close B3Ck64bQ7UTqUwADWk1mKmah7BMUXrjZe7HnZNnpNteD)\nepoch 63: cdbc303e4bbc83cc14cd9ade6f959f3f822010159c8ac461fa7f2d4aff7255dd match (1 flows, 4 tubes, close Ak78KstwD6FuEWgE6i7PfydhqkgzBguqbVYUbuVGFunw)\nverified 63 epochs on spores-hack-router4.testnet: match\nspore 6 epoch 64 state hash: 8f343e69fea1106d3112464116a369e7110f7e2d0a00b3db4ba21ec5025e42b8 match\nspore 6 epoch 64 image hash: 76322f33cc827184bde0a0e4a9ff15778ac446fdfd6aa8fc1fc6b2f6da2d4276 match\nspore 6: age 63, 1 tubes, renderer v1\nimage: match"
+    }
+  },
+  "checks": [
+    {
+      "name": "agents traded unattended for 9 epochs",
+      "ok": true
+    },
+    {
+      "name": "tubes formed: a tube between the run's spores was born or grew at a close",
+      "ok": true
+    },
+    {
+      "name": "the rendered art changed between epochs",
+      "ok": true
+    },
+    {
+      "name": "every logged hire matches spores_core::hiring::pick",
+      "ok": true
+    },
+    {
+      "name": "ledger conserved at the end",
+      "ok": true
+    },
+    {
+      "name": "outside service sold at least one item against an on-chain receipt",
+      "ok": true
+    },
+    {
+      "name": "the keeper committed an image for every active spore after each close, or logged it as skipped",
+      "ok": true
+    },
+    {
+      "name": "spores-verify reproduces every epoch fingerprint of the router from its close receipts",
+      "ok": true
+    },
+    {
+      "name": "spores-verify regenerates spore 6's committed image from chain state",
+      "ok": true
+    },
+    {
+      "name": "sale: spore 6 bought atomically, seller paid price - royalty and the royalty account paid 500 bps",
+      "ok": true
+    },
+    {
+      "name": "sale: operator cleared, policy reset to paused with zero budget, listing gone",
+      "ok": true
+    },
+    {
+      "name": "sale: balance (plus refunded escrow), tubes, age and reputation unchanged",
+      "ok": true
+    },
+    {
+      "name": "sale: the old operator key and the old owner are refused",
+      "ok": true
+    },
+    {
+      "name": "sale: the new owner registered operator2 and the agent resumed trading",
+      "ok": true
+    }
+  ]
+}

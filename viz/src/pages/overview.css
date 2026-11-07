@@ -1,0 +1,285 @@
+/* The landing page (Design §6.A, §13 items 22, 23). The first screen is one plate: the line
+   across the top, the specimen on the left, the sheet that names it on the right, and the
+   loop's eight stops under both. Then the story, each section a line and its evidence. */
+.overview { display: grid; gap: var(--s-9); margin-top: calc(var(--s-3) - var(--s-7)); }
+.landing-page { padding-bottom: 0; }
+:root:not([data-reduced-motion='true']):has(.overview) { scroll-behavior: smooth; }
+.overview [id] { scroll-margin-top: calc(var(--topbar-h) + var(--s-5)); }
+
+.landing-bar { justify-content: space-between; }
+.landing-nav { flex: 1; }
+.landing-nav .navlink { text-decoration: none; }
+.landing-enter { flex: none; min-height: 40px; padding-block: 0; }
+
+.ov-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(340px, 5fr);
+  grid-template-rows: auto auto auto 1fr auto auto;
+  grid-template-areas:
+    'line line'
+    'stage sentence'
+    'stage note'
+    'stage sheet'
+    'stage actions'
+    'strip strip';
+  column-gap: var(--s-6);
+  row-gap: var(--s-3);
+}
+.ov-copy { display: contents; }
+.ov-line { grid-area: line; margin: 0; font: 500 48px/52px var(--font-display); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.ov-sentence { grid-area: sentence; margin: 0; color: var(--text-2); font-size: 14px; line-height: 22px; max-width: none; }
+
+/* What's happening: written by hand next to the plate, with the pen's arrow leaving it. */
+.ov-note {
+  grid-area: note;
+  justify-self: start;
+  margin: 0 0 0 var(--s-3);
+  max-width: 24em;
+  min-height: 56px;
+  font: 600 18px/24px var(--font-sans);
+  font-variation-settings: var(--doodle-loud);
+  color: var(--slime);
+  animation: narrate-in var(--t-panel) var(--ease-grow) both;
+  text-wrap: balance;
+}
+.ov-actions { grid-area: actions; align-self: end; display: flex; flex-wrap: wrap; gap: var(--s-3); }
+
+.ov-stage { grid-area: stage; min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.ov-stage .loop-stages { min-height: 420px; }
+/* The whole plate fits a laptop's first screen: the bar, the line, the legend and the timeline take the rest. */
+.ov-stage .sale-stage { height: clamp(420px, calc(100vh - 332px), 770px); }
+/* The dish is round: the corners are free for what the plate is. */
+.ov-stage-source { position: absolute; left: 0; top: 0; display: grid; justify-items: start; gap: var(--s-1); width: 16%; min-width: 128px; z-index: 2; }
+.ov-stage-source .source-badge { padding: 0; min-height: 0; background: none; border: 0; cursor: pointer; color: inherit; }
+.ov-stage-why { color: var(--text-3); }
+
+/* The spores on the stage are things you can point at. */
+.stage-spots { position: absolute; inset: 0; pointer-events: none; }
+.stage-spot-at { position: absolute; width: 0; height: 0; }
+.stage-spot-at .tip-anchor { position: absolute; left: 0; top: 0; }
+.stage-spot { position: absolute; display: block; transform: translate(-50%, -50%); border-radius: var(--r-full); pointer-events: auto; cursor: pointer; transition: box-shadow var(--t-ui) var(--ease-out); }
+.stage-spot:hover, .stage-spot:focus-visible { box-shadow: 0 0 0 2px var(--slime); outline: none; }
+.stage-spot.is-hero:hover, .stage-spot.is-hero:focus-visible { box-shadow: 0 0 0 1px var(--line-strong); }
+.stage-spots .stage-note { position: absolute; pointer-events: none; display: grid; }
+.stage-spots .stage-note.is-on > :first-child { color: var(--slime); }
+/* The spot's name is the paper label's and the sheet's to say; here the party is its role and its money. */
+.ov-stage .party-name { display: none; }
+.stage-spots .tooltip { top: var(--s-5); max-width: 240px; }
+
+.ov-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-1) var(--s-4); }
+.ov-legend-item { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--text-2); text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; cursor: help; }
+
+/* The sheet: one spore, one state, one list. */
+.ov-sheet { grid-area: sheet; min-width: 0; align-self: start; display: grid; gap: var(--s-2); }
+.ov-sheet-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--s-3); }
+.ov-sheet-head h2 { margin: 0; color: var(--text); }
+.ov-status { animation: narrate-in var(--t-panel) var(--ease-out) both; }
+.ov-status.tone-value { color: var(--value); }
+.ov-sheet-why { grid-column: 1 / -1; margin: var(--s-0) 0 0; color: var(--text-2); min-height: 22px; }
+.ov-sheet-rows { margin: 0; display: grid; }
+.ov-sheet-row { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: baseline; column-gap: var(--s-3); padding: var(--s-1) 0; border-top: 1px solid var(--line); }
+.ov-sheet-row dt { color: var(--text-3); }
+.ov-sheet-row dd { margin: 0; color: var(--text); overflow-wrap: anywhere; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s-3); }
+.ov-sheet-row dd .is-spent { color: var(--text-2); }
+.ov-term { text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; cursor: help; }
+
+/* The timeline: the eight stops, then the chosen one in full. */
+.ov-timeline { grid-area: strip; min-width: 0; display: grid; gap: var(--s-2); }
+.ov-stop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: var(--s-4); padding-top: var(--s-2); border-top: 1px solid var(--line); }
+.ov-stop .ov-play { flex: none; width: 148px; min-height: 40px; padding: 0; white-space: nowrap; }
+.ov-stop-body { min-width: 0; animation: narrate-in var(--t-panel) var(--ease-out) both; }
+.ov-stop-line { margin: 0; color: var(--text); }
+.ov-stop-line .body { color: var(--text-2); }
+.ov-stop-fact { color: var(--text); margin-left: var(--s-1); }
+.ov-stop-gloss { margin: var(--s-0) 0 0; color: var(--text-3); }
+.ov-stop-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-1) var(--s-4); white-space: nowrap; }
+.ov-tx { color: var(--slime); }
+
+.ov-strip { min-width: 0; }
+.ov-pen { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 3; }
+.hand-arrow path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.hand-arrow-halo { stroke: var(--bg); stroke-width: 6; opacity: 0.7; }
+.hand-arrow-shaft { stroke: var(--slime); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 0; animation: pen-draw var(--t-art) var(--ease-out) both; }
+.hand-arrow-head { stroke: var(--slime); stroke-width: 2; animation: pen-land var(--t-micro) linear both; animation-delay: calc(var(--t-art) * 0.85); }
+@keyframes pen-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes pen-land { from { opacity: 0; } to { opacity: 1; } }
+:root[data-reduced-motion='true'] .hand-arrow-shaft,
+:root[data-reduced-motion='true'] .hand-arrow-head,
+:root[data-reduced-motion='true'] .ov-note { animation: none; }
+
+/* The eight stops across the page: each a name and a state, and the whole of it a button. */
+.loop-vein.is-across { grid-template-columns: repeat(8, minmax(0, 1fr)); column-gap: var(--s-2); padding: 0 var(--s-2); }
+.loop-vein.is-across .vein-canvas { width: 100%; height: 48px; }
+.loop-vein.is-across .vein-row { display: block; padding: 0; min-height: 0; }
+.loop-vein.is-across .vein-stop { display: block; width: 100%; min-height: 44px; padding: 44px var(--s-1) var(--s-1) 0; }
+.loop-vein.is-across .vein-dot { position: absolute; left: auto; top: 0; }
+.loop-vein.is-across .vein-word { display: block; }
+.vein-status { display: block; color: var(--text-3); white-space: nowrap; }
+.vein-row.is-past .vein-status { color: var(--text-2); }
+.vein-row.is-now .vein-status { color: var(--text); }
+.loop-vein.is-across .vein-row.is-now .vein-word, .ov-strip.is-finished .vein-row:last-child .vein-word { color: var(--slime); }
+.loop-vein.is-across button.vein-stop:hover .vein-status { color: var(--text); }
+.ov-strip { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+
+/* Right now */
+.ov-now { display: grid; grid-template-columns: minmax(0, 7fr) minmax(320px, 5fr); gap: var(--s-7); align-items: center; }
+.ov-map { position: relative; min-width: 0; }
+.ov-map-wait { aspect-ratio: 1; max-height: 560px; display: grid; place-items: center; }
+.ov-map-link { display: block; aspect-ratio: 1; max-height: 560px; margin: 0 auto; border-radius: var(--r-full); }
+.ov-map-link .network-canvas { width: 100%; height: 100%; min-height: 0; pointer-events: none; cursor: inherit; }
+.ov-map-link:focus-visible { outline: 2px solid var(--slime); outline-offset: 2px; }
+.ov-map-table { position: absolute; left: 0; bottom: 0; color: var(--text-2); }
+.ov-now-copy { display: grid; gap: var(--s-3); align-content: center; }
+.ov-now-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); }
+.ov-now-source .eyebrow, .ov-section-head .eyebrow { margin: 0; }
+.ov-epoch { margin: 0; color: var(--text); }
+.ov-epoch.is-stale { color: var(--text-2); }
+.ov-health { margin: 0; color: var(--text-2); }
+.ov-more { color: var(--text-3); text-decoration: underline dotted; cursor: help; }
+.ov-why { margin: 0; color: var(--text-2); max-width: 54ch; }
+.ov-now-actions { margin: var(--s-2) 0 0; }
+
+/* Featured and activity */
+.ov-section-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-4); margin-bottom: var(--s-4); }
+.ov-section-head > a:last-child { margin-left: auto; }
+.ov-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-4); }
+
+/* The landing story */
+.landing-section { display: grid; gap: var(--s-6); min-width: 0; }
+.landing-head { display: grid; gap: var(--s-3); }
+.landing-head .eyebrow { margin: 0; color: var(--slime); }
+.ov-section-line { margin: 0; font: 500 30px/34px var(--font-display); color: var(--text); max-width: 26em; text-wrap: balance; }
+.landing-lede { margin: 0; color: var(--text-2); }
+.landing-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0; color: var(--text-3); }
+.landing-source .source-badge { padding: 0; min-height: 0; background: none; border: 0; cursor: pointer; color: inherit; }
+
+/* A real spore with a pen's labels, in the art's own coordinates (LandingStory SHEET). */
+.sp-plate { position: relative; margin: 0; aspect-ratio: 1000 / 560; max-width: 1000px; width: 100%; justify-self: center; }
+.sp-art { position: absolute; left: 29%; top: 17.86%; width: 42%; }
+.sp-caption { position: absolute; left: 29%; width: 42%; top: 95%; text-align: center; color: var(--text-3); }
+.sp-pen { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.sp-pen .hand-arrow-shaft { animation-duration: var(--t-grow); }
+.sp-pen .hand-arrow-head { animation-delay: calc(var(--t-grow) * 0.85); }
+.sp-label { position: absolute; width: 24%; margin: 0; display: grid; gap: var(--s-0); }
+.sp-label .heading { color: var(--slime); }
+.sp-label .body { color: var(--text-2); }
+.sp-label.is-tl { left: 0; top: 8%; }
+.sp-label.is-bl { left: 0; top: 72%; }
+.sp-label.is-tr { right: 0; top: 8%; }
+.sp-label.is-br { right: 0; top: 72%; }
+
+.landing-three { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-6); }
+.landing-three li { display: grid; align-content: start; gap: var(--s-2); border-top: 1px solid var(--line); padding-top: var(--s-3); }
+.landing-three h3, .landing-proof h3, .how-words h3 { margin: 0; color: var(--text); }
+.landing-three p { margin: 0; color: var(--text-2); }
+
+.landing-ledger { list-style: none; margin: 0; padding: 0; display: grid; }
+.landing-ledger li { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-6); padding: var(--s-4) 0; border-top: 1px solid var(--line); align-items: baseline; }
+.landing-problem { margin: 0; color: var(--text-3); }
+.landing-answer { margin: 0; color: var(--text); max-width: none; }
+
+/* How it works: a vein grows down the steps as they're read. */
+.how { position: relative; padding-left: var(--s-7); }
+.how-vein { position: absolute; left: 0; top: 0; width: 24px; height: 100%; pointer-events: none; fill: none; }
+.how-vein.is-track path { stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 2 6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.how-vein.is-fill path { stroke: var(--slime); stroke-width: 4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.how-vein.is-fill { clip-path: inset(0 -8px calc((1 - var(--fill)) * 100%) -8px); }
+.how-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-8); }
+.how-step { position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--s-6); align-items: start; }
+.how-step::before { content: ''; position: absolute; left: calc(var(--s-7) * -1 + var(--s-1) + var(--s-0)); top: var(--s-2); width: 12px; height: 12px; border-radius: var(--r-full); background: var(--bg); box-shadow: 0 0 0 1.5px var(--line-strong); transition: background var(--t-panel) var(--ease-out), box-shadow var(--t-panel) var(--ease-out); }
+.how-step.is-seen::before { background: var(--slime); box-shadow: 0 0 0 1.5px var(--slime); }
+.how-words { display: grid; gap: var(--s-2); }
+.how-words p { margin: 0; color: var(--text-2); }
+.how-rule { color: var(--text) !important; }
+.how-figure { margin: 0; display: grid; gap: var(--s-2); color: var(--text); padding: var(--s-3) var(--s-4); background: var(--surface); border-radius: var(--r-2); }
+.how-figure p { margin: 0; }
+p.how-figure { display: block; }
+.how-figure .body { color: var(--text-2); }
+.how-figure figcaption { color: var(--text-3); }
+.how-figure .ov-tx { justify-self: start; }
+.how-quotes { width: 100%; border-collapse: collapse; }
+.how-quotes tbody tr { border-top: 1px solid var(--line); }
+.how-quotes th, .how-quotes td { padding: var(--s-1) var(--s-2) var(--s-1) 0; text-align: left; vertical-align: top; font-weight: 400; }
+.how-quotes tr.is-won th { color: var(--text); }
+.how-quotes td:last-child { white-space: nowrap; padding-right: 0; }
+.how-quotes td:nth-child(2) { width: 100%; }
+.how-bar { display: block; height: 8px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--value); overflow: hidden; }
+.how-bar > span { display: block; height: 100%; background: var(--agent); border-radius: var(--r-full); }
+.how-bar-words { display: block; margin-top: var(--s-1); color: var(--text-2); }
+.how-tube { display: block; width: 100%; height: 72px; }
+.how-tube-ends { display: flex; justify-content: space-between; gap: var(--s-3); color: var(--text-2); }
+.how-arts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+.how-arts li { display: grid; gap: var(--s-1); color: var(--text-3); }
+
+.landing-proof { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-6); }
+.landing-proof > li { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); border-top: 1px solid var(--line); padding-top: var(--s-3); }
+.landing-proof .btn { margin-top: auto; }
+.landing-proof p { margin: 0; color: var(--text-2); }
+.landing-result { color: var(--text) !important; }
+.landing-refusals { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); color: var(--warn); }
+.landing-sim { display: inline-block; padding: 0 var(--s-2); border: 1px dashed var(--line-strong); border-radius: var(--r-blob); color: var(--text); }
+
+.landing-limits { padding-left: var(--s-4); display: grid; gap: var(--s-2); }
+
+.landing-end { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--s-6); padding: var(--s-7) 0 var(--s-7); border-top: 1px solid var(--line); }
+.landing-end-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-4) 0 0; }
+.landing-end-nav { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-4); }
+.landing-end-nav a { color: var(--text-2); }
+
+/* A short or narrow laptop: the smaller display size, so the eight stops still fit on the first screen. */
+@media (max-width: 1359px), (max-height: 899px) {
+  .ov-line { font-size: 30px; line-height: 34px; }
+}
+/* The tall screen's two-line heading comes out of the stage's height. */
+@media (min-width: 1360px) and (min-height: 900px) {
+  .ov-stage .sale-stage { height: clamp(420px, calc(100vh - 350px), 770px); }
+}
+@media (max-width: 1199px) {
+  .ov-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ov-stop { grid-template-columns: auto minmax(0, 1fr); row-gap: var(--s-2); }
+  .ov-stop-links { grid-column: 2; justify-content: flex-start; }
+  .landing-proof { grid-template-columns: minmax(0, 1fr); }
+  .how-step { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+}
+@media (max-width: 899px) {
+  .overview { gap: var(--s-8); margin-top: calc(var(--s-3) - var(--s-7)); }
+  .landing-nav { display: none; }
+  .landing-page, .page.landing-page { padding-bottom: var(--s-5); }
+  .ov-hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: 'line' 'note' 'stage' 'strip' 'sheet' 'sentence' 'actions';
+    row-gap: var(--s-3);
+  }
+  .ov-note { min-height: 72px; margin: 0; max-width: none; }
+  /* No figures on the stage now, so the dish needs only its width and the parties' room at its foot. */
+  .ov-stage .loop-stages { min-height: 0; }
+  .ov-stage .sale-stage { height: calc(100vw + 64px); min-height: 400px; max-height: 790px; }
+  .ov-stage-source { position: static; width: auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); margin-bottom: var(--s-2); }
+  /* The stops scroll sideways with the chosen one in view: each keeps a thumb's width. */
+  .ov-strip { margin-inline: calc(var(--page-pad) * -1); padding-inline: var(--page-pad); }
+  .loop-vein.is-across { min-width: 780px; }
+  .ov-stop { grid-template-columns: minmax(0, 1fr); }
+  .ov-stop .ov-play { width: 100%; min-height: 44px; }
+  .ov-stop-links { grid-column: 1; }
+  .ov-stop-links a { min-height: 44px; display: inline-flex; align-items: center; }
+  .ov-now { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+  .ov-map-table { position: static; display: block; margin-top: var(--s-2); }
+  /* Cards scroll sideways with snap on a phone. */
+  .ov-cards { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: var(--s-3); padding-bottom: var(--s-2); }
+  .ov-cards > li { flex: 0 0 78%; scroll-snap-align: start; }
+  /* The plate's labels leave the art and sit under it: the words don't need the pen. */
+  .sp-plate { aspect-ratio: auto; display: grid; gap: var(--s-3); }
+  .sp-art, .sp-caption, .sp-label { position: static; width: auto; }
+  .sp-art { width: min(100%, 420px); justify-self: center; }
+  .sp-pen { display: none; }
+  .landing-three, .landing-ledger li { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
+  .landing-ledger li { gap: var(--s-1); }
+  .how { padding-left: var(--s-6); }
+  .how-step::before { left: calc(var(--s-6) * -1 + var(--s-1) + var(--s-0)); }
+  .how-arts { gap: var(--s-2); }
+  .landing-end { flex-direction: column; align-items: flex-start; }
+  .landing-end-nav a { min-height: 44px; display: inline-flex; align-items: center; }
+}
+@media (prefers-reduced-transparency: reduce) { .hand-arrow-halo { opacity: 1; } }

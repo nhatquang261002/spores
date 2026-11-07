@@ -1,0 +1,197 @@
+/* `/verify` and VerificationResult (Design §6.G): an evidence table, so plain 1 px
+   rules and mono throughout; status is always a glyph and a word. */
+.verify-header {
+  display: grid;
+  gap: var(--s-3);
+  margin-bottom: var(--s-6);
+}
+.verify-sources {
+  color: var(--text-2);
+}
+.verify-chain {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-left: var(--s-3);
+}
+.verify-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+.verify-spore {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-2);
+}
+.verify-spore input {
+  width: 8ch;
+  min-height: 40px;
+  padding: var(--s-1) var(--s-2);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+}
+.verify-target {
+  color: var(--text-2);
+  margin-bottom: var(--s-4);
+}
+.verify-status:not(:empty) {
+  margin-bottom: var(--s-4);
+}
+.verify-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+}
+.verify-failed {
+  display: grid;
+  gap: var(--s-2);
+  margin-bottom: var(--s-5);
+}
+.verify-failed ul {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.verify-table-wrap {
+  margin-bottom: var(--s-4);
+}
+.verify-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.verify-table th {
+  text-align: left;
+  color: var(--text-3);
+  padding: var(--s-2) var(--s-3) var(--s-2) 0;
+  border-bottom: 1px solid var(--line);
+}
+.verify-table td {
+  padding: var(--s-2) var(--s-3) var(--s-2) 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.verify-table tr.is-target > td {
+  background: var(--surface-2);
+}
+.verify-detail > td {
+  background: var(--surface);
+  padding: var(--s-3) var(--s-4);
+}
+.verify-mark {
+  white-space: nowrap;
+  margin-left: var(--s-2);
+}
+.verify-table td > .verify-mark:first-child {
+  margin-left: 0;
+}
+.verify-toggle {
+  min-height: 24px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.verdict {
+  white-space: nowrap;
+}
+.verify-reason {
+  display: block;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.verify-dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--s-2) var(--s-4);
+  margin: 0;
+}
+.verify-dl dt {
+  color: var(--text-3);
+}
+.verify-dl dd {
+  margin: 0;
+  min-width: 0;
+}
+.verify-value {
+  overflow-wrap: anywhere;
+}
+.verify-diff {
+  display: grid;
+  gap: var(--s-0);
+  overflow-wrap: anywhere;
+}
+.verify-head {
+  color: var(--text-2);
+  margin-bottom: var(--s-6);
+}
+.verify-image {
+  display: grid;
+  gap: var(--s-3);
+  margin-bottom: var(--s-6);
+}
+.verify-image-body {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+.verify-figures {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--s-4);
+  align-items: start;
+}
+.verify-footer {
+  display: grid;
+  gap: var(--s-1);
+  color: var(--text-2);
+  padding-top: var(--s-4);
+  margin-bottom: var(--s-3);
+  border-top: 1px solid var(--line);
+}
+.verify-footer p {
+  margin: 0;
+}
+.verify-compact {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+@media (max-width: 899px) {
+  .verify-image-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Mobile: the row keeps epoch, fingerprint and result; opening it shows every check. */
+@media (max-width: 767px) {
+  .v-col-optional {
+    display: none;
+  }
+  .verify-dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-1);
+  }
+  .verify-dl dd {
+    margin-bottom: var(--s-2);
+  }
+  .verify-chain {
+    margin-left: 0;
+  }
+  .verify-toggle {
+    min-height: 40px;
+  }
+}

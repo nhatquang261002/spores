@@ -42,7 +42,7 @@ The Discord question in SPEC §14 is answered by Q-001 in the published rules; a
 | Prepaid gas per transaction | 1 PGas (1000 TGas) since protocol 83. Some docs pages still say 300 TGas (stale) | https://docs.near.org/protocol/transactions/gas; live testnet `EXPERIMENTAL_protocol_config`: `max_total_prepaid_gas = 1000000000000000`, protocol 88 |
 | View-call gas | Per-node setting (`max_gas_burnt_view`, RPC-only override). Public provider values are not documented. **Open:** measure glyph view gas on the RPC we use | nearcore `client_config.rs`: "The value only affects the RPCs." |
 | Storage price | 1e19 yocto per byte (100 kB per NEAR) | docs storage-staking page; live testnet `storage_amount_per_byte = 10000000000000000000` |
-| 64-spore storage | **Measured 2026-10-31:** 565 bytes per spore (36,202 bytes for 64, 0.36 NEAR); contract code 437 KB = 4.38 NEAR (`docs/phase3-results.md`). Was: **Open.** Measure with `env::storage_usage()` before and after `mint_genesis`. Risk to design for: per-epoch state hashes for all 64 spores are 2 kB/epoch, so 1000 demo epochs come to about 20 NEAR. Store hashes for active spores only, or keep a rolling window | storage-staking page recommends measuring with `env::storage_usage()` |
+| 64-spore storage | **Measured 2026-10-31:** 565 bytes per spore (36,202 bytes for 64, 0.36 NEAR); contract code 437 KB = 4.38 NEAR (`docs/results.md`). Was: **Open.** Measure with `env::storage_usage()` before and after `mint_genesis`. Risk to design for: per-epoch state hashes for all 64 spores are 2 kB/epoch, so 1000 demo epochs come to about 20 NEAR. Store hashes for active spores only, or keep a rolling window | storage-staking page recommends measuring with `env::storage_usage()` |
 
 ## Policy and keys (SPEC §5.3, §5.6, §7.1)
 
@@ -52,7 +52,7 @@ The Discord question in SPEC §14 is answered by Q-001 in the published rules; a
 | Testnet check (2026-10-31) | A function-call key calling a method outside its list is rejected before inclusion with `InvalidAccessKeyError.MethodNameMismatch`; attaching 1 yocto gives `InvalidAccessKeyError.DepositWithFunctionCall` (`docs/phase3-testnet-run.txt`) | |
 | Design impact | Agent payments must be ledger moves inside the router with no attached deposit; this already matches §5.2. NFT transfer, `buy` and `deposit` need a full-access (owner) key. The router cannot delete keys on the operator's account, so "old operator key stops working" is enforced by clearing the registered operator id, not by key deletion. Make sure the §5.3 "key generation counter" means exactly that | as above |
 | Contract-controlled sub-accounts (§5.6) | A contract can add or delete keys on a new sub-account only in the same batch that starts with `CreateAccount`; after that it has no control unless it deployed a contract there exposing key methods. Account creation costs 0.007 NEAR plus storage. **The spike would need a proxy contract per spore.** Expect no-go unless it is cheap | nomicon RuntimeSpec/Actions: AddKey/DeleteKey require `predecessor_id == receiver_id` unless the first action is `CreateAccount`; docs anatomy/actions: "Accounts do NOT have control over their sub-accounts" |
-| Update 2026-10-31 (Phase 2) | Global contracts make the per-spore proxy cheap (publisher burns 10 NEAR per 100 kB once; a referencing account pays under 0.001 NEAR; `near-sdk` has `Promise::use_global_contract`). Cost was not the blocker. **No-go** on other grounds (no custody gain, no atomic `buy`). Contract-initiated `UseGlobalContract` in a `CreateAccount` batch is **unverified** | https://docs.near.org/smart-contracts/global-contracts; https://docs.rs/near-sdk/latest/near_sdk/struct.Promise.html; `docs/phase2-results.md` |
+| Update 2026-10-31 (Phase 2) | Global contracts make the per-spore proxy cheap (publisher burns 10 NEAR per 100 kB once; a referencing account pays under 0.001 NEAR; `near-sdk` has `Promise::use_global_contract`). Cost was not the blocker. **No-go** on other grounds (no custody gain, no atomic `buy`). Contract-initiated `UseGlobalContract` in a `CreateAccount` batch is **unverified** | https://docs.near.org/smart-contracts/global-contracts; https://docs.rs/near-sdk/latest/near_sdk/struct.Promise.html; `docs/results.md` |
 | Contract key API | `Promise::create_account`, `add_full_access_key`, `add_access_key_allowance(pk, allowance, receiver, "m1,m2")`, `delete_key` (`add_access_key` deprecated) | https://docs.rs/near-sdk/latest/near_sdk/struct.Promise.html |
 
 ## Off-chain tooling (SPEC §6)
@@ -92,12 +92,54 @@ docs/       these notes and decision records
 - Testnet accounts: created 2026-10-29. Parent `spores-hack.testnet` via the faucet (10 NEAR; the third try succeeded after two 429s, tx 2DsXEerXKhmaRXtiXbjm8vVW3YvQa4TK3gBnvs238EFH). Sub-accounts funded from the parent and confirmed by RPC `view_account`: `deployer.spores-hack.testnet` 3 NEAR, `owner.spores-hack.testnet` 2, `operator.spores-hack.testnet` 1, `buyer.spores-hack.testnet` 2. Parent keeps about 2 NEAR. Keys are in the git-ignored `.env` (mode 600) as `<ROLE>_ACCOUNT_ID` / `<ROLE>_PRIVATE_KEY`, and also in the macOS keychain. Note the operator key is full-access for now; Phase 3 should replace it with a function-call key limited to the router.
 - Items marked **Open** above. Each one is resolved by a measurement in Phases 2-3.
 
+## Phase 6 (checked 2026-11-03)
+
+Re-read from live testnet for 64 active spores (`docs/phase6-plan.md` S2). All values are unchanged since Phase 5.
+
+| Item | Answer | Evidence |
+| --- | --- | --- |
+| Log length per receipt | 16,384 bytes of log text in total, across all logs of one receipt. Splitting `epoch_closed` into several logs in the same receipt therefore does not help | `EXPERIMENTAL_protocol_config` (protocol 88, `https://rpc.testnet.near.org`, 2026-11-03): `limit_config.max_total_log_length = 16384`; field meaning: https://docs.rs/near-parameters/latest/near_parameters/vm/struct.LimitConfig.html |
+| Logs per receipt | 100 | same call: `limit_config.max_number_logs = 100` |
+| Gas per transaction | 1 PGas prepaid and burnt (`max_total_prepaid_gas` = `max_gas_burnt` = 1e15); 100 actions per receipt | same call: `max_total_prepaid_gas = 1000000000000000`, `max_gas_burnt = 1000000000000000`, `max_actions_per_receipt = 100` |
+| View-call gas | Still **open**: a per-node RPC setting, not part of the protocol config. Unset, the node uses its genesis value. Not published by FastNEAR or dRPC | https://github.com/near/nearcore/blob/master/core/chain-configs/src/client_config.rs (`max_gas_burnt_view`: "only affects the RPCs") |
+| Storage price | 1e19 yocto per byte (100 kB per NEAR) | same call: `storage_amount_per_byte = 10000000000000000000`; https://docs.near.org/protocol/storage/storage-staking ("1E19 yoctoNEAR per byte") |
+| `epoch_closed` at 64 active | **Does not fit in the worst case.** Router test `epoch_closed_log_size_at_64_active` (flows up to 9.99 NEAR per edge per epoch): the sim's peak at 64 active (292 tubes, 149 flow edges, 103 reject edges) is 14,015 bytes; every pair a tube, flow and reject is 129,695 bytes. Ceilings: 889 tubes with no flows, 352 tubes in the sim's mix. The largest `max_active` whose worst case fits is 22. A close whose event is over the limit fails, so the router could not close again until its code changes | `cargo test -p spores-router epoch_closed_log_size -- --nocapture` |
+
+## Phase 6 S8: wallet (checked 2026-11-04)
+
+| Item | Answer | Evidence |
+| --- | --- | --- |
+| Recommended package | NEAR's current docs use **`@hot-labs/near-connect`** (`new NearConnector({ network: "testnet" })`, `connector.connect()`, `connector.wallet()`, `wallet.signAndSendTransaction({ receiverId, actions })`), not `@near-wallet-selector/*`. `@near-wallet-selector/core` is at 10.1.4 (last published 2025-12-04); near-connect at **0.12.0** (2026-10-26), MIT, no runtime dependencies (the `@near-js/*` imports in its `.d.ts` are types only) | https://docs.near.org/web3-apps/tutorials/wallet-login; `npm view @hot-labs/near-connect`, `npm view @near-wallet-selector/core` (2026-11-04); `build/NearConnector.d.ts`, `build/types/index.d.ts` in the 0.12.0 tarball |
+| API used | `NearConnector({ network, features, autoConnect, footerBranding })`, `connect(): Promise<NearWalletBase>`, `disconnect()`, `getConnectedWallet(): {wallet, accounts}`, `wallet(): Promise<NearWalletBase>`, `NearWalletBase.getAccounts({network})`, `signAndSendTransaction({network?, signerId?, receiverId, actions}): Promise<FinalExecutionOutcome>`. Actions accept the wallet-selector shape `{type:"FunctionCall", params:{methodName, args, gas, deposit}}` (gas and deposit as strings). The app still reads the final outcome itself with `tx` (`wait_until: FINAL`) | the 0.12.0 type declarations (above) |
+| Wallets with testnet | Wallets come from a remote manifest (`https://raw.githubusercontent.com/hot-dao/near-selector/refs/heads/main/repository/manifest.json`, version 1.1.0 on 2026-11-04), filtered by `features: { testnet: true, signAndSendTransaction: true }`. `testnet: true`: Meteor, Intear, Ledger, Nightly, WalletConnect (needs a project id, so it is dropped), Unity, Ethereum Wallets, NEAR CLI. Not marked for testnet: HOT, MyNearWallet, OKX, Trezu, Hana; NEAR Mobile is `testnet: false`. The picker in Chrome (router4 app, 2026-11-04) listed Meteor, Intear, Ledger, Nightly, Ethereum Wallets and NEAR CLI | manifest fetched with curl; Chrome check in the S8 session log |
+| Closing the picker | `connect()` rejects with `User rejected`; the app treats it as no error | Chrome, 2026-11-04 |
+
+## Phase 6 S10: old transactions from a browser (checked 2026-11-05)
+
+Provider list: https://docs.near.org/api/rpc/providers. One old close tx (epoch 3 of router4) asked of each endpoint with `wait_until: FINAL`.
+
+| Endpoint | In the docs' testnet table | What it did |
+| --- | --- | --- |
+| `archival-rpc.testnet.near.org` | Public, archival, "Severely rate limited" | About 4.5 s per tx at first, then HTTP 429: `WARNING! THIS ENDPOINT IS DEPRECATED! STOP USING IT NOW! Switch to https://fastnear.com or alternative RPC providers`. The docs page says nothing about a deprecation |
+| `archival-rpc.testnet.fastnear.com` | **Not listed.** The table's FastNEAR row is `test.rpc.fastnear.com`, archival "Paid Only" | 1.2 s, no key, `access-control-allow-origin: *`. Limits later: `Rate limits exceeded. For higher rate limits get a subscription` |
+| `test.rpc.fastnear.com` | Public, archival "Paid Only" | `TIMEOUT_ERROR` after 10–30 s |
+| `near-testnet.drpc.org` | Public, not archival | About 2.3 s: `Request timeout on the free plan` |
+| `rpc.testnet.near.org` | Not listed | HTTP 408 `TIMEOUT_ERROR` after 14 s |
+| `near-testnet.lava.build` | Not listed (Lava has no public testnet URL there) | HTTP 410 `This endpoint has been discontinued` |
+
+- Both archival nodes send their 429 without `access-control-allow-origin` (Chrome: "blocked by CORS policy"), so `fetch` rejects with `Failed to fetch` and the page can't read the status. The app says "unreachable or rate-limited" for this.
+- The app uses FastNEAR's archival, then near.org's (`ARCHIVAL_RPCS`). The FastNEAR URL was found by trying it, not from the docs, and "Paid Only" may come to apply: treat it as working today, not as promised.
+- The app and, since the follow-up below, `spores-verify` send only close `tx` reads there first; views stay on the regular nodes. Before that, `spores-verify` with `NEAR_RPCS` set to an archival node sent its views there too, which is how it reached the limit after 25 txs and 8 views.
+- Team decision (2026-11-05): keep using FastNEAR's archival node, and change the CLI's defaults to match the app.
+- CLI follow-up, measured the same day against router4 with no `NEAR_RPCS`: README `epochs` over 16 closes 21 s, `image` 17 s; all 25 closes 22 s and 77 s, `image --spore 5` over 25 in 79 s, all exit 0 and `match`. With the `NEAR_RPCS` of `scripts/phase6-testnet.sh`, which used to leave no archival node at all: 25 closes in 66 s, exit 0. Archival unreachable (`NEAR_ARCHIVAL_RPCS=http://127.0.0.1:9`): exit 2 after 71 s, naming all three endpoints.
+- The docs ask not to load-test shared endpoints. Each Verify run is one request per close plus one view per epoch, at most 2 and 3 at a time.
+
 ## Phase 5 (checked 2026-11-02)
 
 | Item | Answer | Evidence |
 | --- | --- | --- |
 | NEP-199 payouts | `nft_payout(token_id, balance, max_len_payout: Option<u32>) -> {payout: {account: U128}}` and `nft_transfer_payout(receiver_id, token_id, approval_id: Option<u64>, memo, balance, max_len_payout)`. The payout "MUST be no longer than" `max_len_payout`, the balances "MUST add up to less than or equal to" `balance`, and financial contracts "MUST NOT set their maximum length below 10". Still not in `near-contract-standards` 5.30.0, so the router implements both. Its split always sums to exactly `balance` | https://github.com/near/NEPs/blob/master/neps/nep-0199.md |
 | Log limits | 100 logs and 16,384 bytes of log text per receipt on live testnet (protocol 88). The extended `epoch_closed` event at the worst case the active cap allows (16 spores, all 120 pairs trading) stays under it: router test `the_largest_epoch_closed_event_fits_the_log_limit` | `EXPERIMENTAL_protocol_config`: `runtime_config.wasm_config.limit_config.max_number_logs = 100`, `max_total_log_length = 16384` |
-| Archival testnet RPC | The only public one is `https://archival-rpc.testnet.near.org` ("severely rate limited"). FastNEAR's archival is paid; dRPC and Intear are not archival. `spores-verify` tries FastNEAR, then dRPC, then the archival node, so it still works after the others drop old transactions | https://docs.near.org/api/rpc/providers; `status` call to the archival node answered (protocol 88) |
+| Archival testnet RPC | The only public one is `https://archival-rpc.testnet.near.org` ("severely rate limited"). FastNEAR's archival is paid; dRPC and Intear are not archival. (Superseded by "Phase 6 S10" above: `spores-verify` now reads close txs from archival nodes first, including FastNEAR's, which answers without a key today.) | https://docs.near.org/api/rpc/providers; `status` call to the archival node answered (protocol 88) |
 | near-sdk 5.30 base64 | `near_sdk::base64` re-exports base64 0.22 (`Engine` API); `Base64VecU8` serializes `media_hash` | `cargo tree -p spores-router`; near-sdk `src/lib.rs:1667` |
 | Faucet account | `near account create-account sponsor-by-faucet-service <id> use-manually-provided-public-key <pk> network-config testnet create` (near-cli-rs 0.30.1) gave `spores-hack-router4.testnet` 10 NEAR; the key was generated by `setup.ts` and only the public key passed to the CLI | `near ... --help`; Phase 5 setup log |

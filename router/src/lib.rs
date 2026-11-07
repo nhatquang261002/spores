@@ -98,6 +98,8 @@ impl Router {
         if let Err(e) = config.validate() {
             env::panic_str(&e);
         }
+        // A fresh account has no counter; a mocked test chain may still hold one.
+        env::storage_write(jobs::ESCROWED_JOBS_KEY, &0u64.to_le_bytes());
         Router {
             tokens: NonFungibleToken::new(
                 StorageKey::Owners,
@@ -252,6 +254,25 @@ impl Router {
         require!(self.spore(spore_id).listing.is_none(), "a listed spore cannot be paused; delist it first");
         self.spore_mut(spore_id).policy.paused = true;
         emit("spore_paused", json!({ "spore_id": spore_id }));
+    }
+
+    /// Admin only, 1 yoctoNEAR. Raises `max_active` (it can never be lowered),
+    /// up to `supply_cap`. Also recounts the escrowed jobs the epoch pair cap
+    /// counts, which a router deployed before the cap never stored.
+    #[payable]
+    pub fn set_max_active(&mut self, max_active: u32) {
+        assert_one_yocto();
+        require!(env::predecessor_account_id() == self.admin, "only the admin can change the config");
+        let old = self.config.max_active;
+        require!(max_active > old, "max_active can only be raised");
+        require!(max_active <= self.config.supply_cap, "max_active cannot exceed supply_cap");
+        self.config.max_active = max_active;
+        let escrowed = self.jobs.values().filter(|j| j.provider.is_some()).count() as u64;
+        self.set_escrowed_jobs(escrowed);
+        emit(
+            "config_changed",
+            json!({ "field": "max_active", "old": old, "new": max_active, "escrowed_jobs": escrowed }),
+        );
     }
 }
 

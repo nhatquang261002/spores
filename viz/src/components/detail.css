@@ -1,0 +1,249 @@
+/* Spore detail (Design §6.D): two columns ≥ lg (7 / 5 of 12), sticky art on
+   the left with no border; identity, actions, one primary figure, inline
+   secondary figures and plain sections on the right. Tokens only; 720 px
+   (art max) and 40 px (hit target) are the Design's own sizes. */
+
+.detail-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+.breadcrumb {
+  color: var(--text-2);
+}
+.breadcrumb a {
+  color: var(--text-2);
+}
+.breadcrumb [aria-current] {
+  color: var(--text);
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--s-7) var(--s-5);
+  align-items: start;
+}
+.detail-left {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--s-5));
+  display: grid;
+  gap: var(--s-2);
+}
+.detail-art {
+  max-width: 720px;
+}
+.art-caption {
+  color: var(--text-2);
+}
+.detail-right {
+  display: grid;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+/* Identity: the display face on the name only (§3.2) */
+.identity {
+  display: grid;
+  gap: var(--s-2);
+}
+.detail-name {
+  margin: 0;
+}
+.detail-name[data-swell='grew'] {
+  animation: name-grow var(--t-epoch) var(--ease-grow);
+}
+.detail-name[data-swell='decayed'] {
+  animation: name-decay var(--t-epoch) var(--ease-decay);
+}
+:root[data-reduced-motion='true'] .detail-name {
+  animation: none;
+}
+.identity-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  color: var(--text-2);
+}
+.identity .swatch {
+  display: inline-block;
+  background: var(--accent);
+}
+.chip-you {
+  padding: 0 var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-blob);
+  color: var(--text);
+}
+
+/* Owner actions (§6.D.1): primary, then "More" */
+.owner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+.owner-more {
+  flex-basis: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.owner-more[hidden] {
+  display: none;
+}
+
+/* The one primary figure, then inline secondary figures (principle 2) */
+.primary-figure {
+  display: grid;
+  gap: var(--s-1);
+}
+.figure-note {
+  color: var(--text-2);
+  margin: 0;
+}
+.secondary-figures {
+  color: var(--text-2);
+  margin: 0;
+}
+.money {
+  color: var(--value);
+}
+.figure-l.is-stale,
+.money.is-stale {
+  color: var(--text-2);
+}
+.allowance {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.allowance-meter {
+  display: inline-block;
+  width: var(--s-7);
+  height: 1px;
+  background: var(--line);
+}
+.allowance-meter > span {
+  display: block;
+  height: 1px;
+  background: var(--value);
+}
+.word-warn {
+  color: var(--warn);
+}
+.glyph-agent {
+  color: var(--agent);
+}
+
+/* Sections: plain, separated by space and a --line rule (no cards in cards) */
+.detail-section {
+  display: grid;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line);
+}
+.detail-section .heading {
+  margin: 0;
+}
+.connections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.connections li {
+  display: grid;
+  grid-template-columns: var(--s-6) auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 40px;
+  border-bottom: 1px solid var(--line);
+}
+/* the 32 px partner thumbnail (§7 SporeArtwork `thumb`) */
+.conn-thumb .artwork-thumb .artwork-frame,
+.conn-thumb-empty {
+  display: block;
+  width: var(--s-6);
+  height: var(--s-6);
+  background: var(--art-bg);
+}
+.conn-ref {
+  text-decoration: none;
+  color: var(--text);
+}
+.conn-share {
+  color: var(--text-2);
+}
+.policy {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--s-2) var(--s-4);
+  margin: 0;
+}
+.policy dt {
+  color: var(--text-2);
+}
+.policy dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.policy dd a {
+  margin-right: var(--s-2);
+}
+.technical {
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line);
+}
+.technical summary {
+  cursor: pointer;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+.technical[open] summary {
+  margin-bottom: var(--s-3);
+}
+.token-json {
+  max-height: 40vh;
+  overflow: auto;
+  padding: var(--s-3);
+  background: var(--surface);
+  border-radius: var(--r-2);
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Below lg: one column; the art is full-width at the top, not sticky (§6.D mobile) */
+@media (max-width: 1199px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .detail-left {
+    position: static;
+  }
+  .detail-art {
+    max-width: none;
+  }
+}
+/* < md: the detail name is display-l (§3.2) */
+@media (max-width: 899px) {
+  .detail-name {
+    font: 500 48px/52px var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  .connections li {
+    grid-template-columns: var(--s-6) auto minmax(0, 1fr) auto;
+  }
+  .conn-share {
+    display: none;
+  }
+}

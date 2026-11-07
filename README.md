@@ -68,26 +68,66 @@ Known limits: <!-- TODO: list what is NOT covered, e.g. compromised owner key, m
 
 ## Try it
 
-Requirements: <!-- TODO: node/rust versions as actually used --> and a NEAR testnet account.
+There are two ways in. The recording needs no keys and no testnet; the real run needs funded testnet keys and spends gas.
 
-Each step is "do X, see Y". Fill in the commands and outputs from a real run, and re-run every step before publishing.
+Requirements: Rust with the `wasm32-unknown-unknown` target (built with rustc 1.97) and Node 23.6 or newer, because the agents run TypeScript directly.
 
-1. Install and configure. <!-- TODO: commands --> You should see: <!-- TODO -->
-2. Run the demo in fast-epoch mode. <!-- TODO: command --> You should see: <!-- TODO: dormant spores waking, agents trading, epoch close within ~30 s -->
-3. Open the viz. <!-- TODO: command or URL --> You should see: the collection gallery, a live network where tube thickness tracks payment flow, and a decision log for each hire.
-4. Watch a spore grow. <!-- TODO: command --> You should see: its image change between epochs as tubes thicken, and `verify` regenerate the same image from chain state.
-5. Trigger the shock. <!-- TODO: command --> You should see: the targeted agent removed, the network rerouting and the art changing over the following epochs.
-6. Run the injection test. <!-- TODO: command --> You should see: the agent attempt to send funds to the attacker, the router reject it, and the failed receipt. The agent is deliberately naive and the model's output is shown.
-7. Trigger the rogue agent. <!-- TODO: command --> You should see: an over-budget payment and a non-allowlisted payment rejected, and the spore's tubes decaying and its art shrinking.
-8. Run the wash-trading attacker. <!-- TODO: command --> You should see: the attacker's balance fall by more than it gains, and its spores' art barely change.
-9. List and buy a spore. <!-- TODO: command --> You should see: the NFT move to a second account, the seller and royalty paid, the old operator's next payment fail, the new owner's policy start paused, and balance, connections and age unchanged.
-10. Verify an epoch yourself. See below.
+### Watch a real run, recorded
+
+```sh
+bash scripts/build-wasm.sh   # the renderer and core as wasm, then their checks against the shared vectors
+(cd viz && npm ci)
+bash scripts/demo.sh --playback
+```
+
+You should see the app open on a recording of a real testnet run, badged `RECORDED`, with Spore #6 going through the whole loop in about 47 s: it wakes, hires #11 for 0.1715 NEAR, the tube to #11 goes from D 0 to 473,807, its reputation rises from 0.85 to 1.42, what it may spend goes up, its picture redraws, it is sold to a buyer for 0.50 NEAR, and the old key is refused. Then **Check it against the chain** replays all 63 epochs in your browser. That check reads testnet, so it says `! Unable` if you are offline. Everything else plays offline.
+
+The app's first page tells the same story in about 32 s, then shows what the collection is doing right now.
+
+### Run it for real
+
+This spends testnet gas, closes real epochs and **really sells one spore**, which stays with the buyer. It takes about 12 minutes. It signs as the router's owner and operators, so it needs their keys in a git-ignored `.env`, which is not in this repository. Without them, watch the recording and check it with the `spores-verify` commands below, which need no keys.
+
+```sh
+bash scripts/phase6-setup.sh # with those keys: funds and registers what the run needs; safe to run again
+bash scripts/demo.sh
+```
+
+The terminal prints each stage with what to look for, and the browser follows along at `/lab/loop`. A real run printed:
+
+```
+00:06 ✓ Wake      12 agents started. Spore #6 is the one to watch
+00:12 ✓ Close     epoch 55 closed
+01:18 ✓ Hire      #6 hired #11 at 0.171 NEAR from 1 quote
+01:18 ✓ Settle    #6 paid #11 0.171 NEAR
+01:34 ✓ Grow      tube #6–#11: D 0 → 473,807
+01:34 ✓ Reputation R 0.85 → 1.42, may spend 0.270 NEAR → 0.384 NEAR an epoch
+01:34 ✓ Art       redrawn from 3 tubes at age 57
+03:09 ✓ Sell      #6 sold to buyer.spores-hack.testnet for 0.500 NEAR
+04:21 ✓ Control   old key refused (caller is not this spore's operator); the buyer's agent sent pay_service
+11:43 ✓ Closes    9 closes
+11:43 ✓ Report    14 of 14 checks passed
+spores-verify epochs: verified 63 epochs on spores-hack-router4.testnet: match
+spores-verify image --spore 6: image: match
+```
+
+### The other scenes
+
+With those same keys, `node agents/src/scene-server.ts` serves the Demo Lab's scenes at `/lab`. It only answers pages on the same machine.
+
+Both story scenes also play from their recordings without keys.
+
+- **Rogue agent** (`/lab/rogue`). You should see the owner narrow a spore's policy, three payments refused by the contract with their failed receipts, one allowed, and its tubes decaying over two real closes. It needs a spore with two tubes that outlast two closes, and the page says when the router has none.
+- **Sale** (`/lab/sale`). You should see the NFT move to a second account, the seller and royalty paid, the old operator's next payment refused, and balance, tubes and age unchanged. It really sells a spore.
+- **Wash trading** (`/lab/wash`) is a simulation panel, labelled as one, from `cargo run --release -p spores-sim -- wash`. It opens on the case the defence loses.
+- **Prompt injection** is **not implemented**: no LLM agent exists in this project, and the Demo Lab card says so.
+- **Shocks** (remove an agent, raise a cost, cut a tube) were run on the Phase 4 router with `bash scripts/phase4-testnet.sh`; see `docs/results.md`.
 
 ## Verify an epoch
 
 ```
-cargo run --release -p spores-verify -- epochs --router spores-hack-router4.testnet --closes docs/phase5-closes.txt
-cargo run --release -p spores-verify -- image  --router spores-hack-router4.testnet --closes docs/phase5-closes.txt --spore 5
+cargo run --release -p spores-verify -- epochs --router spores-hack-router4.testnet --closes docs/router4-closes.txt
+cargo run --release -p spores-verify -- image  --router spores-hack-router4.testnet --closes docs/router4-closes.txt --spore 6
 ```
 
 The script reads each epoch's `epoch_closed` event from its close transaction (payments, rejections, fee pool and active set), reruns the update rule with the router's own parameters, rebuilds the canonical string and compares its sha256 with the fingerprint in the event and the one stored on-chain. `image` rebuilds a spore's state at the epoch of its committed image, checks the committed state hash, renders it and compares the image hash. On the Phase 5 run it printed one `epoch N: <fingerprint> match` line per epoch, then `verified 16 epochs on spores-hack-router4.testnet: match` and `image: match`. Old transactions are only on NEAR's rate-limited archival RPC, so a late replay is slow.
@@ -120,17 +160,19 @@ Report every result, even if connections do not win. -->
 
 | Item | State |
 | --- | --- |
-| Graph model, reputation and fingerprint | TODO |
-| Router, ledger and policy | TODO |
-| Spore NFT and transfer semantics | TODO |
-| Fixed-point renderer, image commits, glyph and gallery | TODO |
-| Market and royalties | Built and run on testnet: list, buy with royalty, old operator locked out, new owner takes over (`docs/phase5-results.md`) |
-| Agents, job escrow and outside service | TODO |
-| Living allowance | Built and enforced on every payment; values from the sim (`docs/phase5-results.md`). It did not bind in the testnet run |
-| Visualization | TODO |
-| Baseline and wash-trading results | TODO |
+| Graph model, reputation and fingerprint | Built. `spores-core` is the one implementation: the router, `sim`, `verify` and the browser all run it, checked against shared vectors |
+| Router, ledger and policy | Built and run on testnet: `spores-hack-router4.testnet`, 64 spores active, refusals seen in real receipts (`docs/results.md`) |
+| Spore NFT and transfer semantics | Built and run on testnet: NEP-171 and NEP-199; a transfer clears the operator, pauses the policy and keeps balance, tubes and age |
+| Fixed-point renderer, image commits, glyph and gallery | Built. Rust, wasm and the JS port match the shared vectors on the machines tried; a second physical machine has not run the check yet |
+| Market and royalties | Built and run on testnet: list, buy with royalty, old operator locked out, new owner takes over (`docs/results.md`) |
+| Agents, job escrow and outside service | Built and run on testnet: rule-based hiring, replayed against `spores-core` from the log. No LLM agent exists |
+| Living allowance | Built and enforced on every payment; values from the sim (`docs/results.md`). It did not bind in the testnet run |
+| Visualization | Built: landing page, gallery, network, spore page with wallet actions, activity, browser verify, Demo Lab. No wallet transaction has been signed from it yet, and it has not been run from a static host |
+| Baseline and wash-trading results | Run; `docs/results.md`. The attacker loses money in all 270 cases, but the reputation half of the gate holds in only 168 of 270 at 64 active with testnet-level traffic (1 job per spore per epoch), and 270 of 270 at 3 jobs |
 
 ## Demo
+
+Locally: `bash scripts/demo.sh --playback` (above) needs no keys and no testnet.
 
 <!-- TODO (team supplies): link to the public demo post on X (video attached, tags @NEARProtocol and #NEARHackathon), and a hosted demo URL if there is one. A local-only demo needs the video plus the reproducible steps above (Q-012). Keep any hosted demo up until 2026-11-18, ideally 2026-11-25. -->
 
