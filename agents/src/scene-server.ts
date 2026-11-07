@@ -1,4 +1,4 @@
-// Scene server (docs/phase6-plan.md S11): runs Demo Lab scenes for the app.
+// Scene server: runs Demo Lab scenes for the app.
 // Local only: it binds 127.0.0.1 and refuses any request whose peer, Host or
 // Origin isn't loopback, because a run signs with the keys in .env and any web
 // page could otherwise POST to it. Each scene runs as a child process, and its

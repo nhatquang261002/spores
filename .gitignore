@@ -32,3 +32,7 @@ out/
 .DS_Store
 .idea/
 .vscode/
+
+# Local working notes, kept out of the public repo
+HACKATHON.md
+docs/phase7-plan.md

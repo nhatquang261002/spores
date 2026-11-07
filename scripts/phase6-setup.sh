@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 6 setup (docs/phase6-plan.md S3): grow router4 to 64 active spores.
+# Phase 6 setup: grow router4 to 64 active spores.
 # Builds the router wasm; with REDEPLOY=1 deploys it to router4 as code only
 # (state kept); raises max_active to 64 from the admin; funds the deployer and
 # the operator from faucet accounts; activates spores 9-63 with the Phase 5

@@ -1,4 +1,4 @@
-// Sale and control transfer (docs/phase6-plan.md S12, SPEC §7.3): the owner lists
+// Sale and control transfer (SPEC §7.3): the owner lists
 // a spore, a separate buyer buys it, payouts are read from the receipts, the old
 // agent's key and the old owner are refused, the spore arrives locked with its
 // balance, tubes and age intact, and the buyer's own agent takes over.

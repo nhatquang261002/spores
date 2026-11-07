@@ -15,7 +15,7 @@ import { KeyPair, KeyPairSigner, PublicKey, actions, baseDecode, baseEncode, cre
 export const RPCS = (process.env.NEAR_RPCS ?? process.env.NEAR_RPC ?? 'https://test.rpc.fastnear.com,https://near-testnet.drpc.org').split(',');
 let next = Math.floor(Math.random() * RPCS.length);
 export const EXPLORER = 'https://testnet.nearblocks.io/txns';
-/** Router calls burn about 3 Tgas (docs/results.md); 10 keeps the allowance hold small. */
+/** Router calls burn about 3 Tgas (docs/how-it-works.md §8.6); 10 keeps the allowance hold small. */
 export const CALL_GAS_TGAS = 10;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

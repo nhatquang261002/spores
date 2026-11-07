@@ -1,4 +1,4 @@
-// Rogue agent scene on router4 (docs/phase6-plan.md S11, SPEC §7.3): the owner
+// Rogue agent scene on router4 (SPEC §7.3): the owner
 // sets narrow limits in the contract, a scripted agent with the spore's real
 // operator key breaks each one, and the contract refuses. Then the agent stays
 // quiet for two closes and the spore's tubes decay.

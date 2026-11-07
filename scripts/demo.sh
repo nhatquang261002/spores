@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The one command (docs/phase6-plan.md S13).
+# The one command.
 #
 #   bash scripts/demo.sh                     a real run on testnet, followed in the browser
 #   bash scripts/demo.sh --playback [run]    a committed recording: no keys, no testnet

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Saves a finished run as a committed RECORDED bundle in viz/public/recorded/<run>/
-# and lists it in recorded/index.json (docs/phase6-plan.md S13). Scans for secrets
+# and lists it in recorded/index.json. Scans for secrets
 # first and refuses a run that failed a check. Scene runs use record-scene.ts.
 # Usage: bash scripts/record-bundle.sh <run>
 set -euo pipefail

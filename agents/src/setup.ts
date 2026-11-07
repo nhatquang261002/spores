@@ -24,7 +24,7 @@
 //    and the keeper key may also call `commit_image`
 //
 // SETUP_PHASE=6 (scripts/phase6-setup.sh) grows router4 to every spore active
-// (docs/phase6-plan.md S3), with no init and no mint (all 64 exist):
+// with no init and no mint (all 64 exist):
 //  - REDEPLOY=1: code-only redeploy of the local wasm (same state layout),
 //    then the state is read back through `config` and `epoch_info`
 //  - `set_max_active(MAX_ACTIVE)` (64) from the admin

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 4 exit run on testnet (ROADMAP): the agents trade unattended for 8
+# Phase 4 exit run on testnet: the agents trade unattended for 8
 # epochs on the Phase 4 router with the outside service, the keeper and the
 # three scripted shocks (raise the runner-up's cost, cut the strongest tube,
 # kill the best-value provider). Checks the exit criteria and replays every

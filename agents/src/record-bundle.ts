@@ -1,6 +1,6 @@
 // Saves a finished run as a committed RECORDED bundle (viz/public/recorded/<run>/,
 // listed in recorded/index.json), so the app can replay the whole loop with no
-// keys, no server and no testnet (docs/phase6-plan.md S13). Used by
+// keys, no server and no testnet. Used by
 // scripts/record-bundle.sh; `--closes-only` just adds the run's closes to the
 // router's close list, which LIVE Network and Verify need to see every close.
 //

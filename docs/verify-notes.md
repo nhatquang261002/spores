@@ -1,16 +1,6 @@
-# VERIFY notes (Phase 0)
+# NEAR docs checks
 
-Checked 2026-10-29 against the live docs, crates.io/npm and read-only testnet RPC. One line of evidence per item. Re-check versions on 2026-11-01 before scaffolding; anything marked **open** is still unverified.
-
-## Rules
-
-| Item | Answer | Evidence |
-| --- | --- | --- |
-| HACKATHON.md | 2026-10-29: live copy was byte-identical to the local one (15915 bytes). **Stale as of 2026-10-31:** the local copy is 18999 bytes and the live copy is 19923 bytes. Live adds a Telegram row, a NEAR Builders partner row and "Partner notes" (Rhea; Agent Market: list your agent so it can earn). Re-diff before submitting | `curl https://nearhackathon.com/HACKATHON.md` + `diff` against the local file |
-| Pre-window code (SPEC §14, §16.8) | Allowed from the 2026-10-19 announcement; earlier commits are baseline. Disclose in README. Separate baseline from window work with a `pre-hackathon` tag or branch (Q-003) | HACKATHON.md Q-001: "Yes, from the announcement on 2026-10-19 ... Earlier commits are baseline."; Q-003: "tags pre-hackathon and hackathon-submission, plus a README section linking the diff" |
-| Testnet eligibility | Testnet-only is eligible for all tracks | HACKATHON.md Q-010 |
-
-The Discord question in SPEC §14 is answered by Q-001 in the published rules; asking in Discord is now optional.
+Every NEAR API, version and limit this project relies on was checked against the live docs, crates.io/npm or read-only testnet RPC before it was used, not taken from memory. One line of evidence per item, dated. What the design does because of them: [how-it-works.md §11](how-it-works.md#11-near-facts-checked-against-the-docs). Items marked **open** were never settled.
 
 ## Contract toolchain (SPEC §4)
 
@@ -42,17 +32,17 @@ The Discord question in SPEC §14 is answered by Q-001 in the published rules; a
 | Prepaid gas per transaction | 1 PGas (1000 TGas) since protocol 83. Some docs pages still say 300 TGas (stale) | https://docs.near.org/protocol/transactions/gas; live testnet `EXPERIMENTAL_protocol_config`: `max_total_prepaid_gas = 1000000000000000`, protocol 88 |
 | View-call gas | Per-node setting (`max_gas_burnt_view`, RPC-only override). Public provider values are not documented. **Open:** measure glyph view gas on the RPC we use | nearcore `client_config.rs`: "The value only affects the RPCs." |
 | Storage price | 1e19 yocto per byte (100 kB per NEAR) | docs storage-staking page; live testnet `storage_amount_per_byte = 10000000000000000000` |
-| 64-spore storage | **Measured 2026-10-31:** 565 bytes per spore (36,202 bytes for 64, 0.36 NEAR); contract code 437 KB = 4.38 NEAR (`docs/results.md`). Was: **Open.** Measure with `env::storage_usage()` before and after `mint_genesis`. Risk to design for: per-epoch state hashes for all 64 spores are 2 kB/epoch, so 1000 demo epochs come to about 20 NEAR. Store hashes for active spores only, or keep a rolling window | storage-staking page recommends measuring with `env::storage_usage()` |
+| 64-spore storage | **Measured 2026-10-31:** 565 bytes per spore (36,202 bytes for 64, 0.36 NEAR); contract code 437 KB = 4.38 NEAR at the time. Was: **Open.** Measure with `env::storage_usage()` before and after `mint_genesis`. Risk to design for: per-epoch state hashes for all 64 spores are 2 kB/epoch, so 1000 demo epochs come to about 20 NEAR. Store hashes for active spores only, or keep a rolling window | storage-staking page recommends measuring with `env::storage_usage()` |
 
 ## Policy and keys (SPEC §5.3, §5.6, §7.1)
 
 | Item | Answer | Evidence |
 | --- | --- | --- |
 | Function-call keys | One receiver contract, optional method list (empty = any method), allowance pays gas only. **Cannot attach any deposit, not even 1 yocto.** When the allowance runs out the key is unusable and must be replaced. Method names: at most 256 bytes each, 2000 bytes in total | https://docs.near.org/protocol/access-keys: "do not allow to attach NEAR tokens"; nomicon RuntimeSpec/Actions |
-| Testnet check (2026-10-31) | A function-call key calling a method outside its list is rejected before inclusion with `InvalidAccessKeyError.MethodNameMismatch`; attaching 1 yocto gives `InvalidAccessKeyError.DepositWithFunctionCall` (`docs/phase3-testnet-run.txt`) | |
+| Testnet check (2026-10-31) | A function-call key calling a method outside its list is rejected before inclusion with `InvalidAccessKeyError.MethodNameMismatch`; attaching 1 yocto gives `InvalidAccessKeyError.DepositWithFunctionCall` ([how-it-works.md §8.2](how-it-works.md#82-contract-on-testnet-83-of-83-router2-2026-10-31)) | |
 | Design impact | Agent payments must be ledger moves inside the router with no attached deposit; this already matches §5.2. NFT transfer, `buy` and `deposit` need a full-access (owner) key. The router cannot delete keys on the operator's account, so "old operator key stops working" is enforced by clearing the registered operator id, not by key deletion. Make sure the §5.3 "key generation counter" means exactly that | as above |
 | Contract-controlled sub-accounts (§5.6) | A contract can add or delete keys on a new sub-account only in the same batch that starts with `CreateAccount`; after that it has no control unless it deployed a contract there exposing key methods. Account creation costs 0.007 NEAR plus storage. **The spike would need a proxy contract per spore.** Expect no-go unless it is cheap | nomicon RuntimeSpec/Actions: AddKey/DeleteKey require `predecessor_id == receiver_id` unless the first action is `CreateAccount`; docs anatomy/actions: "Accounts do NOT have control over their sub-accounts" |
-| Update 2026-10-31 (Phase 2) | Global contracts make the per-spore proxy cheap (publisher burns 10 NEAR per 100 kB once; a referencing account pays under 0.001 NEAR; `near-sdk` has `Promise::use_global_contract`). Cost was not the blocker. **No-go** on other grounds (no custody gain, no atomic `buy`). Contract-initiated `UseGlobalContract` in a `CreateAccount` batch is **unverified** | https://docs.near.org/smart-contracts/global-contracts; https://docs.rs/near-sdk/latest/near_sdk/struct.Promise.html; `docs/results.md` |
+| Update 2026-10-31 (Phase 2) | Global contracts make the per-spore proxy cheap (publisher burns 10 NEAR per 100 kB once; a referencing account pays under 0.001 NEAR; `near-sdk` has `Promise::use_global_contract`). Cost was not the blocker. **No-go** on other grounds (no custody gain, no atomic `buy`). Contract-initiated `UseGlobalContract` in a `CreateAccount` batch is **unverified** | https://docs.near.org/smart-contracts/global-contracts; https://docs.rs/near-sdk/latest/near_sdk/struct.Promise.html; [how-it-works.md §3](how-it-works.md#why-one-ledger-not-an-account-per-spore) |
 | Contract key API | `Promise::create_account`, `add_full_access_key`, `add_access_key_allowance(pk, allowance, receiver, "m1,m2")`, `delete_key` (`add_access_key` deprecated) | https://docs.rs/near-sdk/latest/near_sdk/struct.Promise.html |
 
 ## Off-chain tooling (SPEC §6)
@@ -66,35 +56,9 @@ The Discord question in SPEC §14 is answered by Q-001 in the published rules; a
 | Agent client library | TS: `near-api-js` 7.4.0 (single package, replaces `@near-js/*`) or `near-kit` 0.20.2; the docs list both. Python: `py-near` 1.2.22 | https://docs.near.org/tools/near-api |
 | Outside service (§6.4) | NEAR AI Cloud bills by account, prepaid credits and API key; no per-call on-chain payment. No listed partner found that takes per-call on-chain payment, so option 2 applies: run our own service gated by `is_operator` | https://docs.near.ai/cloud/quickstart |
 
-## Local machine (2026-10-29)
-
-Not installed: `rustc`, `cargo`, `cargo-near`, `near`. Installed: node 26.7.0, npm 11.19.0, uv 0.12.16, system python3 3.9.6 (no numpy; `slime.py` needs numpy and Pillow, use `uv`).
-
-## Repo layout (decided)
-
-```
-core/       Rust crate, no near-sdk: graph update, isqrt, fee split, pool split, canonical string, fingerprint
-router/     NEAR contract (near-sdk), depends on core
-renderer/   Rust crate, fixed-point Physarum; native + wasm32 build used by viz and verify
-vectors/    shared JSON test vectors (core and renderer)
-sim/        economy simulation; links core so its bytes match the contract by construction
-agents/     TypeScript, one process per active spore (near-api-js)
-outside/    TypeScript paid service gated by is_operator
-viz/        web page, renderer via wasm
-verify/     fingerprint replay and image regeneration (Rust CLI on core + renderer)
-docs/       these notes and decision records
-```
-
-`slime.py` and `slime_example.png` stay at the root as the disclosed pre-hackathon prototype. Directories are created when their first file lands (git does not track empty directories).
-
-## Still open
-
-- Testnet accounts: created 2026-10-29. Parent `spores-hack.testnet` via the faucet (10 NEAR; the third try succeeded after two 429s, tx 2DsXEerXKhmaRXtiXbjm8vVW3YvQa4TK3gBnvs238EFH). Sub-accounts funded from the parent and confirmed by RPC `view_account`: `deployer.spores-hack.testnet` 3 NEAR, `owner.spores-hack.testnet` 2, `operator.spores-hack.testnet` 1, `buyer.spores-hack.testnet` 2. Parent keeps about 2 NEAR. Keys are in the git-ignored `.env` (mode 600) as `<ROLE>_ACCOUNT_ID` / `<ROLE>_PRIVATE_KEY`, and also in the macOS keychain. Note the operator key is full-access for now; Phase 3 should replace it with a function-call key limited to the router.
-- Items marked **Open** above. Each one is resolved by a measurement in Phases 2-3.
-
 ## Phase 6 (checked 2026-11-03)
 
-Re-read from live testnet for 64 active spores (`docs/phase6-plan.md` S2). All values are unchanged since Phase 5.
+Re-read from live testnet before growing to 64 active spores. All values are unchanged since Phase 5.
 
 | Item | Answer | Evidence |
 | --- | --- | --- |
@@ -130,7 +94,7 @@ Provider list: https://docs.near.org/api/rpc/providers. One old close tx (epoch 
 - Both archival nodes send their 429 without `access-control-allow-origin` (Chrome: "blocked by CORS policy"), so `fetch` rejects with `Failed to fetch` and the page can't read the status. The app says "unreachable or rate-limited" for this.
 - The app uses FastNEAR's archival, then near.org's (`ARCHIVAL_RPCS`). The FastNEAR URL was found by trying it, not from the docs, and "Paid Only" may come to apply: treat it as working today, not as promised.
 - The app and, since the follow-up below, `spores-verify` send only close `tx` reads there first; views stay on the regular nodes. Before that, `spores-verify` with `NEAR_RPCS` set to an archival node sent its views there too, which is how it reached the limit after 25 txs and 8 views.
-- Team decision (2026-11-05): keep using FastNEAR's archival node, and change the CLI's defaults to match the app.
+- Decision (2026-11-05): keep using FastNEAR's archival node, and change the CLI's defaults to match the app.
 - CLI follow-up, measured the same day against router4 with no `NEAR_RPCS`: README `epochs` over 16 closes 21 s, `image` 17 s; all 25 closes 22 s and 77 s, `image --spore 5` over 25 in 79 s, all exit 0 and `match`. With the `NEAR_RPCS` of `scripts/phase6-testnet.sh`, which used to leave no archival node at all: 25 closes in 66 s, exit 0. Archival unreachable (`NEAR_ARCHIVAL_RPCS=http://127.0.0.1:9`): exit 2 after 71 s, naming all three endpoints.
 - The docs ask not to load-test shared endpoints. Each Verify run is one request per close plus one view per epoch, at most 2 and 3 at a time.
 

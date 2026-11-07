@@ -2,7 +2,7 @@
 //!
 //! One pure function, `render(&Spore) -> Vec<u8>`, gives the same bytes on every
 //! target (native, wasm32) and in the JS port. Inputs are the spore's seed, its
-//! age in epochs and its edge list `(neighbour id, D)`. See `docs/results.md`.
+//! age in epochs and its edge list `(neighbour id, D)`. See `docs/how-it-works.md` §4.
 
 pub mod cases;
 pub mod paint;

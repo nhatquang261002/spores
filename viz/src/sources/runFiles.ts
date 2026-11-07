@@ -1,4 +1,4 @@
-// The run-log files a view may read (docs/phase6-plan.md Reference C), shared
+// The run-log files a view may read, shared
 // by the dev-server middleware (server/runs.ts), the LOCAL RUN source and the
 // RECORDED bundle. Anything else in a run directory (agent logs, control.json,
 // outside.jsonl) and anything outside out/agents/ is never served.

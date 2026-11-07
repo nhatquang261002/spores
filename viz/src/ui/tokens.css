@@ -1,5 +1,5 @@
 /*
- * Design tokens (docs/phase6-plan.md, Design §3). Names are final: components
+ * Design tokens. Names are final: components
  * use these and never invent colours inline. Canvas code reads the same values
  * through tokens.ts.
  */

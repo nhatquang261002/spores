@@ -1,5 +1,7 @@
 # Spores: Spec
 
+> **This is the design as first written, kept for reference.** What was actually built, with the evidence, and every place the build departs from this file and why: [docs/how-it-works.md](docs/how-it-works.md) (§10 lists the departures). A few sections below were updated during the build where they say "Shipped".
+
 Status: design only. Everything runs on **testnet**. Anything marked **VERIFY** must be checked against the current NEAR docs before it is built; do not trust this file or model memory for API names, versions or addresses.
 
 ## 1. Idea
@@ -127,7 +129,7 @@ Price data, summarizer, classifier, scraper, translator, result checker and a br
 1. Consumer posts a job; providers quote.
 2. Consumer accepts a quote: the payment moves into router escrow.
 3. Provider delivers with a result hash.
-4. Consumer settles or rejects before a timeout. Settling takes the fee and credits the provider. Rejecting refunds the consumer. At the timeout, a job not yet delivered refunds the consumer; a delivered job the consumer never settled or rejected is auto-settled (fee to the pool, the rest to the provider), so a consumer cannot keep a result for free (changed in Phase 4, `docs/results.md`).
+4. Consumer settles or rejects before a timeout. Settling takes the fee and credits the provider. Rejecting refunds the consumer. At the timeout, a job not yet delivered refunds the consumer; a delivered job the consumer never settled or rejected is auto-settled (fee to the pool, the rest to the provider), so a consumer cannot keep a result for free (changed in Phase 4, [docs/how-it-works.md](docs/how-it-works.md)).
 
 Only explicitly settled jobs count as flow; an auto-settled job pays but grows no tube.
 
@@ -139,7 +141,7 @@ Only explicitly settled jobs count as flow; an auto-settled job pays but grows n
 score = quote / (1 + w * D_norm)
 ```
 
-  `D_norm` is the tube between consumer and provider divided by the consumer's strongest tube among the candidates (0..1), so the rule does not depend on the absolute scale of flows. `w = 4` (tuned in `sim`, `docs/results.md`). Strong tubes lower the effective price; price competition stops any tube locking in forever. Ties go to the lower price, then the lower spore id.
+  `D_norm` is the tube between consumer and provider divided by the consumer's strongest tube among the candidates (0..1), so the rule does not depend on the absolute scale of flows. `w = 4` (tuned in `sim`, [docs/how-it-works.md](docs/how-it-works.md)). Strong tubes lower the effective price; price competition stops any tube locking in forever. Ties go to the lower price, then the lower spore id.
 - Task content may use an LLM. Every money decision uses the rules above, so a run reproduces from its log.
 - **Decision log:** each hire records candidates, quotes, tube strengths and the winner, shown in the viz.
 
@@ -148,7 +150,7 @@ At least one service that is not another agent, paid in NEAR through the router.
 1. A partner API that accepts on-chain payment (check NEAR AI Cloud and the listed partners, including Agent Market (`docs.market.near.ai`, where agents are listed, hired and paid per job) and OutLayer; it may bill by account or API key and not per on-chain call).
 2. A small service we run that checks the router's `is_operator` view, then returns data after verifying a settled-payment receipt. Say in the README that we run it.
 
-Shipped: option 2 (`outside/`, Phase 4). No listed partner takes per-call on-chain payment (`docs/verify-notes.md`). Agents pay it with the router's `pay_service(spore_id, payee, amount, memo)`, which checks the payee against the owner's `external_allowlist` and the same cap and epoch budget as a job, transfers the NEAR and emits `service_paid`; the service delivers only against that event (`docs/results.md`).
+Shipped: option 2 (`outside/`, Phase 4). No listed partner takes per-call on-chain payment (`docs/verify-notes.md`). Agents pay it with the router's `pay_service(spore_id, payee, amount, memo)`, which checks the payee against the owner's `external_allowlist` and the same cap and epoch budget as a job, transfers the NEAR and emits `service_paid`; the service delivers only against that event ([docs/how-it-works.md](docs/how-it-works.md)).
 
 ### 6.5 Proving the tubes matter
 Run the same economy under identical seeds and disruptions in two modes: price only, and price with tubes. Providers in `sim` have hidden quality, and consumers reject bad results. Report average price paid, failed jobs, quality of delivered results and epochs to recover after a shock. Report every result even if tubes do not win; if they do not, change the rule and rerun before the demo. Build `sim` first (days 1-3) and tune `w`, `gain`, `decay_bps` and the margin rules there, before any contract exists.
@@ -174,7 +176,7 @@ The owner's budget is a request, not a grant. The effective per-epoch budget is:
 effective = min(owner_budget, base_budget + trust_gain * R)
 ```
 
-`R` is the spore's reputation (8.2), and `trust_gain` is per 1000 of `R` (one tube at `D = 1.0`). Shipped: `base_budget` 0.1 NEAR, `trust_gain` 0.2 NEAR, from `spores-sim allowance`; a 0.05 NEAR base starved honest spores until a wash ring out-ranked their median (`docs/results.md`). A new spore starts at `base_budget`, which is small. A spore with broad, sustained flow earns a higher ceiling, and a neglected one loses it as its tubes decay. A buyer pays for that ceiling when buying a spore with history.
+`R` is the spore's reputation (8.2), and `trust_gain` is per 1000 of `R` (one tube at `D = 1.0`). Shipped: `base_budget` 0.1 NEAR, `trust_gain` 0.2 NEAR, from `spores-sim allowance`; a 0.05 NEAR base starved honest spores until a wash ring out-ranked their median ([docs/how-it-works.md](docs/how-it-works.md)). A new spore starts at `base_budget`, which is small. A spore with broad, sustained flow earns a higher ceiling, and a neglected one loses it as its tubes decay. A buyer pays for that ceiling when buying a spore with history.
 
 ### 7.3 Demo scenes
 - **Injection:** a real LLM-driven agent is given a job whose description tells it to send funds to an attacker. For a reproducible run the agent is configured as a deliberately naive one, and the README labels it so. The router rejects the payment regardless of what the model does, and the failed receipt and the model's output are both shown. Include a recorded run, and record honestly whether the model complied.
@@ -201,7 +203,7 @@ D' = D' - D' * reject_bps / 10000      (once per rejected delivery on the edge, 
 - No floats. Division rounds down, except the fee, which rounds up. Edges iterate in ascending numeric order of `(a, b)` with `a < b`, so every run gives identical bytes.
 - Every product-then-divide uses an exact 256-bit `mul_div`, so no payment up to `u128::MAX` overflows (tested).
 
-Shipped values (tuned in `sim`, `docs/results.md`): `decay_bps = 2500`, `gain = 1_000_000`, `K = 0.1 NEAR` (about one job's price; 0.5 NEAR left honest tubes at the pruning floor), `D_min = 50_000`, `B = 4`, `reject_bps = 5000`. The code is `core/` (`spores-core`).
+Shipped values (tuned in `sim`, [docs/how-it-works.md](docs/how-it-works.md)): `decay_bps = 2500`, `gain = 1_000_000`, `K = 0.1 NEAR` (about one job's price; 0.5 NEAR left honest tubes at the pruning floor), `D_min = 50_000`, `B = 4`, `reject_bps = 5000`. The code is `core/` (`spores-core`).
 
 ### 8.2 Reputation
 `R_i = sum over edges e of spore i of isqrt(D_e)` in fixed point. The square root rewards many distinct connections over one heavy connection. `R` sets the body size in the art, the living allowance and the summary. Hiring uses the pairwise `D`, not `R`.
@@ -232,7 +234,7 @@ Receipts and escrow do not stop an attacker who controls both sides; the defense
 
 Acceptance criterion, checked in `sim` and again on testnet: for an attacker holding 1 to 3 active spores, across a sweep of `fee_bps`, `K`, `gain` and loop sizes around the defaults, the attacker's net result (pool share gained minus fees paid) is negative, and their tube and reputation gain per NEAR spent is lower than an honest spore's. If any case fails, retune before building further. The demo scene runs the attacker and shows the money lost and the art barely changing.
 
-Phase 1 result (`docs/results.md`): a one-spore loop is rejected as a self-payment; with the shipped rules every 2-3 spore loop loses money (360/360 cases), and no attacker spore reaches the honest median reputation (270/270 cases with K at ½×–2× of default). The per-NEAR part fails for tiny loops (≤ 0.05 NEAR per edge per epoch, 93/270 cases) because `isqrt` reputation makes the smallest surviving tube the most efficient per NEAR for everyone. **Proposed, pending sign-off:** gate on "loses money and cannot reach the honest median reputation" and keep reporting the per-NEAR numbers.
+Phase 1 result ([docs/how-it-works.md](docs/how-it-works.md)): a one-spore loop is rejected as a self-payment; with the shipped rules every 2-3 spore loop loses money (360/360 cases), and no attacker spore reaches the honest median reputation (270/270 cases with K at ½×–2× of default). The per-NEAR part fails for tiny loops (≤ 0.05 NEAR per edge per epoch, 93/270 cases) because `isqrt` reputation makes the smallest surviving tube the most efficient per NEAR for everyone. **Proposed, pending sign-off:** gate on "loses money and cannot reach the honest median reputation" and keep reporting the per-NEAR numbers.
 
 ## 10. Evaluation and demo
 

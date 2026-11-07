@@ -770,7 +770,7 @@ fn epoch_closed_log(active: u32, pairs: usize) -> String {
 
 /// Phase 6: the trimmed `epoch_closed` (no tubes list) at 64 active fits NEAR's
 /// log limit with at least 10% to spare at `MAX_EPOCH_PAIRS`, and would not
-/// without a cap. Run with `--nocapture` for the sizes in `docs/phase6-plan.md`.
+/// without a cap. Run with `--nocapture` for the sizes (`docs/how-it-works.md` §3).
 #[test]
 fn epoch_closed_log_size_at_64_active() {
     let len = |p: usize| epoch_closed_log(64, p).len();

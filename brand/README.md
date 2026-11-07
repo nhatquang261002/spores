@@ -1,6 +1,6 @@
 # Spores brand
 
-The brand comes from the product. The app is "a field instrument for a living culture" (`docs/phase6-plan.md`, Design §2). The mark is a real spore drawn in the renderer's own geometry, and its colours are the app's own tokens: `build.py` reads them from `viz/src/ui/tokens.css`, so the brand follows the app's theme. This file covers the assets. Tokens, type scale and UI rules stay in Design §3–§9 and are not repeated here.
+The brand comes from the product. The app is "a field instrument for a living culture". The mark is a real spore drawn in the renderer's own geometry, and its colours are the app's own tokens: `build.py` reads them from `viz/src/ui/tokens.css`, so the brand follows the app's theme. This file covers the assets. Tokens, type scale and UI rules stay in Design §3–§9 and are not repeated here.
 
 ## Assets
 
@@ -53,7 +53,7 @@ So the mark is a true picture of the product: spore 8 is up and to the right in 
 
 ## Imagery
 
-- **Real renders only.** Use renders from the shipped renderer with a provenance line in mono: spore, epoch, image hash, network and router. `social-card.png` shows Spore #5 at epoch 17, the spore that was sold on testnet. Its image hash `ac15a3e9…8cfe` was committed by `commit_image` (tx `6qdNvM7AC4bgwcG1fSHb7oXs5BjCA5JGgSLwmwQjTUZk`), and `verify image` reproduced it (`docs/results.md`).
+- **Real renders only.** Use renders from the shipped renderer with a provenance line in mono: spore, epoch, image hash, network and router. `social-card.png` shows Spore #5 at epoch 17, the spore that was sold on testnet. Its image hash `ac15a3e9…8cfe` was committed by `commit_image` (tx `6qdNvM7AC4bgwcG1fSHb7oXs5BjCA5JGgSLwmwQjTUZk`), and `verify image` reproduced it (`docs/how-it-works.md` §8.4).
 - **Not allowed:** mock-ups, generated illustrations, stock imagery, or the `slime.py` prototype sheet with its invented names. Design §2 "Explicitly not used" applies too: no glows, gradients, blur or celebration effects.
 
 ## Voice

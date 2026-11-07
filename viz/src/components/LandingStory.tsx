@@ -1,7 +1,7 @@
 // The landing page below its first screen (Design §6.A, §13 item 23): what a spore is, what
 // we do, how it works and how to check it. The words are fixed; every
 // figure beside them is read from the recording the plate plays (model/landing.ts), or is a
-// result in docs/results.md under its own mark. Lazy: the first screen doesn't wait for it.
+// result in docs/how-it-works.md under its own mark. Lazy: the first screen doesn't wait for it.
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { EXPLORER } from '../chain/rpc';

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 6 dense run on router4 (docs/phase6-plan.md S3): every active spore
+# Phase 6 dense run on router4: every active spore
 # trades, all of them in one agent process (--per-process) that shares its RPC
 # reads, with a limited quote fan-out (the router keeps 8 quotes per job) and
 # a cap on concurrent RPC requests. The report adds per-close seconds, gas,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 5 exit run on testnet (ROADMAP): the agents trade on the Phase 5 router
+# Phase 5 exit run on testnet: the agents trade on the Phase 5 router
 # for 8 epochs while the keeper commits an image of every spore after each
 # close; at the third epoch the sale scene runs (list, buy with royalty, old
 # operator key and old owner refused, new owner registers operator2, the agent

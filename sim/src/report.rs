@@ -79,7 +79,7 @@ pub struct Baseline {
 }
 
 /// The hiring rule agents ship with: `D_norm` relative to the strongest
-/// candidate tube, `w = 4`. Chosen from `tune`; see docs/results.md.
+/// candidate tube, `w = 4`. Chosen from `tune`; see docs/how-it-works.md §9.1.
 pub const SHIPPED_HIRING: Mode = Mode::TubesRelative {
     w_bps: spores_core::hiring::SHIPPED_W_BPS,
 };
@@ -752,7 +752,7 @@ pub fn allowance(seeds: u64, scale: Scale) -> AllowanceReport {
     }
 }
 
-/// The Demo Lab's wash panel (`sim wash`, docs/phase6-plan.md S12): the wash gate
+/// The Demo Lab's wash panel (`sim wash`): the wash gate
 /// with the allowance the router enforces, at each traffic level S1 measured,
 /// with the per-epoch series of the default fee, K and gain, plus the Phase 1
 /// sweep's shipped results as first reported. Nothing here is a new rule: the

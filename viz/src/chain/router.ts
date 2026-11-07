@@ -1,4 +1,4 @@
-// Typed views of the Spores router (docs/phase6-plan.md Reference A). Names
+// Typed views of the Spores router (docs/how-it-works.md §3). Names
 // and shapes follow the router ABI; U128/U64 stay decimal strings (money is
 // formatted with BigInt, never Number).
 import { Rpc } from './rpc';

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 3 exit run on testnet (ROADMAP): mint, activate, operator function-call key
+# Phase 3 exit run on testnet: mint, activate, operator function-call key
 # limits, each policy rejection, job escrow, epoch close, first image from chain
 # state, transfer lockout, timeout refund, ledger conservation.
 #
