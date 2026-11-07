@@ -1,6 +1,6 @@
 # Spores
 
-> **DRAFT until the last `TODO` is gone.** Everything else here comes from real runs. The `TODO`s left need the author: the demo post, the hosted demo URL and the tag diff. Do not publish this file with TODOs left in.
+> **DRAFT until the last `TODO` is gone.** Everything else here comes from real runs. The `TODO`s left need the author: the demo post and the hosted demo URL. Do not publish this file with TODOs left in.
 
 **Living slime-mold NFTs whose agents trade on NEAR, and whose art is their trading history.**
 
@@ -312,11 +312,11 @@ Spore #6's story, from the recording:
 
 Spores is a solo project, and its author has no other project in this hackathon (Q-015).
 
-**Baseline.** The author counts all of the work in this repository up to the `pre-hackathon` tag as pre-hackathon baseline (Q-001, Q-003). <!-- TODO (author): link the diff between the `pre-hackathon` and `hackathon-submission` tags once both exist. -->
+**No baseline.** All of the work in this repository was done inside the organizers' window, which opened with the 2026-10-19 announcement (Q-001). There is no pre-hackathon code, so there is no `pre-hackathon` tag (Q-003).
 
-The git history starts on 2026-11-02, when the earlier work was first committed, so commit dates don't separate the stages. From the project's own notes:
+The git history starts on 2026-11-02, when the work so far was first committed, so commit dates don't separate the stages. From the project's own notes, all of them after 2026-10-19:
 
-- `slime.py` and `slime_example.png`: the prototype art renderer, kept for reference. `renderer/` is an integer-only port of it, with a similar look and no shared code.
+- `slime.py` and `slime_example.png`: the first prototype of the art renderer, kept for reference. `renderer/` is an integer-only port of it, with a similar look and no shared code.
 - A browser sketch of the pixel-based visualization (`slime-router.html`), made on 2026-10-26. It is not in this repository, and `viz/` reuses none of it.
 - The graph core and simulation (`core/`, `sim/`, `vectors/`), 2026-10-29.
 - The renderer, router contract and testnet scripts (`renderer/`, `router/`, `scripts/`), 2026-10-31.
