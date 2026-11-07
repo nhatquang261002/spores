@@ -283,6 +283,8 @@ Performance, measured 2026-11-07 in Chrome on one Mac (not the 2019 laptop the d
 
 A production build served by a plain static file server played the recording in 46.9 s, gave `✓ Match · 63/63 epochs · image matches commit` and opened the wash panel, with no console errors.
 
+The hosted copy, [spores-five.vercel.app](https://spores-five.vercel.app) (Vercel, built locally and uploaded with `vercel deploy --prebuilt`), was checked the same way on 2026-11-07. Deep links load the app, and both wasm files are served as `application/wasm`. The recording played to 14 of 14 checks, and Verify reached `✓ Match · 63/63 epochs · image matches commit` in 94 s. While it ran, the console showed the archival nodes' rate-limit replies as CORS errors (§6); the app retried and finished.
+
 ## 8. Testnet evidence
 
 ### 8.1 Deployments

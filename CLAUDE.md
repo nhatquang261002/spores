@@ -38,6 +38,7 @@ bash scripts/phase6-setup.sh                  # idempotent Phase 6 setup on rout
 bash scripts/phase6-testnet.sh                # dense run: all 64 spores in one agent process (--per-process), per-close seconds/gas/log bytes and RPC requests -> out/agents/<run>/, out/phase6/
 bash scripts/demo.sh                          # the one command: a real run on router4 (spends testnet gas, closes real epochs, really sells one spore; 12 spores, 9 closes, about 10 min), followed live at /lab/loop, then spores-verify. --epochs N, --spores N, --port N, --no-open, --exit-at-end
 bash scripts/demo.sh --playback [run]         # the committed recording: no keys, no testnet (needs viz/node_modules and viz/public/wasm once)
+(cd viz && SITE_URL=https://spores-five.vercel.app vercel build --prod && vercel deploy --prebuilt --prod)  # hosted demo on Vercel (project `spores`, team `declub`); run scripts/build-wasm.sh first. Keep it up to 2026-11-25
 node scripts/chain-stats.mjs [closes-file] [--finality N]  # README chain stats from public RPC, no keys or local logs
 bash scripts/record-bundle.sh <run>           # finished run with every check passed -> committed RECORDED bundle in viz/public/recorded/ (no renders: the app redraws them), adds its closes to the close lists; refuses secrets
 node agents/src/scene-server.ts               # Demo Lab scene server, 127.0.0.1:8790 only (SCENE_PORT); one scene at a time. Rogue's Run spends testnet gas and 2 real closes; Sale's Run really sells a spore (no close), and its Reset is a second real sale back

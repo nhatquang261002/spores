@@ -1,12 +1,14 @@
 # Spores
 
-> **DRAFT until the last `TODO` is gone.** Everything else here comes from real runs. The `TODO`s left need the author: the demo post and the hosted demo URL. Do not publish this file with TODOs left in.
+> **DRAFT until the last `TODO` is gone.** Everything else here comes from real runs. The `TODO` left needs the author: the demo post. Do not publish this file with TODOs left in.
 
 **Living slime-mold NFTs whose agents trade on NEAR, and whose art is their trading history.**
 
 Built for NEAR HACKATHON · Tracks: `nfts` (main), `security`, `agents`, `swarms` · NEAR testnet · MIT
 
-<!-- TODO (author supplies): link to the public demo post on X and the hosted demo URL. Keep the hosted demo up until 2026-11-18, ideally 2026-11-25. -->
+**Live demo: [spores-five.vercel.app](https://spores-five.vercel.app)**. Nothing to install: [watch the recorded loop](https://spores-five.vercel.app/lab/loop?source=recorded&run=demo-20261106T101440Z&date=2026-11-06), then press **Check it against the chain**.
+
+<!-- TODO (author supplies): link to the public demo post on X. -->
 
 | Epoch 2 | Age 16 | Age 57 |
 | --- | --- | --- |
@@ -29,7 +31,7 @@ The full design, with every number and its source: **[docs/how-it-works.md](docs
 
 ## Watch it in two minutes
 
-No keys, no testnet account, and no gas. Requirements: Rust with the `wasm32-unknown-unknown` target (built with rustc 1.97), Node 23.6 or newer, `curl`, and `jq` for the RPC examples. These steps were run from a clean export of the repository on macOS and in a Linux container (Debian, rustc 1.97.0, Node 24).
+The quickest way is the [hosted recording](https://spores-five.vercel.app/lab/loop?source=recorded&run=demo-20261106T101440Z&date=2026-11-06). The same app runs locally with no keys, no testnet account and no gas. Requirements: Rust with the `wasm32-unknown-unknown` target (built with rustc 1.97), Node 23.6 or newer, `curl`, and `jq` for the RPC examples. These steps were run from a clean export of the repository on macOS and in a Linux container (Debian, rustc 1.97.0, Node 24).
 
 ```sh
 bash scripts/build-wasm.sh   # the renderer and core as wasm, then their checks against the shared vectors
@@ -305,7 +307,7 @@ Spore #6's story, from the recording:
 | Market and royalties | Built and run on testnet: list, buy with royalty, old operator locked out, new owner takes over |
 | Agents, job escrow and outside service | Built and run on testnet: rule-based hiring, replayed against `spores-core` from the log. No LLM agent exists |
 | Living allowance | Built and enforced on every payment. In the recorded run 11 of 30 hires were skipped because the quote was above what the spore may spend. The agent skips the hire after reading that limit, so those aren't contract refusals; router tests cover the contract's own check |
-| App | Built: landing page, gallery, network, spore page with wallet actions, activity, browser verify, Demo Lab. A production build from a plain static server played, verified and showed the wash panel with no console errors. No wallet transaction has been signed from it yet |
+| App | Built and hosted at [spores-five.vercel.app](https://spores-five.vercel.app): landing page, gallery, network, spore page with wallet actions, activity, browser verify, Demo Lab. On the hosted copy the recording played to 14 of 14 checks and Verify reached `✓ Match · 63/63 epochs · image matches commit`. No wallet transaction has been signed from it yet |
 | Baseline and wash-trading results | Run and reported above, the unfavourable ones included |
 
 ## Disclosure
