@@ -1,15 +1,17 @@
-// Rogue agent (Design §6.H, /lab/rogue; §13 item 19). Built so someone who has
-// never heard of Spores gets it in seconds: the question, one button, then a
-// spore pressing against the wall of its contract. Evidence sits underneath,
-// not in front. Nothing moves or reads as done before the log says so.
+// Rogue agent (Design §6.H, /lab/rogue; §13 items 19, 25). Built so someone who has
+// never heard of Spores gets it in seconds: a spore pressing against the wall of its
+// contract, and beside it the question, the line being said and what the contract
+// decided. The story's controls stay in reach under both; the evidence sits below, a
+// tab at a time. Nothing moves or reads as done before the log says so.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { DecayStrip } from '../components/DecayStrip';
-import { ActRail, Checks, PaceSwitch, Preconditions, seconds, timelineSteps } from '../components/SceneChrome';
+import { ActRail, Checks, NextScene, PaceSwitch, Preconditions, ProofTabs, retold, SceneHead, SceneNav, seconds } from '../components/SceneChrome';
 import { Evidence, SceneLanes } from '../components/SceneLanes';
-import { SceneStage, type StageCast } from '../components/SceneStage';
-import { JobTimeline } from '../components/JobTimeline';
-import { ACTS, buildScene, durationMs, narrate, refusalCount, repText, type SceneLine, type SceneState, type PeerArt } from '../model/scene';
+import { SceneStage, castOf, type StageCast } from '../components/SceneStage';
+import { SceneSteps } from '../components/SceneSteps';
+import { SpecimenSheet, StageLegend, useSpots, type SheetRow } from '../components/StageAids';
+import { ACTS, buildScene, durationMs, narrate, refusalCount, repText, type AttemptKey, type SceneLine, type SceneState, type PeerArt } from '../model/scene';
 import { liveRouter } from '../sources/live';
 import { type RecordedBundle } from '../sources/recorded';
 import { canReachFrom, latestRecording, loadSceneLog, SCENE_SERVER, SceneClient } from '../sources/scene';
@@ -17,19 +19,26 @@ import { linkTo, sourceQuery } from '../sources/source';
 import { ReceiptContext, useReceiptStore } from '../state/activity';
 import { useLiveRun, usePlayback, useSceneServer } from '../state/scene';
 import { useApp } from '../state/source';
-import { formatClock, formatNear, shortAccount } from '../ui/format';
+import { formatNear, shortAccount } from '../ui/format';
 import { ErrorState, LoadingBar } from '../ui/states';
-import { SourceBadge } from '../ui/status';
 import '../components/activity.css';
 import '../components/detail.css';
 import '../components/gallery.css';
 import '../components/lab.css';
 
+/** What each act shows, on the timeline's stops. */
+const ACT_TIPS: Record<string, string> = {
+  limits: 'The owner writes the spore’s limits into the contract.',
+  cap: 'The agent tries one payment bigger than the cap.',
+  budget: 'Small payments, until together they pass the epoch’s budget.',
+  drain: 'The agent tries to pay an account the owner never approved.',
+  quiet: 'The agent stops, and each close takes a share of every tube.',
+  cleanup: 'What the run’s own checks found.',
+};
+
 function Verdict({ scene }: { scene: SceneState }) {
   const v = scene.verdict;
   const { refused, total } = refusalCount(scene);
-  const before = scene.before;
-  const now = scene.now;
   if (v.status !== 'completed' && v.status !== 'failed') return null;
   return (
     <section className={`scene-verdict is-${v.status}`} aria-live="polite">
@@ -43,13 +52,23 @@ function Verdict({ scene }: { scene: SceneState }) {
           {v.line}
         </p>
       )}
-      {v.status === 'completed' && before && now && (
-        <p className="mono-s sv-diff">
-          balance {formatNear(before.balance)} → {formatNear(now.balance)} · R {repText(before.reputation)} → {repText(now.reputation)} · tubes {before.connections.length} → {now.connections.length}
-        </p>
-      )}
     </section>
   );
+}
+
+/** The spore's figures. Once the story is over, each one that moved says where it started. */
+export function sheetRows(cast: StageCast | null, scene: SceneState, over: boolean): SheetRow[] {
+  const from = (now: string, then: string | undefined) => (over && then !== undefined && then !== now ? `was ${then}` : null);
+  const b = scene.before;
+  const rep = cast?.reputation ? repText(cast.reputation) : '—';
+  // No read of it yet: an empty list here means not known, not none.
+  const tubes = cast?.balance ? String(cast.tubes.length) : '—';
+  const bal = cast?.balance ? formatNear(cast.balance) : '—';
+  return [
+    { term: 'Balance', tip: 'Its own money, held by the contract under its id. Testnet NEAR has no value.', value: bal, money: true, side: scene.escrow ? `+ ${formatNear(scene.escrow.amount)} in escrow` : from(bal, b ? formatNear(b.balance) : undefined) },
+    { term: 'Reputation', tip: 'R, added up from its tubes. It falls when they decay.', value: rep, side: from(rep, b ? repText(b.reputation) : undefined), spent: true },
+    { term: 'Tubes', tip: 'Live links to other spores. They live on settled work and fall away without it.', value: tubes, side: from(tubes, b ? String(b.connections.length) : undefined), spent: true },
+  ];
 }
 
 function StateDiff({ scene }: { scene: SceneState }) {
@@ -205,37 +224,52 @@ export function RogueScene({ client: given }: { client?: SceneClient } = {}) {
     window.scrollTo?.(0, 0);
   }, [q]);
 
-  const steps = timelineSteps(scene.steps);
+  const cast = castOf(scene, idleCast);
+  const spots = useSpots(q, cast?.spore ?? null);
+  const [pointed, setPointed] = useState<AttemptKey | null>(null);
   const firstRefusal = scene.steps.filter((s) => s.state === 'failed').length;
+  const passed = scene.checks.filter((c) => c.ok).length;
+  const note = source?.kind === 'recorded' && log ? retold(playback.length, playback.pace) : null;
 
   return (
     <ReceiptContext.Provider value={receipts}>
       <div className="scene">
-        <div className="scene-top">
-          <nav className="breadcrumb body" aria-label="Breadcrumb">
-            <Link to={linkTo('/lab', q)}>Demo Lab</Link> <span aria-hidden="true">/</span> <span aria-current="page">Rogue agent</span>
-          </nav>
-          {source && <SourceBadge source={source} staleSince={isLive ? epoch.staleSince : null} />}
-        </div>
+        <SceneNav current="rogue" q={q} aside={source?.kind === 'recorded' && canReachFrom(SCENE_SERVER, window.location.hostname) ? <Link className="scene-alt" to={liveLink}>Run it live instead</Link> : null} />
 
-        <div className="scene-bench">
-          <div className="scene-head">
-            <h1 className="scene-q">What if the agent goes rogue?</h1>
-            <p className="scene-narrator" aria-live="polite" key={line}>{line}</p>
-            <p className="scene-quote mono tone-warn" aria-live="polite">{lastDecided?.decision === 'refused' ? lastDecided.err : ' '}</p>
+        <div className="scene-play">
+          <div className="scene-bench">
+            <div className="scene-side">
+              <SceneHead question="What if the agent goes rogue?" line={line} quote={lastDecided?.decision === 'refused' ? lastDecided.err : null} />
+              {liveRun.error && <p className="mono tone-warn" role="alert">Could not start: {liveRun.error}</p>}
+              {logError && <ErrorState error={logError} what="this scene's log" onRetry={() => setAttempt((n) => n + 1)} />}
+              {logSource && !log && !logError && <LoadingBar label="Loading the log" ch={12} />}
+              {cast && <SpecimenSheet spore={cast.spore} to={linkTo(`/spore/${cast.spore}`, q)} rows={sheetRows(cast, scene, over)} label={`Spore #${cast.spore}, as of this moment`} />}
+              <aside className="scene-docket">
+                <Verdict scene={scene} />
+                <SceneLanes attempts={scene.attempts} sender={start?.operator} onPoint={setPointed} />
+                {!hasRun && <p className="body scene-idle-note">Three attempts, each a real transaction. The limits are in the contract, so it doesn’t matter what the agent wants.</p>}
+              </aside>
+            </div>
+
+            <div className="scene-stage-slot">
+              <div className="stage-frame">
+                <SceneStage scene={scene} idle={idleCast} reducedMotion={reducedMotion} spots={spots} pointed={pointed} />
+                {note && <span className="label stage-source">{note}</span>}
+              </div>
+              <StageLegend seed={cast?.art?.seed ?? null} marks={['hero', 'peer', 'tube', 'wall', 'attempt', 'refused']} />
+            </div>
+          </div>
+
+          <div className="scene-transport">
             <div className="scene-controls">
               {logSource ? (
-                <>
-                  {playback.finished ? (
-                    <button type="button" className="btn btn-primary" onClick={playback.restart}>↻ Watch again</button>
-                  ) : playback.playing ? (
-                    <button type="button" className="btn btn-secondary" onClick={playback.pause}>Pause</button>
-                  ) : (
-                    <button type="button" className="btn btn-primary" onClick={playback.play} disabled={!log}>▶︎ Play</button>
-                  )}
-                  <PaceSwitch playback={playback} />
-                  {source?.kind === 'recorded' && canReachFrom(SCENE_SERVER, window.location.hostname) && <Link className="scene-alt body" to={liveLink}>Run it live instead</Link>}
-                </>
+                playback.finished ? (
+                  <button type="button" className="btn btn-primary" onClick={playback.restart}>↻ Watch again</button>
+                ) : playback.playing ? (
+                  <button type="button" className="btn btn-secondary" onClick={playback.pause}>Pause</button>
+                ) : (
+                  <button type="button" className="btn btn-primary" onClick={playback.play} disabled={!log}>▶︎ Play</button>
+                )
               ) : running ? (
                 <span className="body scene-running" role="status">
                   <span className="dot-live" aria-hidden="true" /> Running on testnet · each tx waits for its final outcome
@@ -251,80 +285,73 @@ export function RogueScene({ client: given }: { client?: SceneClient } = {}) {
                       {liveRun.starting ? 'Starting…' : hasRun ? 'Run again on testnet' : 'Run it live on testnet'}
                     </button>
                   )}
-                                    {!canRun && server.reachable !== false && pre.some((p) => !p.ok) && <span className="mono-s scene-why">{pre.find((p) => !p.ok)!.label}: not ready. See preconditions below.</span>}
+                  {!canRun && server.reachable !== false && pre.some((p) => !p.ok) && <span className="mono-s scene-why">{pre.find((p) => !p.ok)!.label}: not ready. See preconditions below.</span>}
                   {!offerLink && server.reachable === false && <span className="body scene-why">No recording available.</span>}
                 </>
               )}
             </div>
-            {liveRun.error && <p className="mono tone-warn" role="alert">Could not start: {liveRun.error}</p>}
-            {logError && <ErrorState error={logError} what="this scene's log" onRetry={() => setAttempt((n) => n + 1)} />}
-            {logSource && !log && !logError && <LoadingBar label="Loading the log" ch={12} />}
-            <ActRail acts={ACTS} act={scene.act} over={over} onSeek={logSource && log ? playback.seekAct : undefined} />
+            <ActRail acts={ACTS} act={scene.act} over={over} onSeek={logSource && log ? playback.seekAct : undefined} reducedMotion={reducedMotion} tips={ACT_TIPS} />
+            <div className="scene-after">
+              {logSource && <PaceSwitch playback={playback} />}
+              {over && <NextScene after="rogue" />}
+            </div>
           </div>
-
-          <div className="scene-stage-slot">
-            <SceneStage scene={scene} idle={idleCast} reducedMotion={reducedMotion} />
-          </div>
-
-          <aside className="scene-docket">
-            <Verdict scene={scene} />
-            <SceneLanes attempts={scene.attempts} sender={start?.operator} />
-            {!hasRun && <p className="body scene-idle-note">Three attempts, each a real transaction. The limits are in the contract, so it doesn’t matter what the agent wants.</p>}
-          </aside>
         </div>
 
         <DecayStrip plates={scene.plates} sporeId={start?.spore ?? null} active={hasRun && (scene.act === 'quiet' || scene.act === 'cleanup')} decayBps={start?.decay_bps ?? null} />
 
-        <details className="scene-proof" open={!hasRun && operator && !offerLink}>
-          <summary className="title">Check it yourself</summary>
-          <div className="proof-grid">
-            <section>
-              <h3 className="heading">{operator ? 'Before you run it' : 'What this view is'}</h3>
-              {operator ? (
-                <Preconditions list={pre} epochOk={!!epoch.info && !epoch.error} epochKnown={!!epoch.info} />
-              ) : (
-                <p className="body">This view replays a log, so nothing is sent. Every tx link below points at a real past transaction.</p>
-              )}
-              {isLive && server.scene && (
+        <ProofTabs
+          opening={!hasRun && operator ? 'run' : 'steps'}
+          tabs={[
+            {
+              key: 'steps',
+              word: 'Every step',
+              count: scene.steps.length ? (firstRefusal ? `${scene.steps.length} · ${firstRefusal} refused` : String(scene.steps.length)) : undefined,
+              body: (
                 <>
-                  <button type="button" className="btn btn-secondary" disabled={!!server.scene.reset.blocked || running} onClick={() => client.reset('rogue').finally(server.refresh)}>Reset</button>
-                  {server.scene.reset.blocked && <p className="body scene-why">{server.scene.reset.blocked}</p>}
+                  <SceneSteps steps={scene.steps} acts={ACTS} sender={start?.operator} />
+                  {scene.bad.map((b, i) => (
+                    <p key={i} className="mono-s tone-warn">Unreadable log line: {b}</p>
+                  ))}
+                  {scene.notes.map((n, i) => (
+                    <p key={i} className="body tone-warn">{n}</p>
+                  ))}
+                  {scene.plates.flatMap((p) => (p.close?.tx ? [p] : [])).map((p) => (
+                    <p key={p.mark} className="mono-s proof-close">close of epoch {p.close!.epoch}: <Evidence tx={p.close!.tx!} /> fingerprint {p.close!.fingerprint ? `${p.close!.fingerprint.slice(0, 10)}…` : '—'}</p>
+                  ))}
+                  {hasRun && <Link className="body" to={linkTo('/activity', q)}>See these txs in Activity →</Link>}
                 </>
-              )}
-              {operator && <p className="body scene-why">A live run spends real testnet gas and two real closes. Every spore’s tubes decay at those closes, so it’s worth running only when you want it to count.</p>}
-              {start && (
-                <p className="body scene-why">
-                  Owner <span className="mono">{shortAccount(start.owner)}</span> · operator <span className="mono">{shortAccount(start.operator)}</span> · contract <span className="mono">{start.router}</span>
-                </p>
-              )}
-            </section>
-            <section>
-              <h3 className="heading">Before and after</h3>
-              <StateDiff scene={scene} />
-              <h3 className="heading proof-gap">Checks</h3>
-              <Checks checks={scene.checks} />
-            </section>
-            <section className="proof-wide">
-              <h3 className="heading">Every step{firstRefusal ? ` · ${firstRefusal} refused` : ''}</h3>
-              {steps.length ? <JobTimeline steps={steps} variant="scene" /> : <p className="body">Each transaction lands here with its time, what was expected and what the chain said.</p>}
-              {scene.bad.map((b, i) => (
-                <p key={i} className="mono-s tone-warn">Unreadable log line: {b}</p>
-              ))}
-              {scene.notes.map((n, i) => (
-                <p key={i} className="body tone-warn">{n}</p>
-              ))}
-              {scene.plates.flatMap((p) => (p.close?.tx ? [p] : [])).map((p) => (
-                <p key={p.mark} className="mono-s proof-close">close of epoch {p.close!.epoch}: <Evidence tx={p.close!.tx!} /> fingerprint {p.close!.fingerprint ? `${p.close!.fingerprint.slice(0, 10)}…` : '—'}</p>
-              ))}
-              {start?.run && steps[0]?.at && <p className="mono-s scene-why">First transaction at {formatClock(steps[0].at)} your time.</p>}
-              {hasRun && (
-                <Link className="body" to={linkTo('/activity', q)}>
-                  See these txs in Activity →
-                </Link>
-              )}
-            </section>
-          </div>
-        </details>
+              ),
+            },
+            { key: 'diff', word: 'Before and after', body: <StateDiff scene={scene} /> },
+            { key: 'checks', word: 'Checks', count: scene.checks.length ? `${passed} of ${scene.checks.length}` : undefined, body: <Checks checks={scene.checks} /> },
+            {
+              key: 'run',
+              word: operator ? 'Before you run it' : 'What this view is',
+              body: (
+                <>
+                  {operator ? (
+                    <Preconditions list={pre} epochOk={!!epoch.info && !epoch.error} epochKnown={!!epoch.info} />
+                  ) : (
+                    <p className="body">This view replays a log, so nothing is sent. Every tx link here points at a real past transaction.</p>
+                  )}
+                  {isLive && server.scene && (
+                    <>
+                      <button type="button" className="btn btn-secondary" disabled={!!server.scene.reset.blocked || running} onClick={() => client.reset('rogue').finally(server.refresh)}>Reset</button>
+                      {server.scene.reset.blocked && <p className="body scene-why">{server.scene.reset.blocked}</p>}
+                    </>
+                  )}
+                  {operator && <p className="body scene-why">A live run spends real testnet gas and two real closes. Every spore’s tubes decay at those closes, so it’s worth running only when you want it to count.</p>}
+                  {start && (
+                    <p className="body scene-why">
+                      Owner <span className="mono">{shortAccount(start.owner)}</span> · agent <span className="mono">{shortAccount(start.operator)}</span> · attacker <span className="mono">{start.attacker}</span> · contract <span className="mono">{start.router}</span>
+                    </p>
+                  )}
+                </>
+              ),
+            },
+          ]}
+        />
       </div>
     </ReceiptContext.Provider>
   );

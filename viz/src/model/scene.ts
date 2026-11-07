@@ -62,6 +62,20 @@ export interface SceneStep {
   args?: Record<string, any>;
 }
 
+/** Who did a step, in a visitor's words: anyone may send what the keeper sends. */
+export const actorWord = (actor: string) => (actor === 'keeper' ? 'anyone' : actor);
+
+/** A step's action in a visitor's words: no method names, no repeating who did it. */
+export function stepWords(s: Pick<SceneStep, 'actor' | 'action'>): string {
+  const a = s.action
+    .replace(/^operator key called accept again$/, 'tries to pay again')
+    .replace(/^operator key called accept$/, 'tries to pay')
+    .replace(/^operator key called pay_service$/, 'tries to pay an outside account');
+  const who = actorWord(s.actor);
+  const said = a.toLowerCase().startsWith(`${who} `) ? a.slice(who.length + 1) : a;
+  return said.charAt(0).toUpperCase() + said.slice(1);
+}
+
 export interface SceneTry extends SceneStep {
   /** What the contract did, whether or not the script expected it. */
   decision: 'pending' | 'refused' | 'allowed';

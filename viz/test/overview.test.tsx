@@ -15,7 +15,7 @@ import { narrateSale } from '../src/model/sale';
 import { featuredOf, frameOfGallery, healthLine, healthOf, idleFor, IDLE_AFTER_MS, mapSummary } from '../src/model/overview';
 import { deepLink, nextStop, noteWorthy, overviewDelay, plateSheet, plateTarget, shownStop, STOP_GLOSS } from '../src/model/plate';
 import { hireExample, landingFacts } from '../src/model/landing';
-import { LoopVein, stopWord } from '../src/components/LoopVein';
+import { LoopChain, LoopVein, stopWord } from '../src/components/LoopVein';
 import { durationMs, parseSceneLog } from '../src/model/scene';
 import type { Source } from '../src/model/types';
 import { Overview } from '../src/pages/Overview';
@@ -200,13 +200,13 @@ describe('the timeline', () => {
 
   it('across the page each stop is a name and a state, with the detail left to the panel', () => {
     const rows = loopRows(buildLoop(LINES), true);
-    const { unmount } = render(<LoopVein across rows={rows} returned={false} reducedMotion onSeek={() => {}} />);
+    const { unmount } = render(<LoopVein rows={rows} returned={false} reducedMotion onSeek={() => {}} />);
     expect(screen.getAllByRole('button')).toHaveLength(8);
     expect(screen.getByRole('button', { name: /^Hire/ }).textContent).toBe('Hire✓ done');
     expect(screen.queryByRole('link')).toBeNull();
     unmount();
-    // The Demo Lab's vein down the page keeps its figures and links.
-    render(<LoopVein rows={rows} returned={false} reducedMotion />);
+    // The Demo Lab's chain beside the stage keeps its figures and links.
+    render(<LoopChain rows={rows} />);
     expect(screen.getAllByRole('link').length).toBeGreaterThan(0);
     expect(screen.getByText(/the only quote/)).toBeTruthy();
     cleanup();

@@ -8,9 +8,12 @@ import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } 
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { angleGap, fanOut, gateLayout, membraneAt, metrics, subCurve } from '../src/graph/stage';
-import { actStarts, buildScene, durationMs, gapMs, narrate, parseSceneLog, refusalCount, storyDelay, type SceneLine } from '../src/model/scene';
+import { ACTS, actStarts, actorWord, buildScene, durationMs, gapMs, narrate, parseSceneLog, refusalCount, repText, stepWords, storyDelay, type SceneLine } from '../src/model/scene';
+import { castOf } from '../src/components/SceneStage';
+import { ProofTabs, SceneNav } from '../src/components/SceneChrome';
+import { SceneSteps } from '../src/components/SceneSteps';
 import { DemoLab } from '../src/pages/DemoLab';
-import { RogueScene } from '../src/pages/RogueScene';
+import { RogueScene, sheetRows } from '../src/pages/RogueScene';
 import { isRunFile } from '../src/sources/runFiles';
 import { SceneClient, type ServerScene } from '../src/sources/scene';
 import { usePlayback } from '../src/state/scene';
@@ -576,5 +579,97 @@ describe('scene files', () => {
     expect(log).toBe(TEXT);
     expect(JSON.parse(readFileSync(path.join(dir, entry.run, 'files.json'), 'utf8'))).toContain('scene.jsonl');
     for (const f of ['scene.jsonl', 'events.jsonl', 'run.json']) expect(readFileSync(path.join(dir, entry.run, f), 'utf8')).not.toMatch(/ed25519:|private_?key/i);
+  });
+});
+
+// --- the bench (§13 item 25) -----------------------------------------------------
+
+describe('what the scene pages share', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('a step reads without method names and without saying who did it twice', () => {
+    expect(stepWords({ actor: 'agent', action: 'operator key called accept' })).toBe('Tries to pay');
+    expect(stepWords({ actor: 'agent', action: 'operator key called accept again' })).toBe('Tries to pay again');
+    expect(stepWords({ actor: 'agent', action: 'operator key called pay_service' })).toBe('Tries to pay an outside account');
+    expect(stepWords({ actor: 'owner', action: 'owner sets the limits in the contract' })).toBe('Sets the limits in the contract');
+    expect(stepWords({ actor: 'keeper', action: 'anyone closes epoch 26' })).toBe('Closes epoch 26');
+    expect(actorWord('keeper')).toBe('anyone');
+  });
+
+  it('every step is grouped by act; refusals can be picked out, and a row opens to what was expected', () => {
+    const steps = buildScene(LINES).steps;
+    const refused = steps.filter((s) => s.state === 'failed');
+    render(<MemoryRouter><SceneSteps steps={steps} acts={ACTS} /></MemoryRouter>);
+    expect(screen.getByRole('region', { name: 'Over the cap' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Agent goes quiet' })).toBeTruthy();
+    expect(document.querySelectorAll('.step')).toHaveLength(steps.length);
+    const only = screen.getByRole('button', { name: `Refused ${refused.length}` });
+    fireEvent.click(only);
+    expect(only.getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelectorAll('.step')).toHaveLength(refused.length);
+    expect(screen.queryByRole('region', { name: 'Agent goes quiet' })).toBeNull();
+    const first = document.querySelector('.step')!;
+    expect(within(first as HTMLElement).getAllByText(refused[0].err!).length).toBeGreaterThan(1);
+    expect(within(first as HTMLElement).getByRole('link', { name: new RegExp(`tx ${refused[0].tx}`) })).toBeTruthy();
+  });
+
+  it('nothing refused yet: the filter is off, not an empty list', () => {
+    const before = buildScene(LINES).steps.filter((s) => s.state !== 'failed');
+    render(<MemoryRouter><SceneSteps steps={before} acts={ACTS} /></MemoryRouter>);
+    expect((screen.getByRole('button', { name: 'Refused 0' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('the proof shows a tab at a time, keeps the rest in the page and moves with the arrow keys', () => {
+    render(<ProofTabs opening="a" tabs={[{ key: 'a', word: 'First', body: <p>one</p> }, { key: 'b', word: 'Second', count: '2', body: <p>two</p> }]} />);
+    const first = screen.getByRole('tab', { name: 'First' });
+    expect(first.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tabpanel').textContent).toBe('one');
+    expect(screen.getByText('two').closest('[role="tabpanel"]')!.hasAttribute('hidden')).toBe(true);
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: /Second/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tabpanel').textContent).toBe('two');
+    fireEvent.keyDown(screen.getByRole('tab', { name: /Second/ }), { key: 'ArrowRight' });
+    expect(screen.getByRole('tabpanel').textContent).toBe('one');
+  });
+
+  it('on a recording, a link to another scene goes to that scene’s recording and never carries this run', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([{ run: 'rogue-real', date: '2026-11-06', scene: 'rogue' }, { run: 'sale-real', date: '2026-11-06', scene: 'sale' }]))));
+    page(<SceneNav current="rogue" q="?source=recorded&run=rogue-real" />, RECORDED);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Sale' }).getAttribute('href')).toContain('run=sale-real'));
+    expect(screen.getByRole('link', { name: 'Wash trading' }).getAttribute('href')).toBe('/lab/wash');
+    // No recording of it: the scene's own page, which says so.
+    expect(screen.getByRole('link', { name: 'The whole loop' }).getAttribute('href')).toBe('/lab/loop');
+    expect(screen.getByText('Rogue agent').getAttribute('aria-current')).toBe('page');
+  });
+
+  it('the index goes straight to each scene’s own recording, whatever source it was reached on', async () => {
+    stubFiles();
+    const { client } = fakeClient(new Error('down'));
+    page(<DemoLab client={client} />, { kind: 'recorded', run: 'another-run', date: '2026-11-06' }, '/lab');
+    const rogueCard = () => screen.getByRole('heading', { name: 'Rogue agent' }).closest('a')!;
+    await waitFor(() => expect(rogueCard().getAttribute('href')).toContain('run=rogue-real'));
+    expect(screen.getByRole('link', { name: /Sale and control transfer/ }).getAttribute('href')).not.toContain('another-run');
+    expect(screen.getByRole('link', { name: /Wash trading/ }).getAttribute('href')).toBe('/lab/wash');
+  });
+
+  it('before the run has read the spore, its figures say not known, never 0', () => {
+    const scene = buildScene(upTo((l) => l.type === 'start'));
+    expect(scene.now, 'the log has named the spore but not read it').toBeFalsy();
+    const rows = sheetRows(castOf(scene, null), scene, false);
+    expect(rows.find((r) => r.term === 'Tubes')!.value).toBe('—');
+    expect(rows.find((r) => r.term === 'Balance')!.value).toBe('—');
+    expect(rows.find((r) => r.term === 'Reputation')!.value).toBe('—');
+  });
+
+  it('once it is over, a figure that moved says where it started; one that did not, says nothing', () => {
+    const scene = buildScene(LINES);
+    const rows = sheetRows(castOf(scene, null), scene, true);
+    expect(rows.find((r) => r.term === 'Reputation')!.side).toBe(`was ${repText(scene.before!.reputation)}`);
+    expect(rows.find((r) => r.term === 'Tubes')!.side).toBe(`was ${scene.before!.connections.length}`);
+    expect(rows.find((r) => r.term === 'Balance')!.side).toBeNull();
+    expect(sheetRows(castOf(scene, null), scene, false).find((r) => r.term === 'Reputation')!.side, 'not before the end').toBeNull();
   });
 });

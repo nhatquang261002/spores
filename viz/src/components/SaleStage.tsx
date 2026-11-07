@@ -15,6 +15,7 @@ import type { PeerArt } from '../model/scene';
 import { repText } from '../model/scene';
 import { formatNear, tubesText } from '../ui/format';
 import { breakpoint, color, motion } from '../ui/tokens';
+import type { SheetRow } from './StageAids';
 
 /** Who is on stage before a run: read from the chain by the page. */
 export interface SaleCast {
@@ -54,6 +55,10 @@ export interface PeerSpot {
   /** What it quoted for the job on stage. */
   quote: string | null;
   state: 'plain' | 'won' | 'lost' | 'grown';
+  /** Its tube fell under the minimum and is gone. */
+  removed?: boolean;
+  /** What it's doing on this stage, if not trading with the spore. */
+  role?: string;
   /** Where it stands and where its id goes, % of the stage. */
   at: { left: string; top: string };
   label: { left: string; top: string };
@@ -69,7 +74,7 @@ export interface StageSpots {
 /** A spore's spot on the stage: its id clear of its art, which reaches 0.17 u from where it stands. */
 export function spotOf(m: StageMetrics, size: { w: number; h: number }, angle: number, p: Pick<PeerSpot, 'id' | 'd' | 'quote' | 'state'>): PeerSpot {
   const pct = (q: Pt) => ({ left: `${(q.x / size.w) * 100}%`, top: `${(q.y / size.h) * 100}%` });
-  return { ...p, at: pct(onRing(m, angle, m.ringR)), label: pct(clampX(onRing(m, angle, m.ringR + m.u * 0.2), size.w)), right: Math.sin(angle) >= 0, size: m.u * PEER_ART };
+  return { ...p, at: pct(onRing(m, angle, m.ringR)), label: pct(clampY(clampX(onRing(m, angle, m.ringR + m.u * 0.2), size.w), size.h)), right: Math.sin(angle) >= 0, size: m.u * PEER_ART };
 }
 
 export const ART_SCALE = 2.1;
@@ -79,6 +84,8 @@ const PARTY_H = 92;
 export const PHONE = breakpoint.md;
 /** Room a tube's short id needs at the stage's edge, px. */
 const ID_ROOM = 30;
+/** Half a one-line note's height, px. */
+const NOTE_ROOM = 10;
 export const PEER_ART = 0.34;
 const TAU = Math.PI * 2;
 export const slotAngle = (id: number) => ((id % 64) * TAU) / 64;
@@ -387,8 +394,6 @@ export function SaleStage({ scene, idle, reducedMotion, resting = false, spots }
   const start = scene.start;
   const seller = start?.seller ?? null;
   const owner = cast?.owner ?? null;
-  // Check 9 compares the blocks either side of the buy. A value read after a later close isn't what it proved.
-  const kept = (same: (after: Record<string, any>) => boolean) => scene.intact && !!scene.diff && same(scene.diff.after);
   const summary = cast ? `Spore #${cast.spore} in a dish, owned by ${owner ?? 'an account not read yet'}. ${tubesText(cast.tubes.length)}. ${scene.sold ? 'Sold.' : scene.listed ? 'Listed.' : ''}` : 'The dish, empty until a spore is known.';
 
   return (
@@ -424,16 +429,6 @@ export function SaleStage({ scene, idle, reducedMotion, resting = false, spots }
         </div>
       )}
 
-      {cast && !spots && (
-        <div className="stage-plate">
-          <span className="display-s">Spore #{cast.spore}</span>
-          <Kept word={cast.balance ? formatNear(cast.balance) : '—'} money kept={kept((a) => String(a.balance) === cast.balance)} />
-          <Kept word={tubesText(cast.tubes.length)} kept={kept((a) => a.connections?.length === cast.tubes.length)} />
-          <Kept word={cast.age !== null ? `age ${cast.age}` : 'age —'} kept={kept((a) => a.age === cast.age)} />
-          <Kept word={`reputation ${cast.reputation ? repText(cast.reputation) : '—'}`} kept={kept((a) => String(a.reputation) === cast.reputation)} />
-        </div>
-      )}
-
       {/* The label on the dish: the one light thing on the stage, the thing a sale changes. */}
       {cast && m && (
         <div className="dish-label-slot" style={pct(onRing(m, Math.PI, m.dishR * 0.86))}>
@@ -459,8 +454,23 @@ export function SaleStage({ scene, idle, reducedMotion, resting = false, spots }
   );
 }
 
+/** What a buyer gets, for the sheet beside the stage. */
+export function saleSheetRows(scene: SaleState, cast: SaleCast): SheetRow[] {
+  // Check 9 compares the blocks either side of the buy. A value read after a later close isn't what it proved.
+  const kept = (same: (after: Record<string, any>) => boolean) => scene.intact && !!scene.diff && same(scene.diff.after);
+  return [
+    { term: 'Balance', tip: 'Its own money, held by the contract under its id. It stays with the spore. Testnet NEAR has no value.', value: <Kept word={cast.balance ? formatNear(cast.balance) : '—'} money kept={kept((a) => String(a.balance) === cast.balance)} /> },
+    { term: 'Tubes', tip: 'Live links to other spores, grown by settled payments. A sale doesn’t touch them.', value: <Kept word={tubesText(cast.tubes.length)} kept={kept((a) => a.connections?.length === cast.tubes.length)} /> },
+    { term: 'Age', tip: 'Epochs since it was activated. It stays with the spore through a sale.', value: <Kept word={cast.age !== null ? `${cast.age} epochs` : '—'} kept={kept((a) => a.age === cast.age)} /> },
+    { term: 'Reputation', tip: 'R, added up from its tubes.', value: <Kept word={cast.reputation ? repText(cast.reputation) : '—'} kept={kept((a) => String(a.reputation) === cast.reputation)} /> },
+  ];
+}
+
 /** Keeps a note's anchor inside the stage, so a short id isn't clipped at the edge. */
 export const clampX = (p: Pt, w: number): Pt => ({ x: Math.max(ID_ROOM, Math.min(w - ID_ROOM, p.x)), y: p.y });
+
+/** Keeps a note inside the stage at its top and foot, clear of what's under the stage. */
+const clampY = (p: Pt, h: number): Pt => ({ x: p.x, y: Math.max(NOTE_ROOM, Math.min(h - NOTE_ROOM, p.y)) });
 
 export function Kept({ word, money, kept }: { word: string; money?: boolean; kept: boolean }) {
   return (

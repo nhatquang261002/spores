@@ -247,7 +247,7 @@ describe('Wash page', () => {
   it('the loop and the spores drive the case; a capped loop says so', async () => {
     page();
     await screen.findByText('168 / 270', { selector: '.figure-l' });
-    const slider = screen.getByRole('slider') as HTMLInputElement;
+    const slider = screen.getByRole('slider', { name: /How much money/ }) as HTMLInputElement;
     expect(slider.getAttribute('aria-valuetext')).toBe('0.2 NEAR');
     fireEvent.change(slider, { target: { value: '4' } });
     expect(slider.getAttribute('aria-valuetext')).toBe('5 NEAR');

@@ -1,13 +1,14 @@
-// Sale and control transfer (Design §6.H, /lab/sale). Starts from Rogue's layout:
-// the question, one button, the stage pinned beside the story, proof underneath.
+// Sale and control transfer (Design §6.H, /lab/sale; §13 item 25). Rogue's bench: the
+// stage beside the story, the controls under both, the proof below, a tab at a time.
 // The owner flips only when the `buy` tx is final, and payouts come from receipts.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { EXPLORER } from '../chain/rpc';
-import { JobTimeline } from '../components/JobTimeline';
-import { SaleStage, type SaleCast } from '../components/SaleStage';
-import { ActRail, Checks, PaceSwitch, Preconditions, seconds, timelineSteps } from '../components/SceneChrome';
+import { saleCastOf, SaleStage, saleSheetRows, type SaleCast } from '../components/SaleStage';
+import { ActRail, Checks, NextScene, PaceSwitch, Preconditions, ProofTabs, retold, SceneHead, SceneNav, seconds } from '../components/SceneChrome';
 import { Evidence } from '../components/SceneLanes';
+import { SceneSteps } from '../components/SceneSteps';
+import { SpecimenSheet, StageLegend, useSpots } from '../components/StageAids';
 import { buildSale, narrateSale, SALE_ACTS, saleDelay, saleRows, type SaleState } from '../model/sale';
 import { durationMs, repText, type SceneLine } from '../model/scene';
 import { liveRouter } from '../sources/live';
@@ -17,15 +18,23 @@ import { linkTo, sourceQuery } from '../sources/source';
 import { ReceiptContext, useReceiptStore } from '../state/activity';
 import { useIdleCast, useLiveRun, usePlayback, useSceneServer } from '../state/scene';
 import { useApp } from '../state/source';
-import { formatClock, formatNear, shortAccount, tubesText } from '../ui/format';
+import { formatNear, shortAccount, tubesText } from '../ui/format';
 import { ErrorState, LoadingBar } from '../ui/states';
-import { SourceBadge } from '../ui/status';
 import '../components/activity.css';
 import '../components/detail.css';
 import '../components/gallery.css';
 import '../components/lab.css';
 
 const EMPTY = buildSale([]);
+
+/** What each act shows, on the timeline's stops. */
+const ACT_TIPS: Record<string, string> = {
+  listed: 'The owner puts it on the market at its price.',
+  sold: 'A buyer pays. The owner changes when the tx is final.',
+  lockout: 'The old agent’s key and the old owner try again, and are refused.',
+  intact: 'Its balance, tubes and age, either side of the buy.',
+  takeover: 'The buyer appoints an agent, and it works.',
+};
 
 /** A failed row quotes the contract or the check as it is; a passed row keeps its evidence one click away. */
 function SaleChecklist({ scene, evidence, sender }: { scene: SaleState; evidence: boolean; sender?: string }) {
@@ -215,37 +224,51 @@ export function SaleScene({ client: given }: { client?: SceneClient } = {}) {
     window.scrollTo?.(0, 0);
   }, [q]);
 
-  const steps = timelineSteps(scene.steps);
   const failed = scene.steps.filter((s) => s.state === 'failed').length;
+  const passed = scene.checks.filter((c) => c.ok).length;
+  const cast = saleCastOf(scene, idleCast);
+  const spots = useSpots(q, cast?.spore ?? null);
+  const note = source?.kind === 'recorded' && log ? retold(playback.length, playback.pace) : null;
 
   return (
     <ReceiptContext.Provider value={receipts}>
       <div className="scene">
-        <div className="scene-top">
-          <nav className="breadcrumb body" aria-label="Breadcrumb">
-            <Link to={linkTo('/lab', q)}>Demo Lab</Link> <span aria-hidden="true">/</span> <span aria-current="page">Sale and control transfer</span>
-          </nav>
-          {source && <SourceBadge source={source} staleSince={isLive ? epoch.staleSince : null} />}
-        </div>
+        <SceneNav current="sale" q={q} aside={source?.kind === 'recorded' && canReachFrom(SCENE_SERVER, window.location.hostname) ? <Link className="scene-alt" to={liveLink}>Run it live instead</Link> : null} />
 
-        <div className="scene-bench">
-          <div className="scene-head">
-            <h1 className="scene-q">What does a buyer actually get?</h1>
-            <p className="scene-narrator" aria-live="polite" key={line}>{line}</p>
-            <p className="scene-quote mono tone-warn" aria-live="polite">{refusal ?? ' '}</p>
+        <div className="scene-play">
+          <div className="scene-bench">
+            <div className="scene-side">
+              <SceneHead question="What does a buyer actually get?" line={line} quote={refusal} />
+              {liveRun.error && <p className="mono tone-warn" role="alert">Could not start: {liveRun.error}</p>}
+              {resetError && <p className="mono tone-warn" role="alert">The reset failed: {resetError}</p>}
+              {logError && <ErrorState error={logError} what="this scene's log" onRetry={() => setAttempt((n) => n + 1)} />}
+              {logSource && !log && !logError && <LoadingBar label="Loading the log" ch={12} />}
+              {cast && <SpecimenSheet spore={cast.spore} to={linkTo(`/spore/${cast.spore}`, q)} rows={saleSheetRows(scene, cast)} label={`Spore #${cast.spore}, as of this moment`} />}
+              <aside className="scene-docket">
+                <Verdict scene={scene} />
+                <SaleChecklist scene={scene} evidence={over} sender={start?.buyer} />
+              </aside>
+            </div>
+
+            <div className="scene-stage-slot">
+              <div className="stage-frame">
+                <SaleStage scene={scene} idle={idleCast} reducedMotion={reducedMotion} spots={spots} />
+                {note && <span className="label stage-source">{note}</span>}
+              </div>
+              <StageLegend seed={cast?.art?.seed ?? null} marks={['hero', 'peer', 'tube', 'agent', 'wall', 'refused']} />
+            </div>
+          </div>
+
+          <div className="scene-transport">
             <div className="scene-controls">
               {logSource ? (
-                <>
-                  {playback.finished ? (
-                    <button type="button" className="btn btn-primary" onClick={playback.restart}>↻ Watch again</button>
-                  ) : playback.playing ? (
-                    <button type="button" className="btn btn-secondary" onClick={playback.pause}>Pause</button>
-                  ) : (
-                    <button type="button" className="btn btn-primary" onClick={playback.play} disabled={!log}>▶︎ Play</button>
-                  )}
-                  <PaceSwitch playback={playback} />
-                  {source?.kind === 'recorded' && canReachFrom(SCENE_SERVER, window.location.hostname) && <Link className="scene-alt body" to={liveLink}>Run it live instead</Link>}
-                </>
+                playback.finished ? (
+                  <button type="button" className="btn btn-primary" onClick={playback.restart}>↻ Watch again</button>
+                ) : playback.playing ? (
+                  <button type="button" className="btn btn-secondary" onClick={playback.pause}>Pause</button>
+                ) : (
+                  <button type="button" className="btn btn-primary" onClick={playback.play} disabled={!log}>▶︎ Play</button>
+                )
               ) : running ? (
                 <span className="body scene-running" role="status">
                   <span className="dot-live" aria-hidden="true" /> Running on testnet · each tx waits for its final outcome
@@ -263,84 +286,94 @@ export function SaleScene({ client: given }: { client?: SceneClient } = {}) {
                       {liveRun.starting ? 'Starting…' : hasRun ? 'Run again on testnet' : 'Run it live on testnet'}
                     </button>
                   ) : null}
-                                    {canReset && <span className="body scene-why">A live run sold this spore and it stays sold. Reset is a second real sale, back to its first owner, with its own royalty.</span>}
+                  {canReset && <span className="body scene-why">A live run sold this spore and it stays sold. Reset is a second real sale, back to its first owner, with its own royalty.</span>}
                   {!canReset && !canRun && server.reachable !== false && pre.some((p) => !p.ok) && <span className="mono-s scene-why">{pre.find((p) => !p.ok)!.label}: not ready. See preconditions below.</span>}
                   {!offerLink && server.reachable === false && <span className="body scene-why">No recording available.</span>}
                 </>
               )}
             </div>
-            {liveRun.error && <p className="mono tone-warn" role="alert">Could not start: {liveRun.error}</p>}
-            {resetError && <p className="mono tone-warn" role="alert">The reset failed: {resetError}</p>}
-            {logError && <ErrorState error={logError} what="this scene's log" onRetry={() => setAttempt((n) => n + 1)} />}
-            {logSource && !log && !logError && <LoadingBar label="Loading the log" ch={12} />}
-            <ActRail acts={SALE_ACTS} act={scene.act} over={over} onSeek={logSource && log ? playback.seekAct : undefined} />
+            <ActRail acts={SALE_ACTS} act={scene.act} over={over} onSeek={logSource && log ? playback.seekAct : undefined} reducedMotion={reducedMotion} tips={ACT_TIPS} />
+            <div className="scene-after">
+              {logSource && <PaceSwitch playback={playback} />}
+              {over && <NextScene after="sale" />}
+            </div>
           </div>
-
-          <div className="scene-stage-slot">
-            <SaleStage scene={scene} idle={idleCast} reducedMotion={reducedMotion} />
-          </div>
-
-          <aside className="scene-docket">
-            <Verdict scene={scene} />
-            <SaleChecklist scene={scene} evidence={over} sender={start?.buyer} />
-          </aside>
         </div>
 
-        <details className="scene-proof" open={!hasRun && operator && !offerLink}>
-          <summary className="title">Check it yourself</summary>
-          <div className="proof-grid">
-            <section>
-              <h3 className="heading">{operator ? 'Before you run it' : 'What this view is'}</h3>
-              {operator ? (
-                <Preconditions list={pre} epochOk={!!epoch.info && !epoch.error} epochKnown={!!epoch.info} />
-              ) : (
-                <p className="body">This view replays a log, so nothing is sent. Every tx link below points at a real past transaction.</p>
-              )}
-              {operator && server.scene?.reset.blocked && <p className="body scene-why">{server.scene.reset.blocked}</p>}
-              {operator && <p className="body scene-why">A live run is a real sale: the spore goes to the buyer and stays there. Reset is a second real sale back to the first owner, with its own royalty. Nothing here closes an epoch, so no tube decays because of it.</p>}
-              {start && (
-                <p className="body scene-why">
-                  Seller <span className="mono">{shortAccount(start.seller)}</span> · buyer <span className="mono">{shortAccount(start.buyer)}</span> · royalty <span className="mono">{shortAccount(start.royalty_account)}</span> · router <span className="mono">{start.router}</span>
-                </p>
-              )}
-            </section>
-            <section>
-              <h3 className="heading">Either side of the buy</h3>
-              <BlockDiffTable scene={scene} />
-              <h3 className="heading proof-gap">Payouts, from the receipts</h3>
-              {scene.payouts.seller || scene.payouts.royalty ? (
-                <ul className="preconditions">
-                  {(['seller', 'royalty'] as const).map((role) => {
-                    const p = scene.payouts[role];
-                    if (!p) return null;
-                    return (
-                      <li key={role}>
-                        <span className={p.ok ? 'tone-growth' : 'tone-warn'} aria-hidden="true">{p.ok ? '✓' : '✕'}</span>
-                        <span className="body">{role}: <span className="mono">{shortAccount(p.to)}</span> <span className="mono money">{p.amount ? formatNear(p.amount) : '—'}</span><span className="sr-only">{p.ok ? ', paid' : ', not paid'}</span></span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="body">The contract’s two transfers appear here once the buy’s receipts are read.</p>
-              )}
-              <h3 className="heading proof-gap">Checks</h3>
-              <Checks checks={scene.checks} />
-            </section>
-            <section className="proof-wide">
-              <h3 className="heading">Every step{failed ? ` · ${failed} refused` : ''}</h3>
-              {steps.length ? <JobTimeline steps={steps} variant="scene" /> : <p className="body">Each transaction lands here with its time, what was expected and what the chain said.</p>}
-              {scene.bad.map((b, i) => (
-                <p key={i} className="mono-s tone-warn">Unreadable log line: {b}</p>
-              ))}
-              {scene.notes.map((n, i) => (
-                <p key={i} className="body tone-warn">{n}</p>
-              ))}
-              {start?.run && steps[0]?.at && <p className="mono-s scene-why">First transaction at {formatClock(steps[0].at)} your time.</p>}
-              {hasRun && <Link className="body" to={linkTo('/activity', q)}>See these txs in Activity →</Link>}
-            </section>
-          </div>
-        </details>
+        <ProofTabs
+          opening={!hasRun && operator ? 'run' : 'steps'}
+          tabs={[
+            {
+              key: 'steps',
+              word: 'Every step',
+              count: scene.steps.length ? (failed ? `${scene.steps.length} · ${failed} refused` : String(scene.steps.length)) : undefined,
+              body: (
+                <>
+                  <SceneSteps steps={scene.steps} acts={SALE_ACTS} sender={start?.buyer} />
+                  {scene.bad.map((b, i) => (
+                    <p key={i} className="mono-s tone-warn">Unreadable log line: {b}</p>
+                  ))}
+                  {scene.notes.map((n, i) => (
+                    <p key={i} className="body tone-warn">{n}</p>
+                  ))}
+                  {hasRun && <Link className="body" to={linkTo('/activity', q)}>See these txs in Activity →</Link>}
+                </>
+              ),
+            },
+            {
+              key: 'diff',
+              word: 'Either side of the buy',
+              body: (
+                <div className="proof-grid">
+                  <section>
+                    <h3 className="heading">The chain’s values</h3>
+                    <BlockDiffTable scene={scene} />
+                  </section>
+                  <section>
+                    <h3 className="heading">Payouts, from the receipts</h3>
+                    {scene.payouts.seller || scene.payouts.royalty ? (
+                      <ul className="preconditions">
+                        {(['seller', 'royalty'] as const).map((role) => {
+                          const p = scene.payouts[role];
+                          if (!p) return null;
+                          return (
+                            <li key={role}>
+                              <span className={p.ok ? 'tone-growth' : 'tone-warn'} aria-hidden="true">{p.ok ? '✓' : '✕'}</span>
+                              <span className="body">{role}: <span className="mono">{shortAccount(p.to)}</span> <span className="mono money">{p.amount ? formatNear(p.amount) : '—'}</span><span className="sr-only">{p.ok ? ', paid' : ', not paid'}</span></span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="body">The contract’s two transfers appear here once the buy’s receipts are read.</p>
+                    )}
+                  </section>
+                </div>
+              ),
+            },
+            { key: 'checks', word: 'Checks', count: scene.checks.length ? `${passed} of ${scene.checks.length}` : undefined, body: <Checks checks={scene.checks} /> },
+            {
+              key: 'run',
+              word: operator ? 'Before you run it' : 'What this view is',
+              body: (
+                <>
+                  {operator ? (
+                    <Preconditions list={pre} epochOk={!!epoch.info && !epoch.error} epochKnown={!!epoch.info} />
+                  ) : (
+                    <p className="body">This view replays a log, so nothing is sent. Every tx link here points at a real past transaction.</p>
+                  )}
+                  {operator && server.scene?.reset.blocked && <p className="body scene-why">{server.scene.reset.blocked}</p>}
+                  {operator && <p className="body scene-why">A live run is a real sale: the spore goes to the buyer and stays there. Reset is a second real sale back to the first owner, with its own royalty. Nothing here closes an epoch, so no tube decays because of it.</p>}
+                  {start && (
+                    <p className="body scene-why">
+                      Seller <span className="mono">{shortAccount(start.seller)}</span> · buyer <span className="mono">{shortAccount(start.buyer)}</span> · royalty <span className="mono">{shortAccount(start.royalty_account)}</span> · contract <span className="mono">{start.router}</span>
+                    </p>
+                  )}
+                </>
+              ),
+            },
+          ]}
+        />
       </div>
     </ReceiptContext.Provider>
   );

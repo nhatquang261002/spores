@@ -12,7 +12,8 @@ import { tubesText } from '../src/ui/format';
 import { durationMs, parseSceneLog, type SceneLine } from '../src/model/scene';
 import type { Source } from '../src/model/types';
 import { LoopStage } from '../src/components/LoopStage';
-import { SaleStage } from '../src/components/SaleStage';
+import { saleCastOf, saleSheetRows } from '../src/components/SaleStage';
+import { SpecimenSheet } from '../src/components/StageAids';
 import { LoopScene } from '../src/pages/LoopScene';
 import { loadLoopRun } from '../src/sources/loop';
 import { isRunFile } from '../src/sources/runFiles';
@@ -284,8 +285,8 @@ describe('✓ kept on the Sale stage', () => {
   });
   const plate = (scene: ReturnType<typeof buildSale>) => {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 800, height: 800 } as DOMRect);
-    const { container } = render(<RenderQueueContext.Provider value={() => Promise.reject(new Error('no renderer'))}><SaleStage scene={scene} idle={null} reducedMotion /></RenderQueueContext.Provider>);
-    return [...container.querySelectorAll('.kept-row')].map((r) => r.textContent ?? '');
+    const { container } = render(<SpecimenSheet spore={scene.start!.spore} rows={saleSheetRows(scene, saleCastOf(scene, null)!)} label="sheet" />);
+    return [...container.querySelectorAll('.sheet-row')].map((r) => (r.textContent ?? '').toLowerCase());
   };
 
   it('marks a value only if it is the one the blocks either side of the buy agree on', () => {
@@ -589,7 +590,6 @@ describe('the page, on LIVE', () => {
     expect(link.getAttribute('href')).toBe('/lab/loop?source=recorded&run=demo-real&date=2026-11-06');
     await waitFor(() => expect(r.sporeSummary).toHaveBeenCalledWith(HERO));
     await waitFor(() => expect(narrator()).toMatch(new RegExp(`Spore #${HERO} is an NFT`)));
-    expect(screen.getAllByText(/router4/).length, 'the badge names the router').toBeGreaterThan(0);
     for (const a of LOOP_ACTS) expect(screen.getByText(a.promise)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Pause' })).toBeNull();
   });

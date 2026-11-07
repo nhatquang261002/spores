@@ -5,6 +5,7 @@
 // a close. Under reduced motion each state is drawn as a still; the lanes and
 // the narrator say the same in words.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { spotOf, type StageSpots } from './SaleStage';
 import {
   artDiscR,
   clamp01,
@@ -36,6 +37,7 @@ import { artReach, curvePoint } from '../model/network';
 import { refusalCount, type AttemptKey, type PeerArt, type SceneState } from '../model/scene';
 import { formatNear } from '../ui/format';
 import { color, motion } from '../ui/tokens';
+import { Tooltip } from '../ui/Tooltip';
 
 export interface StageCast {
   spore: number;
@@ -75,13 +77,12 @@ interface TryAnim {
   decidedAt: number | null;
 }
 
-const LABEL_GAP = 0.15;
 /** Side of another spore's art on the ring, as a share of the half side. */
 const PEER_ART = 0.34;
 /** The spore's art side, as a share of artR. */
 const ART_SCALE = 2.1;
 
-export function SceneStage({ scene, idle, reducedMotion }: { scene: SceneState; idle: StageCast | null; reducedMotion: boolean }) {
+export function SceneStage({ scene, idle, reducedMotion, spots, pointed = null }: { scene: SceneState; idle: StageCast | null; reducedMotion: boolean; spots: StageSpots; /** The attempt the visitor is on in the docket: its gate lights. */ pointed?: AttemptKey | null }) {
   const cast = castOf(scene, idle);
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -368,7 +369,7 @@ export function SceneStage({ scene, idle, reducedMotion }: { scene: SceneState; 
   const lim = scene.start?.limits;
   const count = refusalCount(scene);
   const summary = cast
-    ? `Spore #${cast.spore} in a dish. The contract is a wall round it. ${count.refused} of ${count.total} attempts refused so far. ${cast.tubes.length} tubes.`
+    ? `Spore #${cast.spore} in a dish. The contract is a wall round it. ${count.refused} of ${count.total} attempts refused so far.${cast.balance ? ` ${cast.tubes.length} tubes.` : ''}`
     : 'The dish, empty until a spore is known.';
   const gateTip = (key: AttemptKey) => scene.attempts.find((a) => a.key === key)?.tries.at(-1);
 
@@ -376,70 +377,48 @@ export function SceneStage({ scene, idle, reducedMotion }: { scene: SceneState; 
     <div className="stage" ref={box}>
       <canvas ref={canvas} className="stage-canvas" role="img" aria-label={summary} />
       {cast && m && gates && (
-        <div className="stage-notes">
+        <div className="stage-spots">
+          {spots.hero(cast.spore, m.artR * 2)}
           {[...gates.partners].map(([id, angle]) => {
             const tube = cast.tubes.find(([n]) => n === id);
             const gone = !tube && !!scene.before;
-            return (
-              <span key={id} className={`stage-note ${side(angle)}${gone ? ' is-gone' : ''}`} style={pct(onRing(m, angle, m.ringR + m.u * LABEL_GAP))}>
-                <span className="mono-s">#{id}</span>
-                {tube && <span className="mono-s stage-d">D {Number(tube[1]).toLocaleString('en-US')}</span>}
-                {gone && <span className="mono-s stage-d"><span className="stage-long">tube </span>removed</span>}
-              </span>
-            );
+            return <span key={id}>{spots.peer({ ...spotOf(m, size, angle, { id, d: tube ? tube[1] : null, quote: null, state: 'plain' }), removed: gone })}</span>;
           })}
-          {cast.provider !== null && (
-            <span className={`stage-note ${side(gates.provider)}`} style={pct(onRing(m, gates.provider, m.ringR + m.u * LABEL_GAP))}>
-              <span className="mono-s">#{cast.provider}</span>
-              <span className="label stage-role">quotes for the agent</span>
-            </span>
-          )}
+          {cast.provider !== null && <span>{spots.peer({ ...spotOf(m, size, gates.provider, { id: cast.provider, d: null, quote: null, state: 'plain' }), role: 'It quotes for the agent’s jobs' })}</span>}
+        </div>
+      )}
+      {cast && m && gates && (
+        <div className="stage-notes">
           <span className={`stage-note stage-attacker ${side(gates.attacker)}`} style={pct(onRing(m, gates.attacker, m.ringR + m.u * 0.08))}>
-            <AccountName name={cast.attacker} />
-            <span className="label stage-role">never approved by the owner</span>
+            <Tooltip align={side(gates.attacker) === 'is-left' ? 'end' : 'start'} content={<><span className="mono-s">{cast.attacker}</span><br />An account the owner never approved. The agent’s third attempt tries to pay it.</>}>
+              <span className="stage-term mono-s tone-warn">{cast.attacker.split('.')[0]}</span>
+            </Tooltip>
           </span>
           <span className={`stage-note stage-wall ${side(gates.wall)}`} style={pct(onRing(m, gates.wall, m.membraneR + m.u * 0.05))}>
-            <span className="label">the contract</span>
+            <Tooltip align={side(gates.wall) === 'is-left' ? 'end' : 'start'} content="The limits are enforced here, in the contract, not in the agent’s code. It doesn’t matter what the agent wants.">
+              <span className="stage-term label">the contract</span>
+            </Tooltip>
           </span>
           {lim && (scene.limitsSet || scene.verdict.status === 'completed' || scene.verdict.status === 'failed') && (
             <>
-              <GateNote at={pct(onRing(m, gates.cap, m.membraneR + m.u * 0.09))} cls={side(gates.cap)} word={`cap ${formatNear(lim.max_payment)}`} tried={gateTip('cap')?.decision} />
-              <GateNote at={pct(onRing(m, gates.budget, m.membraneR + m.u * 0.09))} cls={side(gates.budget)} word={<>budget {formatNear(lim.budget_per_epoch)}<span className="stage-long"> / epoch</span></>} tried={gateTip('budget')?.decision} />
+              <GateNote on={pointed === 'cap'} at={pct(onRing(m, gates.cap, m.membraneR + m.u * 0.09))} cls={side(gates.cap)} word={`cap ${formatNear(lim.max_payment)}`} tip={`No single payment above ${formatNear(lim.max_payment)}. The owner set it; the contract enforces it.`} tried={gateTip('cap')?.decision} />
+              <GateNote on={pointed === 'budget'} at={pct(onRing(m, gates.budget, m.membraneR + m.u * 0.09))} cls={side(gates.budget)} word={<>budget {formatNear(lim.budget_per_epoch)}<span className="stage-long"> / epoch</span></>} tip={`No more than ${formatNear(lim.budget_per_epoch)} an epoch, across all its payments.`} tried={gateTip('budget')?.decision} />
               {/* Rotated up the wall, so it clears the hole on the same radius. */}
-              <GateNote at={pct(onRing(m, gates.drain + (Math.sin(gates.drain) >= 0 ? -0.34 : 0.34), m.membraneR + m.u * 0.07))} cls={side(gates.drain)} word="no outside payees" tried={gateTip('drain')?.decision} />
+              <GateNote on={pointed === 'drain'} at={pct(onRing(m, gates.drain + (Math.sin(gates.drain) >= 0 ? -0.34 : 0.34), m.membraneR + m.u * 0.07))} cls={`${side(gates.drain)} is-drain`} word="no outside payees" tip="Outside payments only to accounts on the owner’s list. This one isn’t on it." tried={gateTip('drain')?.decision} />
             </>
           )}
-        </div>
-      )}
-      {cast && (
-        <div className="stage-plate">
-          <span className="display-s">Spore #{cast.spore}</span>
-          <span className="mono">
-            {cast.balance ? <span className="money">{formatNear(cast.balance)}</span> : '—'}
-            {scene.escrow && <span className="stage-escrow"> + {formatNear(scene.escrow.amount)} in escrow</span>}
-          </span>
-          <span className="mono">reputation {cast.reputation ? (Number(cast.reputation) / 1000).toFixed(2) : '—'}</span>
         </div>
       )}
     </div>
   );
 }
 
-/** On a narrow dish only the name's first part fits; the whole name is in the proof below. */
-function AccountName({ name }: { name: string }) {
-  const dot = name.indexOf('.');
+function GateNote({ at, cls, word, tip, tried, on }: { at: { left: string; top: string }; cls: string; word: ReactNode; tip: string; tried?: 'pending' | 'refused' | 'allowed'; on: boolean }) {
   return (
-    <span className="mono-s tone-warn">
-      {dot > 0 ? name.slice(0, dot) : name}
-      {dot > 0 && <span className="stage-long">{name.slice(dot)}</span>}
-    </span>
-  );
-}
-
-function GateNote({ at, cls, word, tried }: { at: { left: string; top: string }; cls: string; word: ReactNode; tried?: 'pending' | 'refused' | 'allowed' }) {
-  return (
-    <span className={`stage-note stage-gate ${cls}${tried === 'refused' ? ' is-hit' : ''}`} style={at}>
-      <span className="mono-s">{word}</span>
+    <span className={`stage-note stage-gate ${cls}${tried === 'refused' ? ' is-hit' : ''}${on ? ' is-on' : ''}`} style={at}>
+      <Tooltip align={cls.includes('is-left') ? 'end' : 'start'} content={tip}>
+        <span className="stage-term mono-s">{word}</span>
+      </Tooltip>
       {tried === 'refused' && (
         <span className="stamp is-refused is-small">
           <span aria-hidden="true">✕</span> Refused

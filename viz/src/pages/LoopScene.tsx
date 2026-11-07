@@ -8,11 +8,13 @@ import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
 import { EXPLORER } from '../chain/rpc';
 import { loopCast, LoopStage, usePrewarm } from '../components/LoopStage';
-import { LoopVein } from '../components/LoopVein';
+import { LoopChain, LoopVein } from '../components/LoopVein';
 import { SaleStage } from '../components/SaleStage';
-import { seconds, PaceSwitch } from '../components/SceneChrome';
+import { NextScene, PaceSwitch, ProofTabs, retold, SceneHead, SceneNav, seconds } from '../components/SceneChrome';
+import { SporeSheet, StageLegend, useSpots } from '../components/StageAids';
 import { decisionSummary, ruleCaption } from '../model/decisions';
 import { buildLoop, heroOf, loopDelay, loopRows, loopWaiting, narrateLoop, type LoopAct, type LoopState } from '../model/loop';
+import { plateSheet, STOP_GLOSS } from '../model/plate';
 import { narrateSale } from '../model/sale';
 import type { Source } from '../model/types';
 import { type LogSource } from '../sources/loop';
@@ -22,7 +24,6 @@ import { useIdleCast, usePlayback } from '../state/scene';
 import { useApp } from '../state/source';
 import { formatClock, shortAccount, shortHash } from '../ui/format';
 import { ErrorState, LoadingBar } from '../ui/states';
-import { SourceBadge } from '../ui/status';
 import '../components/activity.css';
 import '../components/detail.css';
 import '../components/gallery.css';
@@ -80,20 +81,46 @@ function LogStory({ source }: { source: LogSource }) {
     window.scrollTo?.(0, 0);
   }, [q]);
 
+  const sheet = useMemo(() => plateSheet(s), [s]);
+  const spots = useSpots(q, s.hero ?? heroKnown);
+  const note = source.kind === 'recorded' && data.lines ? retold(playback.length, playback.pace) : null;
+
   return (
     <div className="scene loop-scene">
-      <div className="scene-top">
-        <nav className="breadcrumb body" aria-label="Breadcrumb">
-          <Link to={linkTo('/lab', q)}>Demo Lab</Link> <span aria-hidden="true">/</span> <span aria-current="page">The whole loop</span>
-        </nav>
-        <SourceBadge source={source} staleSince={data.lostSince} />
-      </div>
+      <SceneNav current="loop" q={q} />
 
-      <div className="scene-bench">
-        <div className="scene-head">
-          <h1 className="scene-q">{QUESTION}</h1>
-          <p className="scene-narrator" aria-live="polite" key={line}>{line}</p>
-          <p className="scene-quote mono tone-warn" aria-live="polite">{refusal ?? ' '}</p>
+      <div className="scene-play">
+        <div className="scene-bench">
+          <div className="scene-side">
+            <SceneHead question={QUESTION} line={line} quote={refusal} />
+            {data.lostSince !== null && <p className="mono tone-warn" role="alert">Lost the connection at {formatClock(data.lostSince)}, retrying. What’s here is what it said before that.</p>}
+            {data.error && <ErrorState error={data.error} what="this recording’s logs" onRetry={data.retry} />}
+            {!data.lines && !data.error && (source.kind === 'run' ? <p className="body scene-why">Waiting for the run to write its first line.</p> : <LoadingBar label="Loading the run" ch={12} />)}
+            {sheet && <SporeSheet sheet={sheet} to={linkTo(`/spore/${sheet.spore}`, q)} />}
+            <aside className="scene-docket">
+              {s.checks && <Verdict checks={s.checks} />}
+              <LoopChain rows={rows} />
+              {playback.finished && over && <NextSteps q={q} hero={s.hero ?? heroKnown} />}
+            </aside>
+          </div>
+
+          <div className="scene-stage-slot">
+            <div className="stage-frame">
+              <div className="loop-stages">
+                <div className={s.saleStarted ? 'loop-layer is-off' : 'loop-layer'}>
+                  <LoopStage state={s} reducedMotion={reducedMotion} spots={spots} />
+                </div>
+                <div className={s.saleStarted ? 'loop-layer loop-layer-top' : 'loop-layer loop-layer-top is-off'} aria-hidden={s.saleStarted ? undefined : true}>
+                  <SaleStage scene={s.sale} idle={cast} reducedMotion={reducedMotion} resting={!s.saleStarted} spots={spots} />
+                </div>
+              </div>
+              {note && <span className="label stage-source">{note}</span>}
+            </div>
+            <StageLegend seed={sheet?.seed ?? null} marks={s.saleStarted ? ['hero', 'peer', 'tube', 'agent', 'wall'] : ['hero', 'peer', 'tube', 'agent', 'wall', 'rim']} />
+          </div>
+        </div>
+
+        <div className="scene-transport">
           <div className="scene-controls">
             {source.kind === 'recorded' || !follow ? (
               <>
@@ -105,7 +132,6 @@ function LogStory({ source }: { source: LogSource }) {
                 ) : (
                   <button type="button" className="btn btn-primary" onClick={playback.play} disabled={!data.lines}>▶︎ Play</button>
                 )}
-                {!(playback.finished && over) && <PaceSwitch playback={playback} />}
               </>
             ) : (
               <span className="body scene-running" role="status">
@@ -114,33 +140,17 @@ function LogStory({ source }: { source: LogSource }) {
               </span>
             )}
           </div>
-          {data.lostSince !== null && <p className="mono tone-warn" role="alert">Lost the connection at {formatClock(data.lostSince)}, retrying. What’s here is what it said before that.</p>}
-          {data.error && <ErrorState error={data.error} what="this recording’s logs" onRetry={data.retry} />}
-          {!data.lines && !data.error && (source.kind === 'run' ? <p className="body scene-why">Waiting for the run to write its first line.</p> : <LoadingBar label="Loading the run" ch={12} />)}
-        </div>
-
-        <div className="scene-stage-slot">
-          <div className="loop-stages">
-            <div className={s.saleStarted ? 'loop-layer is-off' : 'loop-layer'}>
-              <LoopStage state={s} reducedMotion={reducedMotion} />
-            </div>
-            <div className={s.saleStarted ? 'loop-layer loop-layer-top' : 'loop-layer loop-layer-top is-off'} aria-hidden={s.saleStarted ? undefined : true}>
-              <SaleStage scene={s.sale} idle={cast} reducedMotion={reducedMotion} resting={!s.saleStarted} />
-            </div>
+          <div className={`scene-rail${playback.finished ? ' is-finished' : ''}`}>
+            <LoopVein rows={rows} returned={!!s.resumed} reducedMotion={reducedMotion} tips={STOP_GLOSS} onSeek={canSeek ? (a: LoopAct) => playback.seekAct(a) : undefined} />
+          </div>
+          <div className="scene-after">
+            {(source.kind === 'recorded' || !follow) && !(playback.finished && over) && <PaceSwitch playback={playback} />}
+            {playback.finished && over && <NextScene after="loop" />}
           </div>
         </div>
-
-        <aside className="scene-docket">
-          <LoopVein rows={rows} returned={!!s.resumed} reducedMotion={reducedMotion} onSeek={canSeek ? (a: LoopAct) => playback.seekAct(a) : undefined} />
-          {s.checks && <Verdict checks={s.checks} />}
-          {playback.finished && over && <NextSteps q={q} hero={s.hero ?? heroKnown} />}
-        </aside>
       </div>
 
-      <details className="scene-proof">
-        <summary className="title">Check it yourself</summary>
-        <Proof s={s} source={source} routerId={data.run?.run.router ?? null} start={data.run?.events[0]?.at ?? null} real={playback.length.real} story={playback.length.story} />
-      </details>
+      <Proof s={s} source={source} routerId={data.run?.run.router ?? null} start={data.run?.events[0]?.at ?? null} real={playback.length.real} story={playback.length.story} />
     </div>
   );
 }
@@ -159,74 +169,96 @@ function Proof({ s, source, routerId, start, real, story }: { s: LoopState; sour
     ['Old owner refused', s.sale.oldOwner?.tx],
     ['New agent', s.resumed?.tx],
   ];
+  const shown = txs.filter(([, h]) => h && !h.endsWith(')'));
   return (
-    <div className="proof-grid">
-      <section>
-        <h3 className="heading">What this view is</h3>
-        <p className="body">
-          Each line above is read from the agents’ logs: {source.kind === 'recorded' ? <>this recording is real, played in {seconds(story)}; it took {seconds(real)}.</> : 'as it happens.'} Nothing here is sent to the chain. From the sale on, the plate shows the chain at the buy: closes went on while it took place, so its tubes kept decaying after that, and the <Link to={linkTo(`/spore/${s.hero ?? ''}`, q)}>Spore page</Link> has where it ended.
-        </p>
-        {routerId && <p className="body scene-why">Contract <span className="mono">{routerId}</span>{start && <>, started at {formatClock(Date.parse(start))} your time</>}.</p>}
-        <p className="body scene-why">Check it yourself, in this browser:</p>
-        <Link className="body" to={linkTo('/verify', q)}>Verify →</Link>
-      </section>
-      <section>
-        <h3 className="heading">Why it hired {d?.winner !== undefined && d?.winner !== null ? `#${d.winner}` : 'whom it did'}</h3>
-        {d ? (
-          <>
-            <p className="body"><span aria-label="derived" title="Derived in the browser from the logged quotes">≈ </span>{decisionSummary(d)}</p>
-            <p className="mono-s scene-why">{ruleCaption(d.rule)}</p>
-          </>
-        ) : (
-          <p className="body">The rule’s numbers appear here once the story has reached its hire.</p>
-        )}
-      </section>
-      <section className="proof-wide">
-        <h3 className="heading">The transactions behind this story</h3>
-        <ul className="loop-txs">
-          {txs.filter(([, h]) => h && !h.endsWith(')')).map(([what, h]) => (
-            <li key={what}>
-              <span className="body">{what}</span> <a className="mono-s" href={`${EXPLORER}/${h}`} target="_blank" rel="noreferrer" aria-label={`${what} tx ${h}, opens the explorer`}>{shortHash(h!)} ↗</a>
-            </li>
-          ))}
-          {s.sale.start && <li><span className="body">seller, buyer</span> <span className="mono-s">{shortAccount(s.sale.start.seller)}, {shortAccount(s.sale.start.buyer)}</span></li>}
-        </ul>
-        <p className="body scene-why">The sale has its own scene, with all its checks: <Link to={linkTo('/lab/sale', q)}>Sale and control transfer →</Link></p>
-      </section>
-    </div>
+    <ProofTabs
+      opening="txs"
+      tabs={[
+        {
+          key: 'txs',
+          word: 'The transactions',
+          count: shown.length ? String(shown.length) : undefined,
+          body: (
+            <>
+              <ul className="loop-txs">
+                {shown.map(([what, h]) => (
+                  <li key={what}>
+                    <span className="body">{what}</span> <a className="mono-s" href={`${EXPLORER}/${h}`} target="_blank" rel="noreferrer" aria-label={`${what} tx ${h}, opens the explorer`}>{shortHash(h!)} ↗</a>
+                  </li>
+                ))}
+                {s.sale.start && <li><span className="body">Seller, buyer</span> <span className="mono-s">{shortAccount(s.sale.start.seller)}, {shortAccount(s.sale.start.buyer)}</span></li>}
+              </ul>
+              {!shown.length && <p className="body">The transactions behind the story land here as it reaches them.</p>}
+              <p className="body scene-why">The sale has its own scene, with all its checks: <Link to={linkTo('/lab/sale', q)}>Sale and control transfer →</Link></p>
+            </>
+          ),
+        },
+        {
+          key: 'why',
+          word: d?.winner !== undefined && d?.winner !== null ? `Why it hired #${d.winner}` : 'Why it hired whom it did',
+          body: d ? (
+            <>
+              <p className="body"><span aria-label="derived" title="Derived in the browser from the logged quotes">≈ </span>{decisionSummary(d)}</p>
+              <p className="mono-s scene-why">{ruleCaption(d.rule)}</p>
+            </>
+          ) : (
+            <p className="body">The rule’s numbers appear here once the story has reached its hire.</p>
+          ),
+        },
+        {
+          key: 'view',
+          word: 'What this view is',
+          body: (
+            <>
+              <p className="body">
+                Each line above is read from the agents’ logs: {source.kind === 'recorded' ? <>this recording is real, played in {seconds(story)}; it took {seconds(real)}.</> : 'as it happens.'} Nothing here is sent to the chain. From the sale on, the sheet shows the chain at the buy: closes went on while it took place, so its tubes kept decaying after that, and the <Link to={linkTo(`/spore/${s.hero ?? ''}`, q)}>Spore page</Link> has where it ended.
+              </p>
+              {routerId && <p className="body scene-why">Contract <span className="mono">{routerId}</span>{start && <>, started at {formatClock(Date.parse(start))} your time</>}.</p>}
+              <p className="body scene-why">Check it yourself, in this browser: <Link to={linkTo('/verify', q)}>Verify →</Link></p>
+            </>
+          ),
+        },
+      ]}
+    />
   );
 }
 
 /** On LIVE nothing is playing, and a recording is one honest click away. */
 function LiveInvite({ source }: { source: Source }) {
-  const { reducedMotion, epoch } = useApp();
+  const { reducedMotion } = useApp();
   const rec = useLoopRecording();
   const cast = useIdleCast(rec.hero, true, 0);
   const empty = useMemo(() => buildLoop([]), []);
   const link = rec.bundle ? linkTo('/lab/loop', sourceQuery({ kind: 'recorded', run: rec.bundle.run, date: rec.bundle.date })) : null;
+  const q = sourceQuery(source);
+  const spots = useSpots(q, cast?.spore ?? null);
+  const rows = loopRows(empty, false);
   return (
     <div className="scene loop-scene">
-      <div className="scene-top">
-        <nav className="breadcrumb body" aria-label="Breadcrumb">
-          <Link to="/lab">Demo Lab</Link> <span aria-hidden="true">/</span> <span aria-current="page">The whole loop</span>
-        </nav>
-        <SourceBadge source={source} staleSince={epoch.staleSince} />
-      </div>
-      <div className="scene-bench">
-        <div className="scene-head">
-          <h1 className="scene-q">{QUESTION}</h1>
-          <p className="scene-narrator" aria-live="polite">{cast ? `Spore #${cast.spore} is an NFT with its own money. An agent runs it.` : 'A Spore is an NFT with its own money and an agent that spends it.'}</p>
-          <p className="scene-quote mono"> </p>
+      <SceneNav current="loop" q={q} />
+      <div className="scene-play">
+        <div className="scene-bench">
+          <div className="scene-side">
+            <SceneHead question={QUESTION} line={cast ? `Spore #${cast.spore} is an NFT with its own money. An agent runs it.` : 'A Spore is an NFT with its own money and an agent that spends it.'} />
+            <aside className="scene-docket">
+              <LoopChain rows={rows} />
+            </aside>
+          </div>
+          <div className="scene-stage-slot">
+            <div className="stage-frame">
+              <SaleStage scene={empty.sale} idle={cast} reducedMotion={reducedMotion} spots={spots} />
+            </div>
+            <StageLegend seed={cast?.art?.seed ?? null} marks={['hero', 'peer', 'tube', 'agent', 'wall']} />
+          </div>
+        </div>
+        <div className="scene-transport">
           <div className="scene-controls">
             {link ? <Link className="btn btn-primary scene-cta" to={link}>▶︎ Watch the recording{rec.length ? ` · ${seconds(rec.length)}` : ''}</Link> : <span className="body scene-why">No recording available.</span>}
           </div>
+          <div className="scene-rail">
+            <LoopVein rows={rows} reducedMotion={reducedMotion} tips={STOP_GLOSS} />
+          </div>
         </div>
-        <div className="scene-stage-slot">
-          <SaleStage scene={empty.sale} idle={cast} reducedMotion={reducedMotion} />
-        </div>
-        <aside className="scene-docket">
-          <LoopVein rows={loopRows(empty, false)} returned={false} reducedMotion={reducedMotion} />
-        </aside>
       </div>
     </div>
   );

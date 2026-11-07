@@ -1,42 +1,57 @@
-/* Demo Lab (Design §6.H, §13 item 19). Tokens only. The specimen leads: the
-   stage takes the page, the docket annotates it, the proof waits underneath. */
+/* Demo Lab (Design §6.H, §13 items 19, 25). Tokens only. The bench is the landing plate's:
+   the specimen on the left and the sheet that names it on the right, the story's timeline
+   under both, the evidence below, a tab at a time. */
 
 /* ---- index ---------------------------------------------------------------- */
-.lab-intro { margin: 0 0 var(--s-6); }
+.lab-intro { margin: 0 0 var(--s-5); color: var(--text-2); }
 .scene-cards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--s-5);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-4);
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.scene-card { background: var(--surface); border-radius: var(--r-2); }
-.scene-card.is-off { background: none; outline: 1px dashed var(--line-strong); outline-offset: -1px; }
-.scene-card.is-off .title { color: var(--text-3); }
+.scene-card { background: var(--surface); border-radius: var(--r-2); min-width: 0; }
+.scene-card.is-wide, .scene-card.is-off { grid-column: 1 / -1; }
 .scene-card-link {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: var(--s-5);
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: var(--s-4);
   height: 100%;
-  padding: var(--s-5);
+  padding: var(--s-4) var(--s-5);
   color: inherit;
   text-decoration: none;
   border-radius: inherit;
   transition: background var(--t-micro) var(--ease-out);
 }
-a.scene-card-link:hover { background: var(--surface-2); }
-.scene-card-body { display: grid; align-content: start; gap: var(--s-2); justify-items: start; min-width: 0; }
-.scene-card-body p { margin: 0; }
-.scene-card-meta { color: var(--text-2); }
-.scene-card-go { margin-top: var(--s-1); }
+.scene-card-link:hover { background: var(--surface-2); }
+.scene-card-link:hover .sk-dish { stroke: var(--line-strong); }
+.scene-card-body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); min-width: 0; }
+.scene-card-body p, .scene-card-body h2 { margin: 0; }
+.scene-card-q { color: var(--text-2); }
+.scene-card-claim { color: var(--text-2); }
+.scene-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-top: auto; padding-top: var(--s-3); }
+.scene-card-go { flex: none; display: inline-flex; align-items: center; justify-content: center; }
+/* The whole card is the link, so the whole card wakes its button. */
+.scene-card-link:hover .scene-card-go { border-radius: var(--r-blob-2); }
+.scene-card-link:hover .btn-secondary { background: var(--surface-3); }
+.scene-card-meta { color: var(--text-3); }
+.scene-card.is-wide .scene-card-link { grid-template-columns: 144px minmax(0, 1fr); gap: var(--s-6); align-items: center; }
+.scene-card.is-wide .sketch { width: 144px; height: 144px; }
+.scene-card.is-wide .scene-card-claim { color: var(--text); max-width: 64ch; }
+.scene-card.is-wide .scene-card-q { font: 500 22px/26px var(--font-display); }
+.scene-card-stops { margin: 0; color: var(--text-3); }
+.scene-card.is-off { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: var(--s-4); align-items: start; padding: var(--s-4) var(--s-5); background: none; outline: 1px dashed var(--line-strong); outline-offset: -1px; }
+.scene-card.is-off .title { color: var(--text-3); }
+.scene-card.is-off .sketch { width: 48px; height: 48px; }
 .mode-chip { padding: var(--s-0) var(--s-3); border-radius: var(--r-blob); border: 1px solid var(--line-strong); color: var(--text-2); }
 .mode-live { border-color: var(--growth); color: var(--growth); }
 .mode-simulation { border-style: dashed; }
 .mode-unavailable, .mode-unbuilt { border-style: dashed; color: var(--text-3); }
 
-.sketch { width: 96px; height: 96px; fill: none; stroke-linecap: round; }
-.sk-dish { fill: var(--bg); stroke: var(--line); }
+.sketch { width: 72px; height: 72px; fill: none; stroke-linecap: round; }
+.sk-dish { fill: var(--bg); stroke: var(--line); transition: stroke var(--t-micro) var(--ease-out); }
 .sk-wall { stroke: var(--slime); stroke-width: 2.5; }
 .sk-pod { stroke: var(--agent); stroke-width: 3; }
 .sk-x { stroke: var(--warn); stroke-width: 3; }
@@ -48,31 +63,34 @@ a.scene-card-link:hover { background: var(--surface-2); }
 .sk-loop { stroke: var(--warn); stroke-width: 3; }
 .sk-bead { fill: var(--value); }
 
-/* ---- scene ---------------------------------------------------------------- */
+/* ---- the bench ------------------------------------------------------------ */
 .scene { margin-top: calc(-1 * var(--s-5)); }
-.scene-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-3); }
-/* Story on the left, the dish pinned on the right: it stays in view whatever the
-   docket grows to, so nobody scrolls away from the thing that is happening. */
+/* Where you are in the lab, and the way to the other scenes. */
+.scene-nav { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); margin-bottom: var(--s-3); color: var(--text-3); }
+.scene-nav-list { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); list-style: none; margin: 0; padding: 0; }
+.scene-nav-item { color: var(--text-2); }
+.scene-nav-aside { margin-left: auto; }
+.scene-nav-item.is-on { color: var(--text); text-decoration: underline wavy var(--slime); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+/* The dish stays in view whatever the docket grows to, so nobody scrolls away from the thing that is happening. */
 .scene-bench {
   display: grid;
-  grid-template-columns: minmax(380px, 5fr) minmax(0, 7fr);
-  grid-template-rows: auto 1fr;
-  grid-template-areas: 'head stage' 'docket stage';
+  grid-template-columns: minmax(0, 7fr) minmax(380px, 5fr);
   column-gap: var(--s-6);
-  row-gap: var(--s-4);
   align-items: start;
 }
-.scene-head { grid-area: head; min-width: 0; }
-.scene-stage-slot { grid-area: stage; position: sticky; top: calc(var(--topbar-h) + var(--s-3)); min-width: 0; }
-.scene-docket { grid-area: docket; }
+.scene-stage-slot { grid-column: 1; grid-row: 1; position: sticky; top: calc(var(--topbar-h) + var(--s-3)); min-width: 0; display: grid; gap: var(--s-2); }
+.scene-side { grid-column: 2; grid-row: 1; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); align-content: start; min-width: 0; }
+.scene-head { min-width: 0; }
 .scene-q { margin: 0; font: 500 22px/26px var(--font-display); color: var(--text-2); }
 /* The one line the eye follows: what just happened. Remounted per line, so it enters on a real event. */
 .scene-narrator {
-  margin: 0;
-  font: 500 30px/34px var(--font-display);
+  margin: var(--s-2) 0 0;
+  font: 500 26px/32px var(--font-display);
   color: var(--text);
   animation: narrate-in var(--t-panel) var(--ease-grow) both;
 }
+/* Room for three lines and the contract's words always: what's below must not jump when a line is short. */
+.scene-say { min-height: 124px; }
 /* Opacity only: stage notes are placed with transform. */
 @keyframes note-in {
   from { opacity: 0; }
@@ -82,12 +100,37 @@ a.scene-card-link:hover { background: var(--surface-2); }
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-.scene-say { min-height: 92px; margin-top: var(--s-2); }
-.scene-quote { margin: var(--s-1) 0 0; animation: note-in var(--t-panel) var(--ease-out) both; }
-.scene-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin: var(--s-3) 0 var(--s-4); min-height: 40px; }
-.scene-cta { display: inline-flex; align-items: center; text-decoration: none; }
+.scene-quote { margin: var(--s-1) 0 0; min-height: 22px; overflow-wrap: anywhere; animation: note-in var(--t-panel) var(--ease-out) both; }
 .scene-why { color: var(--text-2); }
-.scene-alt { color: var(--text-2); }
+.scene-alt, .scene-next { color: var(--text-2); white-space: nowrap; }
+.scene-next { color: var(--slime); }
+
+/* The story's controls: in reach however far the docket goes, gone once the bench has scrolled away. */
+.scene-transport {
+  position: sticky;
+  bottom: var(--s-2);
+  z-index: 4;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-2) var(--s-5);
+  margin-top: var(--s-3);
+  padding: var(--s-1) var(--s-4);
+  background: var(--surface);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-float);
+}
+/* A sentence beside the button needs the width: the timeline goes under it. */
+.scene-transport:has(.scene-why) { grid-template-columns: minmax(0, 1fr) auto; }
+.scene-transport:has(.scene-why) .scene-rail { grid-column: 1 / -1; grid-row: 2; }
+.scene-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); min-height: 40px; }
+/* Play and Pause the same width, so the timeline doesn't move when one replaces the other. */
+.scene-controls .btn { min-width: 132px; }
+.scene-after { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-1) var(--s-3); }
+.scene-after:empty { display: none; }
+.scene-rail { min-width: 0; }
+.scene-rail.is-finished .vein-row:last-child .vein-word { color: var(--slime); }
+.scene-cta { display: inline-flex; align-items: center; text-decoration: none; }
 .scene-running { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--text-2); }
 .pace { display: inline-flex; gap: var(--s-1); }
 .pace-btn {
@@ -98,20 +141,44 @@ a.scene-card-link:hover { background: var(--surface-2); }
   border-radius: var(--r-blob);
   color: var(--text-2);
   cursor: pointer;
+  transition: background var(--t-micro) var(--ease-out), border-color var(--t-micro) var(--ease-out);
 }
+.pace-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.pace-btn:disabled { color: var(--text-3); cursor: not-allowed; }
 .pace-btn.is-on { border-color: var(--line-strong); color: var(--text); background: var(--surface-2); }
+
+/* ---- the timeline: a story's stops on one vein, here and on the landing plate ---- */
+.loop-vein { position: relative; list-style: none; margin: 0; display: grid; grid-template-columns: repeat(var(--stops, 8), minmax(0, 1fr)); column-gap: var(--s-2); padding: 0 var(--s-2); }
+.vein-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 48px; pointer-events: none; }
+.vein-row { display: block; min-width: 0; }
+.vein-row .tip-anchor { display: block; }
+.vein-stop { display: block; width: 100%; min-height: 44px; padding: 44px var(--s-1) var(--s-1) 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; }
+button.vein-stop { cursor: pointer; border-radius: var(--r-1); }
+button.vein-stop:hover .vein-word { color: var(--slime); }
+button.vein-stop:hover .vein-status { color: var(--text); }
+/* A dot only to be measured: the canvas draws the real one, on the vein's line. */
+.vein-dot { position: absolute; top: 0; width: 0; height: 0; }
+.vein-word { display: block; font: 600 15px/20px var(--font-sans); font-variation-settings: var(--doodle-loud); color: var(--text-3); transition: color var(--t-ui) var(--ease-out); }
+.vein-status { display: block; color: var(--text-3); white-space: nowrap; }
+.vein-row.is-past .vein-word { color: var(--text-2); }
+.vein-row.is-past .vein-status { color: var(--text-2); }
+.vein-row.is-now .vein-word { color: var(--slime); }
+.vein-row.is-now .vein-status { color: var(--text); }
 
 /* ---- the stage ------------------------------------------------------------ */
 .stage { position: relative; width: 100%; height: clamp(460px, calc(100dvh - var(--topbar-h) - var(--s-9) - var(--s-5)), 860px); }
+.stage-frame { position: relative; min-width: 0; }
 .stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.stage-notes { position: absolute; inset: 0; pointer-events: none; overflow: clip; }
+.stage-notes { position: absolute; inset: 0; pointer-events: none; }
 .stage-note {
   position: absolute;
   display: grid;
-  gap: 0;
+  gap: var(--s-1);
   color: var(--text-2);
   white-space: nowrap;
-  transition: opacity var(--t-panel) var(--ease-out);
+  /* The dish's rim and the tubes run behind the words: they keep a halo of the page's colour. */
+  text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 6px var(--bg);
+  transition: opacity var(--t-panel) var(--ease-out), color var(--t-micro) var(--ease-out);
 }
 .stage-note.is-right { transform: translate(var(--s-1), -50%); justify-items: start; text-align: left; }
 .stage-note.is-left { transform: translate(calc(-100% - var(--s-1)), -50%); justify-items: end; text-align: right; }
@@ -122,8 +189,45 @@ a.scene-card-link:hover { background: var(--surface-2); }
 .stage-wall { color: var(--slime); }
 .stage-gate { color: var(--slime); animation: note-in var(--t-panel) var(--ease-out) both; }
 .stage-gate.is-hit { color: var(--text-2); }
-.stage-plate { position: absolute; left: 0; top: 0; display: grid; gap: var(--s-0); pointer-events: none; }
+.stage-gate.is-on { color: var(--text); }
+/* A word on the stage you can ask about. */
+.stage-term { pointer-events: auto; cursor: help; text-decoration: underline dotted currentColor; text-underline-offset: 3px; }
+.stage-notes .tip-anchor { pointer-events: auto; }
+.stage-notes .tooltip { white-space: normal; text-shadow: none; }
+.stage-source { position: absolute; left: 0; top: 0; z-index: 2; width: 18%; min-width: 128px; color: var(--text-3); pointer-events: none; }
 .stage-escrow { color: var(--value); }
+
+/* The spores on the stage, as things you can point at. */
+.stage-spots { position: absolute; inset: 0; pointer-events: none; }
+.stage-spot-at { position: absolute; width: 0; height: 0; }
+.stage-spot-at .tip-anchor { position: absolute; left: 0; top: 0; }
+.stage-spot { position: absolute; display: block; transform: translate(-50%, -50%); border-radius: var(--r-full); pointer-events: auto; cursor: pointer; transition: box-shadow var(--t-ui) var(--ease-out); }
+.stage-spot:hover, .stage-spot:focus-visible { box-shadow: 0 0 0 2px var(--slime); outline: none; }
+.stage-spot.is-hero:hover, .stage-spot.is-hero:focus-visible { box-shadow: 0 0 0 1px var(--line-strong); }
+.stage-spots .stage-note { position: absolute; pointer-events: none; display: grid; }
+.stage-spots .stage-note.is-on > :first-child { color: var(--slime); }
+.stage-spots .tooltip { top: var(--s-5); max-width: 240px; }
+
+/* What's drawn, read from the code that draws it. */
+.stage-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-1) var(--s-4); }
+.stage-legend-item { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--text-2); text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; cursor: help; }
+
+/* The sheet: which spore this is and what it has. One list, one alignment. */
+.sheet { min-width: 0; display: grid; gap: var(--s-2); }
+.sheet-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--s-3); }
+.sheet-head h2 { margin: 0; color: var(--text); }
+.sheet-name { color: inherit; text-decoration: none; }
+.sheet-name:hover { text-decoration: underline wavy var(--slime); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.sheet-status { animation: narrate-in var(--t-panel) var(--ease-out) both; }
+.sheet-status.tone-value { color: var(--value); }
+.sheet-why { grid-column: 1 / -1; margin: var(--s-0) 0 0; color: var(--text-2); min-height: 22px; }
+.sheet-rows { margin: 0; display: grid; }
+.sheet-row { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: baseline; column-gap: var(--s-3); padding: var(--s-1) 0; border-top: 1px solid var(--line); }
+.sheet-row dt { color: var(--text-3); }
+.sheet-row dd { margin: 0; color: var(--text); overflow-wrap: anywhere; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s-3); }
+.sheet-row dd .is-spent { color: var(--text-2); }
+.sheet-row .kept-row { font: inherit; }
+.sheet-term { text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; cursor: help; }
 
 /* The stamp: a word that lands on a final outcome. Glyph plus word, never colour alone. */
 .stamp {
@@ -150,24 +254,26 @@ a.scene-card-link:hover { background: var(--surface-2); }
 }
 
 /* ---- the docket ----------------------------------------------------------- */
-.scene-docket { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); min-width: 0; }
-.lanes-key { display: grid; grid-template-columns: minmax(0, 5fr) var(--s-4) minmax(0, 6fr); gap: var(--s-2); padding-bottom: var(--s-2); border-bottom: 1px solid var(--line); }
-.lanes-key > :last-child { grid-column: 3; }
+.scene-docket { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); min-width: 0; }
+.lanes-key { display: grid; grid-template-columns: minmax(0, 2fr) var(--s-4) minmax(0, 3fr); gap: var(--s-2); padding-bottom: var(--s-1); border-bottom: 1px solid var(--line); }
+.lanes-key > :last-child { grid-column: 3; color: var(--text-2); }
 .lanes-scripted { text-decoration: underline dotted; text-underline-offset: 3px; }
-.attempts { display: grid; gap: var(--s-4); list-style: none; margin: var(--s-3) 0 0; padding: 0; }
+.attempts { display: grid; gap: var(--s-1); list-style: none; margin: var(--s-1) 0 0; padding: 0; }
+.attempt { padding: var(--s-1) var(--s-2); margin-inline: calc(-1 * var(--s-2)); border-radius: var(--r-1); transition: background var(--t-micro) var(--ease-out); }
+.attempt:hover, .attempt:focus-within { background: var(--surface); }
 .attempt-head { display: flex; align-items: baseline; gap: var(--s-2); }
 .attempt-head h3 { margin: 0; }
 .attempt-n { color: var(--text-3); }
-.attempt-plan { margin: var(--s-1) 0 0; color: var(--text-3); }
+.attempt-plan { margin: 0 0 0 var(--s-4); color: var(--text-3); }
 .attempt.is-future .heading { color: var(--text-3); }
 .attempt-row {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) var(--s-4) minmax(0, 6fr);
+  grid-template-columns: minmax(0, 2fr) var(--s-4) minmax(0, 3fr);
   gap: var(--s-2);
-  margin-top: var(--s-2);
+  margin-top: var(--s-1);
   animation: narrate-in var(--t-ui) var(--ease-out) both;
 }
-.lane { display: grid; gap: var(--s-1); align-content: start; min-width: 0; }
+.lane { display: grid; gap: var(--s-0); align-content: start; min-width: 0; }
 .lane-agent { color: var(--text-2); padding-left: var(--s-2); border-left: 2px solid var(--agent); }
 .lane-arrow { color: var(--text-3); }
 .lane-error { color: var(--warn); overflow-wrap: anywhere; }
@@ -175,49 +281,10 @@ a.scene-card-link:hover { background: var(--surface-2); }
 .lane-evidence { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
 .lane-fetch { background: none; border: none; padding: 0; color: var(--text-2); text-decoration: underline; cursor: pointer; }
 
-.scene-verdict { display: grid; gap: var(--s-1); padding-bottom: var(--s-4); border-bottom: 1px solid var(--line); }
+.scene-verdict { display: grid; gap: var(--s-1); padding-bottom: var(--s-3); border-bottom: 1px solid var(--line); }
 .sv-figure { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
 .sv-line { margin: 0; overflow-wrap: anywhere; }
-.sv-diff { margin: 0; color: var(--text-2); }
 .scene-idle-note { margin: 0; color: var(--text-2); }
-
-/* ---- the act rail --------------------------------------------------------- */
-.act-rail {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(var(--acts, 6), minmax(0, 1fr));
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.act-rail::before, .act-rail::after {
-  content: '';
-  position: absolute;
-  left: calc(50% / var(--acts, 6));
-  right: calc(50% / var(--acts, 6));
-  top: 11px;
-  height: 2px;
-  background: var(--line);
-}
-.act-rail::after {
-  background: var(--slime);
-  transform-origin: left;
-  transform: scaleX(var(--rail-share, 0));
-  transition: transform var(--t-epoch) var(--ease-grow);
-}
-.act { position: relative; z-index: 1; display: grid; justify-items: center; }
-.act-btn { display: grid; justify-items: center; gap: var(--s-1); background: none; border: none; color: var(--text-3); padding: 0; font: inherit; text-align: center; }
-button.act-btn { cursor: pointer; }
-button.act-btn:hover { color: var(--text); }
-.act-dot { width: 14px; height: 14px; margin: var(--s-1) 0 0; border-radius: var(--r-full); background: var(--bg); border: 2px solid var(--line-strong); }
-.act.is-past .act-dot { background: var(--slime); border-color: var(--slime); }
-.act.is-past .act-btn { color: var(--text-2); }
-.act.is-now .act-btn { color: var(--text); }
-.act.is-now .act-dot { background: var(--slime); border-color: var(--slime); animation: act-swell var(--t-epoch) var(--ease-grow) both; }
-@keyframes act-swell {
-  from { scale: 2.4; }
-  to { scale: 1; }
-}
 
 /* ---- the decay strip ------------------------------------------------------ */
 .decay { margin-top: var(--s-7); }
@@ -236,13 +303,32 @@ button.act-btn:hover { color: var(--text); }
 .plate-tubes .is-removed .mono-s { text-decoration: line-through; }
 .plate-tubes .is-removed > :last-child { text-align: left; }
 
-/* ---- the proof ------------------------------------------------------------ */
+/* ---- the proof: a tab at a time -------------------------------------------- */
 .scene-proof { margin-top: var(--s-7); padding-top: var(--s-4); border-top: 1px solid var(--line); }
-.scene-proof summary { cursor: pointer; }
-.proof-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6); margin-top: var(--s-4); }
+.proof-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-5); margin-bottom: var(--s-4); }
+.proof-head .title { margin: 0; }
+.proof-tabs { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.proof-tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  min-height: 32px;
+  padding: var(--s-1) var(--s-3);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r-blob);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-micro) var(--ease-out);
+}
+.proof-tab:hover { background: var(--surface-2); color: var(--text); }
+.proof-tab.is-on { border-color: var(--line-strong); background: var(--surface-2); color: var(--text); }
+.proof-count { color: var(--text-3); }
+.proof-panel[hidden] { display: none; }
+.proof-panel { display: grid; gap: var(--s-3); max-width: 1040px; }
+.proof-panel > p { margin: 0; }
+.proof-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6); }
 .proof-grid h3 { margin: 0 0 var(--s-2); }
-.proof-gap { margin-top: var(--s-5) !important; }
-.proof-wide { grid-column: 1 / -1; }
 .proof-close { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .preconditions, .scene-checks { display: grid; gap: var(--s-1); list-style: none; margin: 0 0 var(--s-3); padding: 0; }
 .preconditions li, .scene-check { display: grid; grid-template-columns: 2ch minmax(0, 1fr) auto; column-gap: var(--s-2); align-items: baseline; }
@@ -254,30 +340,94 @@ button.act-btn:hover { color: var(--text); }
 .state-diff .is-changed td:last-child { color: var(--text); }
 .state-diff td { color: var(--text-2); }
 
-@media (max-width: 1199px) {
-  .scene-bench { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: 'head' 'stage' 'docket'; }
-  .scene-stage-slot { position: static; }
+/* Every step, by act: when, who, what, and what the chain said. A row opens to the detail. */
+.steps { display: grid; gap: var(--s-4); }
+.steps-filter { display: flex; gap: var(--s-1); }
+.steps-filter .mono-s { color: var(--text-3); }
+.step-group-head { margin: 0 0 var(--s-1); color: var(--text-3); }
+.step-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.step { border-bottom: 1px solid var(--line); }
+.step-row {
+  display: grid;
+  grid-template-columns: 9ch 10ch minmax(0, 1fr) auto var(--s-3);
+  align-items: baseline;
+  column-gap: var(--s-3);
+  padding: var(--s-2) var(--s-1);
+  cursor: pointer;
+  list-style: none;
+  border-radius: var(--r-1);
+  transition: background var(--t-micro) var(--ease-out);
+}
+.step-row::-webkit-details-marker { display: none; }
+.step-row:hover { background: var(--surface); }
+.step-time { color: var(--text-3); }
+.step-who { color: var(--text-2); overflow-wrap: anywhere; }
+.step-what { min-width: 0; }
+.step-err { display: block; overflow-wrap: anywhere; }
+.step-out { white-space: nowrap; }
+.step-open { color: var(--text-3); transition: transform var(--t-micro) var(--ease-out); }
+.step-details[open] .step-open { transform: rotate(90deg); }
+.step-body { display: grid; grid-template-columns: 12ch minmax(0, 1fr); gap: var(--s-1) var(--s-3); margin: 0; padding: var(--s-1) var(--s-1) var(--s-3) calc(19ch + var(--s-5)); }
+.step-body dt { color: var(--text-3); }
+.step-body dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
+
+/* The bench takes one column: the line being said, then the dish it's about, then the controls. */
+@media (min-width: 1000px) {
+  .scene .stage { height: clamp(400px, calc(100dvh - var(--topbar-h) - var(--banner-h, 0px) - var(--s-9) - var(--s-9) - var(--s-7) - var(--s-3)), 820px); }
+  :root:has(.recorded-banner) .scene { --banner-h: var(--s-6); }
+}
+@media (max-width: 999px) {
+  .scene-play { display: flex; flex-direction: column; gap: var(--s-3); }
+  .scene-bench, .scene-side { display: contents; }
+  .scene-side > * { order: 5; min-width: 0; }
+  .scene-side > .scene-head { order: 1; }
+  .scene-stage-slot { display: contents; }
+  .stage-frame { order: 2; }
+  .stage-legend { order: 4; }
+  .sim-panel { order: 2; }
+  .wash-under { order: 4; }
+  .scene-transport { order: 3; position: static; margin-top: 0; box-shadow: none; }
   .stage { height: min(70vh, 620px); }
+  /* Wide enough for the corners to stay free: the dish gives way so the controls are on the first screen. */
+  .scene .stage { height: clamp(360px, calc(100dvh - var(--s-9) * 4 - var(--s-3)), 620px); }
+  .scene-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scene-card.is-wide .scene-card-link { grid-template-columns: 120px minmax(0, 1fr); gap: var(--s-5); }
+  .scene-card.is-wide .sketch { width: 120px; height: 120px; }
 }
 @media (max-width: 899px) {
   .scene-cards, .plates, .proof-grid { grid-template-columns: minmax(0, 1fr); }
-  .scene-narrator, .scene-q { font-size: 22px; line-height: 26px; }
-  .scene-q { color: var(--text-3); }
-  .scene-say { min-height: 76px; }
-  .stage { height: 100vw; min-height: 340px; max-height: 620px; }
+  .scene-narrator { font-size: 22px; line-height: 26px; }
+  .scene-q { font-size: 22px; line-height: 26px; color: var(--text-3); }
+  .scene-say { min-height: 84px; }
+  /* One line that scrolls: the story has to start in the first screen. */
+  .scene-nav { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  .scene-nav-list { flex-wrap: nowrap; }
+  .stage-gate.is-drain { display: none; }
+  .stage, .scene .stage { height: 100vw; min-height: 340px; max-height: 620px; }
   .stage-role, .stage-long { display: none; }
   .stage-gate, .stage-wall { white-space: normal; max-width: 11ch; }
   /* The ✕ on the wall stays; the stamp with its words is in the lanes just below. */
   .stage-gate .stamp { display: none; }
   /* No room beside the hole on a phone: the name sits above it. */
   .stage-attacker { transform: translate(-50%, calc(-100% - var(--s-4))) !important; justify-items: center; }
-  .scene-top .source-detail { display: none; }
-  .act-rail { grid-template-columns: repeat(var(--acts, 6), minmax(52px, 1fr)); overflow-x: auto; }
-  .act-rail::before, .act-rail::after { display: none; }
+  .stage-source { display: none; }
+  .scene-transport { grid-template-columns: minmax(0, 1fr) auto; padding: var(--s-2) var(--s-3); }
+  .scene-rail, .scene-transport:has(.scene-why) .scene-rail { grid-column: 1 / -1; grid-row: 2; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+  .scene-rail .loop-vein { width: max-content; min-width: 100%; grid-template-columns: repeat(var(--stops, 8), 96px); }
   .attempt-row, .lanes-key { grid-template-columns: minmax(0, 1fr); }
   .lane-arrow, .lanes-key > :last-child { display: none; }
-  .scene-card-link { grid-template-columns: 64px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-4); }
-  .sketch { width: 64px; height: 64px; }
+  .scene-card-link { padding: var(--s-4); grid-template-columns: 56px minmax(0, 1fr); gap: var(--s-3); }
+  .sketch { width: 56px; height: 56px; }
+  .scene-card.is-wide .scene-card-link { grid-template-columns: 72px minmax(0, 1fr); gap: var(--s-3); align-items: start; }
+  .scene-card.is-wide .sketch { width: 72px; height: 72px; }
+  .step-row { grid-template-columns: auto minmax(0, 1fr) auto var(--s-3); row-gap: var(--s-0); }
+  .step-what { grid-column: 1 / -1; grid-row: 2; }
+  .step-time { grid-column: 1; }
+  .step-who { grid-column: 2; }
+  .step-out { grid-column: 3; }
+  .step-open { grid-column: 4; }
+  .step-body { padding-left: var(--s-1); grid-template-columns: minmax(0, 1fr); }
+  .step-body dd { margin-bottom: var(--s-1); }
 }
 
 /* ---- the sale stage (S12) --------------------------------------------------- */
@@ -359,13 +509,13 @@ button.act-btn:hover { color: var(--text); }
 .sale-why { grid-column: 2 / -1; overflow-wrap: anywhere; }
 
 /* ---- the wash panel (S12) ---------------------------------------------------- */
-.wash-case { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); margin: var(--s-3) 0 var(--s-4); color: var(--text-2); }
-.wash-controls { display: grid; gap: var(--s-3); margin-bottom: var(--s-4); }
+.wash-case { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); margin: var(--s-2) 0 0; color: var(--text-2); }
+.wash-controls { display: grid; gap: var(--s-3); }
 .wash-slider { display: grid; gap: var(--s-1); color: var(--text-2); }
-.wash-slider input[type='range'] { width: 100%; margin: 0; height: 28px; background: none; appearance: none; cursor: pointer; }
-.wash-slider input[type='range']::-webkit-slider-runnable-track { height: 6px; border-radius: var(--r-full); background: var(--line); }
-.wash-slider input[type='range']::-moz-range-track { height: 6px; border-radius: var(--r-full); background: var(--line); }
-.wash-slider input[type='range']::-webkit-slider-thumb {
+.wash-range { width: 100%; margin: 0; height: 28px; background: none; appearance: none; cursor: pointer; }
+.wash-range::-webkit-slider-runnable-track { height: 6px; border-radius: var(--r-full); background: var(--line); }
+.wash-range::-moz-range-track { height: 6px; border-radius: var(--r-full); background: var(--line); }
+.wash-range::-webkit-slider-thumb {
   appearance: none;
   width: 24px;
   height: 24px;
@@ -375,24 +525,26 @@ button.act-btn:hover { color: var(--text); }
   background: radial-gradient(circle, var(--text) 0 22%, var(--value) 24%);
   transition: scale var(--t-micro) var(--ease-out);
 }
-.wash-slider input[type='range']::-moz-range-thumb { width: 18px; height: 18px; border-radius: var(--r-full); border: 3px solid var(--bg); background: var(--value); }
-.wash-slider input[type='range']:active::-webkit-slider-thumb { scale: 1.15; }
-.wash-slider input[type='range']:focus-visible { outline: 2px solid var(--slime); outline-offset: 2px; border-radius: var(--r-1); }
+.wash-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: var(--r-full); border: 3px solid var(--bg); background: var(--value); }
+.wash-range:active::-webkit-slider-thumb { scale: 1.15; }
+.wash-range:focus-visible { outline: 2px solid var(--slime); outline-offset: 2px; border-radius: var(--r-1); }
 .wash-ticks { display: flex; justify-content: space-between; color: var(--text-3); }
 .wash-ticks .is-on { color: var(--value); }
 .wash-spores { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); color: var(--text-2); }
-.wash-replay { margin-left: auto; }
 .wash-note { margin: 0; color: var(--text-2); animation: note-in var(--t-panel) var(--ease-out) both; }
-.wash-figure { padding-top: var(--s-3); border-top: 1px solid var(--line); }
+.wash-under { display: grid; gap: var(--s-3); }
+.wash-figure { padding-top: var(--s-1); }
 .wash-figure .sv-figure .body { max-width: 34ch; color: var(--text-2); }
 .wash-config { margin: var(--s-2) 0 0; color: var(--text-2); }
-.wash-fixed { margin: var(--s-4) 0 0; padding-left: var(--s-3); border-left: 2px solid var(--slime); color: var(--text); }
+.wash-fixed { margin: 0; padding-left: var(--s-3); border-left: 2px solid var(--slime); color: var(--text); }
 
 /* A simulation is never mistaken for the chain: a dashed outline, dashed series (§4.1). */
 .sim-panel { padding: var(--s-4); border-radius: var(--r-2); outline: 1px dashed var(--line-strong); outline-offset: -1px; }
 .sim-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-bottom: var(--s-3); }
 .sim-head .title { margin: 0; }
-.sim-clock { margin-left: auto; color: var(--text); }
+.sim-clock { color: var(--text); white-space: nowrap; }
+.wash-transport { padding-block: var(--s-2); }
+.wash-scrub { display: block; min-width: 0; }
 .sim-body { display: grid; grid-template-columns: minmax(180px, 2fr) minmax(0, 3fr); gap: var(--s-4); align-items: start; }
 .sim-loop { display: grid; gap: var(--s-1); min-width: 0; }
 .wash-loop { position: relative; width: 100%; aspect-ratio: 1; }
@@ -428,7 +580,7 @@ button.act-btn:hover { color: var(--text); }
 .wc-swatch { display: inline-block; width: var(--s-4); height: 2px; vertical-align: middle; }
 .wc-swatch-attacker { background: var(--warn); }
 .wc-swatch-honest { background: var(--text-2); }
-.traffic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-1) var(--s-3); margin-top: var(--s-3); }
+.traffic { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-1); }
 .traffic-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -449,7 +601,7 @@ button.act-btn:hover { color: var(--text); }
 .traffic-n { color: var(--text); }
 .traffic-bar { grid-column: 1 / -1; display: block; height: 3px; margin-top: var(--s-1); background: var(--warn); border-radius: var(--r-full); overflow: hidden; }
 .traffic-bar > span { display: block; height: 100%; background: var(--growth); transition: width var(--t-epoch) var(--ease-grow); }
-.wash-fails { margin-top: var(--s-7); }
+.wash-fails { margin-top: var(--s-6); }
 .fails-table { width: 100%; border-collapse: collapse; }
 .fails-table th, .fails-table td { padding: var(--s-2) var(--s-3) var(--s-2) 0; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--line); font-weight: 400; }
 .fails-table thead th { color: var(--text-2); }
@@ -464,7 +616,7 @@ button.act-btn:hover { color: var(--text); }
   .sale-stage { height: min(calc(70vh + 150px), 770px); }
 }
 @media (max-width: 899px) {
-  .sim-body, .traffic { grid-template-columns: minmax(0, 1fr); }
+  .sim-body { grid-template-columns: minmax(0, 1fr); }
   .sim-loop { justify-self: center; width: min(100%, 300px); }
   .traffic-row { grid-template-columns: minmax(0, 1fr) auto; }
   .traffic-row .tone-muted { grid-row: 2; }
@@ -476,9 +628,6 @@ button.act-btn:hover { color: var(--text); }
   .fails-table tbody th { max-width: none; }
   .fails-table td.mono { white-space: normal; }
 
-  /* Story scenes on a phone: the line being said sits right above the dish it's about. */
-  .scene-bench:has(.act-rail) { row-gap: var(--s-2); grid-template-areas: none; grid-template-rows: none; }
-  .scene-bench:has(.act-rail) .scene-stage-slot, .scene-bench:has(.act-rail) .scene-docket { grid-area: auto; }
   .scene-bench:has(.act-rail) .scene-head { display: contents; }
   .scene-bench:has(.act-rail) .scene-head > * { order: 5; min-width: 0; }
   .scene-bench:has(.act-rail) .scene-q { order: 1; }
@@ -488,16 +637,19 @@ button.act-btn:hover { color: var(--text); }
   .scene-bench:has(.act-rail) .scene-controls { margin: 0; }
   .scene-bench:has(.act-rail) .scene-docket { order: 7; margin-top: var(--s-3); }
 
-  .sale-stage { height: calc(100vw + 170px); min-height: 510px; max-height: 790px; }
-  .sale-stage .stage-plate { right: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-3); }
-  .sale-stage .stage-plate .display-s { flex: 1 0 100%; }
+  .sale-stage, .scene .sale-stage { height: calc(100vw + 170px); min-height: 510px; max-height: 790px; }
+  /* The figures moved to the sheet: on a scene only the foot's band is needed, for the parties. */
+  .scene .stage-frame:has(.sale-stage) { margin-top: calc(-1 * var(--s-8)); }
+  .wash-transport { grid-template-columns: auto minmax(0, 1fr); justify-items: end; }
+  .wash-scrub { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; }
   .sale-stage .stage-d, .kept-word { display: none; }
   .kept-row { gap: var(--s-1); }
   .party { max-width: 33%; }
   .party-royalty { top: auto; right: auto; left: 50%; bottom: 0; transform: translateX(-50%); justify-items: center; text-align: center; }
   .dish-label-name { font-size: 18px; line-height: 22px; }
   .dish-label { padding: 0 var(--s-3); }
-  .price-tag { margin: calc(-1 * var(--s-4)) calc(-1 * var(--s-4)) 0 0; }
+  /* Above the label, so "belongs to" stays readable under it. */
+  .price-tag { margin: calc(-1 * var(--s-6)) calc(-1 * var(--s-4)) 0 0; }
   .sale-step .lane-evidence { grid-column: 2 / -1; }
 }
 :root[data-reduced-motion='true'] .scene-narrator,
@@ -505,7 +657,6 @@ button.act-btn:hover { color: var(--text); }
 :root[data-reduced-motion='true'] .attempt-row,
 :root[data-reduced-motion='true'] .plate,
 :root[data-reduced-motion='true'] .stage-gate,
-:root[data-reduced-motion='true'] .act-dot,
 :root[data-reduced-motion='true'] .dish-label,
 :root[data-reduced-motion='true'] .price-tag,
 :root[data-reduced-motion='true'] .party-delta,
@@ -514,71 +665,39 @@ button.act-btn:hover { color: var(--text); }
 :root[data-reduced-motion='true'] .kept-mark,
 :root[data-reduced-motion='true'] .sale-locked,
 :root[data-reduced-motion='true'] .sale-n,
+:root[data-reduced-motion='true'] .sheet-status,
+:root[data-reduced-motion='true'] .chain-fact,
 :root[data-reduced-motion='true'] .wash-note {
   animation: none;
 }
 :root[data-reduced-motion='true'] .traffic-bar > span { transition: none; }
 
 /* ---- the whole loop (S13) ------------------------------------------------- */
-.scene-card.is-wide { grid-column: 1 / -1; }
-
 /* Two stages on one spot: the hire, then the sale, in the same places. */
 .loop-stages { position: relative; }
 .loop-layer-top { position: absolute; inset: 0; }
 .loop-layer.is-off { visibility: hidden; }
 .loop-rim { animation: note-in var(--t-panel) var(--ease-out) both; }
 .loop-then { position: absolute; color: var(--text-3); white-space: nowrap; animation: note-in var(--t-art) var(--ease-out) both; }
-.loop-allow { animation: narrate-in var(--t-panel) var(--ease-grow) both; }
 .stage-d.is-grown { color: var(--growth); animation: note-in var(--t-panel) var(--ease-out) both; }
 
-/* Room for two lines always: the stops must not jump when a line is short. */
-.loop-scene .scene-narrator { min-height: 68px; }
-
-/* The eight stops: one vein down the page. */
-.loop-vein { position: relative; list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
-.vein-canvas { position: absolute; left: 0; top: 0; width: 44px; height: 100%; pointer-events: none; }
-.vein-row { display: flex; align-items: center; gap: var(--s-2); min-height: 40px; padding-left: 44px; }
-.vein-stop {
-  display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  align-items: baseline;
-  column-gap: var(--s-2);
-  flex: 1;
-  min-width: 0;
-  min-height: 40px;
-  align-content: center;
-  padding: 0;
-  background: none;
-  border: 0;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-}
-button.vein-stop { cursor: pointer; border-radius: var(--r-1); }
-button.vein-stop:hover .vein-word { color: var(--slime); }
-/* A dot only to be measured: the canvas draws the real one on the same row, in the gutter. */
-.vein-dot { position: absolute; left: 22px; width: 0; height: 0; align-self: center; }
-.vein-word { font: 600 15px/20px var(--font-sans); font-variation-settings: var(--doodle-loud); color: var(--text-3); transition: color var(--t-ui) var(--ease-out); }
-.vein-promise { color: var(--text-3); }
-.vein-fact { color: var(--text-2); animation: narrate-in var(--t-panel) var(--ease-out) both; overflow-wrap: anywhere; }
-.vein-row.is-past .vein-word { color: var(--text-2); }
-.vein-row.is-now .vein-word { color: var(--text); }
-.vein-row.is-now .vein-fact, .vein-row.is-now .vein-promise { color: var(--text); }
-.vein-tx { flex: none; }
-.loop-next { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: var(--s-3) 0 0; animation: narrate-in var(--t-panel) var(--ease-grow) both; }
+/* The causal chain: a promise until the stop has happened, then the run's figures and their tx. */
+.loop-chain { list-style: none; margin: 0; padding: 0; }
+.chain-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) auto; align-items: baseline; column-gap: var(--s-2); padding: var(--s-1) 0; border-top: 1px solid var(--line); }
+/* The sheet already names the owner; the corner keeps its role and its agent. */
+.loop-scene .party-name { display: none; }
+.chain-word { color: var(--text-3); }
+.chain-promise { color: var(--text-3); font-size: 13px; line-height: 20px; }
+.chain-fact { color: var(--text-2); animation: narrate-in var(--t-panel) var(--ease-out) both; overflow-wrap: anywhere; }
+.chain-row.is-past .chain-word { color: var(--text-2); }
+.chain-row.is-now .chain-word { color: var(--slime); }
+.chain-row.is-now .chain-fact, .chain-row.is-now .chain-promise { color: var(--text); }
+.chain-tx { white-space: nowrap; }
+.loop-next { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: var(--s-1) 0 0; animation: narrate-in var(--t-panel) var(--ease-grow) both; }
 .loop-txs { display: grid; gap: var(--s-1); list-style: none; margin: 0; padding: 0; }
 @media (max-width: 899px) {
-  .loop-scene .scene-bench { row-gap: var(--s-2); grid-template-areas: none; grid-template-rows: none; }
-  .loop-scene .scene-stage-slot, .loop-scene .scene-docket { grid-area: auto; }
-  .loop-scene .scene-head { display: contents; }
-  .loop-scene .scene-head > * { order: 5; min-width: 0; }
-  .loop-scene .scene-q { order: 1; }
-  .loop-scene .scene-narrator { order: 2; min-height: 68px; }
-  .loop-scene .scene-quote { order: 3; }
-  .loop-scene .scene-stage-slot { order: 4; }
-  .loop-scene .scene-controls { margin: 0; }
-  .loop-scene .scene-docket { order: 7; margin-top: var(--s-3); }
-  .vein-stop { grid-template-columns: 84px minmax(0, 1fr); }
+  .chain-row { grid-template-columns: 76px minmax(0, 1fr) auto; }
 }
-/* The rim runs behind the partners' notes: the words keep a halo of the dish's colour. */
-.loop-stage .stage-note { text-shadow: 0 0 3px var(--surface), 0 0 6px var(--surface), 0 0 6px var(--surface); }
+/* In the transport a tip opens upward: below it is the end of the screen. */
+.scene-transport .tooltip { top: auto; bottom: calc(100% + var(--s-2)); transform-origin: bottom left; }
+.scene-transport .tooltip-end { transform-origin: bottom right; }

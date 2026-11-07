@@ -55,34 +55,12 @@
 .ov-stage-why { color: var(--text-3); }
 
 /* The spores on the stage are things you can point at. */
-.stage-spots { position: absolute; inset: 0; pointer-events: none; }
-.stage-spot-at { position: absolute; width: 0; height: 0; }
-.stage-spot-at .tip-anchor { position: absolute; left: 0; top: 0; }
-.stage-spot { position: absolute; display: block; transform: translate(-50%, -50%); border-radius: var(--r-full); pointer-events: auto; cursor: pointer; transition: box-shadow var(--t-ui) var(--ease-out); }
-.stage-spot:hover, .stage-spot:focus-visible { box-shadow: 0 0 0 2px var(--slime); outline: none; }
-.stage-spot.is-hero:hover, .stage-spot.is-hero:focus-visible { box-shadow: 0 0 0 1px var(--line-strong); }
-.stage-spots .stage-note { position: absolute; pointer-events: none; display: grid; }
-.stage-spots .stage-note.is-on > :first-child { color: var(--slime); }
 /* The spot's name is the paper label's and the sheet's to say; here the party is its role and its money. */
 .ov-stage .party-name { display: none; }
-.stage-spots .tooltip { top: var(--s-5); max-width: 240px; }
 
-.ov-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-1) var(--s-4); }
-.ov-legend-item { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--text-2); text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; cursor: help; }
 
 /* The sheet: one spore, one state, one list. */
-.ov-sheet { grid-area: sheet; min-width: 0; align-self: start; display: grid; gap: var(--s-2); }
-.ov-sheet-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--s-3); }
-.ov-sheet-head h2 { margin: 0; color: var(--text); }
-.ov-status { animation: narrate-in var(--t-panel) var(--ease-out) both; }
-.ov-status.tone-value { color: var(--value); }
-.ov-sheet-why { grid-column: 1 / -1; margin: var(--s-0) 0 0; color: var(--text-2); min-height: 22px; }
-.ov-sheet-rows { margin: 0; display: grid; }
-.ov-sheet-row { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: baseline; column-gap: var(--s-3); padding: var(--s-1) 0; border-top: 1px solid var(--line); }
-.ov-sheet-row dt { color: var(--text-3); }
-.ov-sheet-row dd { margin: 0; color: var(--text); overflow-wrap: anywhere; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s-3); }
-.ov-sheet-row dd .is-spent { color: var(--text-2); }
-.ov-term { text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; cursor: help; }
+.ov-hero .sheet { grid-area: sheet; align-self: start; }
 
 /* The timeline: the eight stops, then the chosen one in full. */
 .ov-timeline { grid-area: strip; min-width: 0; display: grid; gap: var(--s-2); }
@@ -108,19 +86,7 @@
 :root[data-reduced-motion='true'] .hand-arrow-head,
 :root[data-reduced-motion='true'] .ov-note { animation: none; }
 
-/* The eight stops across the page: each a name and a state, and the whole of it a button. */
-.loop-vein.is-across { grid-template-columns: repeat(8, minmax(0, 1fr)); column-gap: var(--s-2); padding: 0 var(--s-2); }
-.loop-vein.is-across .vein-canvas { width: 100%; height: 48px; }
-.loop-vein.is-across .vein-row { display: block; padding: 0; min-height: 0; }
-.loop-vein.is-across .vein-stop { display: block; width: 100%; min-height: 44px; padding: 44px var(--s-1) var(--s-1) 0; }
-.loop-vein.is-across .vein-dot { position: absolute; left: auto; top: 0; }
-.loop-vein.is-across .vein-word { display: block; }
-.vein-status { display: block; color: var(--text-3); white-space: nowrap; }
-.vein-row.is-past .vein-status { color: var(--text-2); }
-.vein-row.is-now .vein-status { color: var(--text); }
-.loop-vein.is-across .vein-row.is-now .vein-word, .ov-strip.is-finished .vein-row:last-child .vein-word { color: var(--slime); }
-.loop-vein.is-across button.vein-stop:hover .vein-status { color: var(--text); }
-.ov-strip { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.vein-row.is-past .vein-row.is-now .ov-strip.is-finished .vein-row:last-child .vein-word { color: var(--slime); }
 
 /* Right now */
 .ov-now { display: grid; grid-template-columns: minmax(0, 7fr) minmax(320px, 5fr); gap: var(--s-7); align-items: center; }
@@ -259,8 +225,7 @@ p.how-figure { display: block; }
   .ov-stage-source { position: static; width: auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); margin-bottom: var(--s-2); }
   /* The stops scroll sideways with the chosen one in view: each keeps a thumb's width. */
   .ov-strip { margin-inline: calc(var(--page-pad) * -1); padding-inline: var(--page-pad); }
-  .loop-vein.is-across { min-width: 780px; }
-  .ov-stop { grid-template-columns: minmax(0, 1fr); }
+    .ov-stop { grid-template-columns: minmax(0, 1fr); }
   .ov-stop .ov-play { width: 100%; min-height: 44px; }
   .ov-stop-links { grid-column: 1; }
   .ov-stop-links a { min-height: 44px; display: inline-flex; align-items: center; }

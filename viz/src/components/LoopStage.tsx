@@ -13,13 +13,13 @@ import { fanOut, artDiscR, clamp01, curvePoint, drawArt, drawBead, drawDish, dra
 import { fillTube, phaseOf, rgba, VEIN, type FlexClock } from '../graph/flex';
 import { useNodeArt, type NodeArtInput } from '../graph/nodeArt';
 import { artReach, type Curve, type Pt } from '../model/network';
-import type { HeroFrame, LoopState } from '../model/loop';
+import type { LoopState } from '../model/loop';
 import { loopArtInputs } from '../model/loop';
-import { repText, type SceneLine } from '../model/scene';
+import type { SceneLine } from '../model/scene';
 import { formatNear, tubesText } from '../ui/format';
 import { color, hex, motion, paletteOf } from '../ui/tokens';
 import { RenderQueueContext } from '../wasm/art';
-import { ART_SCALE, angleOf, clampX, DishLabel, drawLimb, Kept, limb, partyAnchors, PEER_ART, PHONE, Party, slotAngle, spotOf, type SaleCast, type StageSpots } from './SaleStage';
+import { ART_SCALE, angleOf, clampX, DishLabel, drawLimb, limb, partyAnchors, PEER_ART, PHONE, Party, slotAngle, spotOf, type SaleCast, type StageSpots } from './SaleStage';
 
 const TAU = Math.PI * 2;
 /** Id of the "when it woke" image in the art map: not a spore id. */
@@ -434,7 +434,6 @@ export function LoopStage({ state, reducedMotion, spots }: { state: LoopState; r
           })}
         </div>
       )}
-      {frame && !spots && <Plate frame={frame} state={state} />}
       {start && artFrame && artFrame !== start && (
         <span className="stage-note loop-then mono-s" style={{ right: 0, top: 0 }}>
           when it woke{spots ? '' : ` · E ${start.epoch}`}
@@ -450,18 +449,3 @@ export function LoopStage({ state, reducedMotion, spots }: { state: LoopState; r
   );
 }
 
-function Plate({ frame, state }: { frame: HeroFrame; state: LoopState }) {
-  // The money moves at the settle; every other number here at a close.
-  const spent = state.paid && state.job && !state.growth;
-  return (
-    <div className="stage-plate">
-      <span className="display-s">Spore #{state.hero}</span>
-      <Kept word={formatNear(frame.balance)} money kept={false} />
-      {spent && <span className="mono party-delta is-spent" key="spent">−{formatNear(state.job!.price)}</span>}
-      <span className="mono kept-row">R {repText(frame.reputation)}</span>
-      <span className="mono kept-row">{tubesText(frame.tubes.length)} · age {frame.art.age}</span>
-      <span className="mono kept-row money loop-allow" key={frame.allowance}>may spend {formatNear(frame.allowance)}</span>
-      <span className="mono-s stage-d">epoch {frame.epoch}</span>
-    </div>
-  );
-}

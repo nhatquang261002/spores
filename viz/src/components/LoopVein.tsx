@@ -1,55 +1,63 @@
-// The eight stops of the loop as one living vein down the page (S13). Before
-// anything has happened, each stop says what it means, so the whole idea is on
-// screen in the first seconds; as the story reaches a stop its promise gives way to
-// the run's real figures. The vein grows from stop to stop with the same tube body
-// as the map and the shell, in yolk, because this is interface, not data. When the
-// new agent is working, a thin vein runs back from the last stop to Hire: it's a
-// loop, and the log has just said so.
-import { useEffect, useRef, useState } from 'react';
+// A story's stops as one living vein across the page: the eight stops of the loop, or a
+// scene's acts, and always the same timeline. Each stop is its name and its state; the
+// vein grows from stop to stop with the same tube body as the map and the shell, in yolk,
+// because this is interface, not data. When the new agent is working, a thin vein runs
+// back from the last stop to Hire: it's a loop, and the log has just said so.
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { EXPLORER } from '../chain/rpc';
 import { clamp01, easeInOut, easeOut, subCurve } from '../graph/stage';
 import { fillTube, rgba, type FlexClock } from '../graph/flex';
 import { curvePoint, type Curve, type Pt } from '../model/network';
-import type { LoopAct, LoopRow } from '../model/loop';
+import type { LoopRow } from '../model/loop';
 import { color, motion } from '../ui/tokens';
+import { Tooltip } from '../ui/Tooltip';
 
-/** Vein's x in the gutter, px. */
-const X = 22;
 const LAYERS = [
   { w: 2.4, a: 0.16, c: color.slime },
   { w: 1, a: 0.95, c: color.slime },
   { w: 0.34, a: 0.75, c: color.text },
 ];
 
-/** Across the page (the Overview): the vein's line from the canvas's top, px. */
-const ACROSS_Y = 30;
+/** The vein's line from the canvas's top, px. Room above it for the way back. */
+const LINE_Y = 30;
 
 /** A point on the vein: `along` the page's run, `side` px off its line. */
-const place = (across: boolean, along: number, side: number): Pt => (across ? { x: along, y: ACROSS_Y + side } : { x: X + side, y: along });
+const place = (along: number, side: number): Pt => ({ x: along, y: LINE_Y + side });
 
 /** A gentle S between two stops, so it reads as grown rather than ruled. */
-function segment(a: number, b: number, i: number, across: boolean): Curve {
+function segment(a: number, b: number, i: number): Curve {
   const lean = i % 2 ? 5 : -5;
   const h = b - a;
-  return { p0: place(across, a, 0), c0: place(across, a + h * 0.35, lean), c1: place(across, a + h * 0.65, -lean), p1: place(across, b, 0) };
+  return { p0: place(a, 0), c0: place(a + h * 0.35, lean), c1: place(a + h * 0.65, -lean), p1: place(b, 0) };
 }
 
 /** A stop's state in a word, so it doesn't rest on colour. */
-export function stopWord(r: LoopRow): { glyph: string; word: string } {
+export function stopWord(r: Pick<VeinStop, 'state' | 'warn'>): { glyph: string; word: string } {
   if (r.warn) return { glyph: '✕', word: 'failed' };
   if (r.state === 'past') return { glyph: '✓', word: 'done' };
   if (r.state === 'now') return { glyph: '●', word: 'now' };
   return { glyph: '○', word: 'to come' };
 }
 
-export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false }: {
-  rows: LoopRow[];
+/** What the vein needs of a stop. */
+export interface VeinStop<K extends string = string> {
+  key: K;
+  word: string;
+  state: 'future' | 'now' | 'past';
+  warn?: boolean;
+}
+
+export function LoopVein<K extends string>({ rows, returned = false, reducedMotion, onSeek, label = 'The loop, stop by stop', seekName, tips }: {
+  rows: VeinStop<K>[];
   /** The loop has come round: the new agent is working. */
-  returned: boolean;
+  returned?: boolean;
   reducedMotion: boolean;
-  onSeek?: (a: LoopAct) => void;
-  /** Runs left to right, each stop only its name and state: the page shows the chosen stop's detail (the Overview). */
-  across?: boolean;
+  onSeek?: (a: K) => void;
+  label?: string;
+  /** A stop button's accessible name; by default its word and state. */
+  seekName?: (word: string) => string;
+  /** What each stop means, on hover and focus. */
+  tips?: Partial<Record<K, string>>;
 }) {
   const box = useRef<HTMLOListElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -59,17 +67,21 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const measure = () => setYs([...el.querySelectorAll<HTMLElement>('.vein-dot')].map((d) => (across ? d.offsetLeft : d.offsetTop + d.offsetHeight / 2)));
+    // From the list's own edge: a stop may sit in a tooltip's anchor, so offsetLeft wouldn't reach it.
+    const measure = () => {
+      const left = el.getBoundingClientRect().left;
+      setYs([...el.querySelectorAll<HTMLElement>('.vein-dot')].map((d) => d.getBoundingClientRect().left - left));
+    };
     measure();
     if (typeof ResizeObserver !== 'function') return;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [across]);
+  }, [rows.length]);
 
   const anim = useRef({ shown: -1, from: -1, at: -1e9, returnAt: -1e9 });
-  const latest = useRef({ reached, ys, returned, reducedMotion, rows, across });
-  latest.current = { reached, ys, returned, reducedMotion, rows, across };
+  const latest = useRef({ reached, ys, returned, reducedMotion, rows });
+  latest.current = { reached, ys, returned, reducedMotion, rows };
   const raf = useRef<number | null>(null);
   const schedule = () => {
     if (raf.current === null && typeof requestAnimationFrame === 'function') raf.current = requestAnimationFrame(paint);
@@ -89,7 +101,16 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
       if (raf.current !== null) cancelAnimationFrame(raf.current);
       raf.current = null;
     };
-  }, [reached, ys.join(), across]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [reached, ys.join()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Where the stops scroll sideways (a phone), the one reached stays in view.
+  useEffect(() => {
+    const el = box.current;
+    const strip = el?.parentElement;
+    const row = el?.querySelectorAll<HTMLElement>('.vein-row')[Math.max(0, reached)];
+    if (!strip || !row || strip.scrollWidth <= strip.clientWidth) return;
+    strip.scrollTo?.({ left: row.offsetLeft - strip.clientWidth / 2 + row.offsetWidth / 2, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }, [reached]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     anim.current.returnAt = returned ? performance.now() : -1e9;
@@ -100,7 +121,7 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
     raf.current = null;
     const el = canvas.current;
     const ctx = el?.getContext?.('2d');
-    const { reached: n, ys: y, returned: back, reducedMotion: still, across: flat } = latest.current;
+    const { reached: n, ys: y, returned: back, reducedMotion: still } = latest.current;
     if (!el || !ctx || y.length < 2) return;
     const w = el.clientWidth;
     const h = el.clientHeight;
@@ -111,7 +132,7 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    const at = (along: number, side = 0) => place(flat, along, side);
+    const at = place;
     const now = performance.now();
     const a = anim.current;
     const clock: FlexClock = { now, ambient: !still };
@@ -125,8 +146,8 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = color.lineStrong;
     ctx.beginPath();
-    const road0 = at(y[Math.max(0, n)]);
-    const road1 = at(y[y.length - 1]);
+    const road0 = at(y[Math.max(0, n)], 0);
+    const road1 = at(y[y.length - 1], 0);
     ctx.moveTo(road0.x, road0.y);
     ctx.lineTo(road1.x, road1.y);
     ctx.stroke();
@@ -134,9 +155,9 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
 
     // The vein so far.
     const tip = (q: Curve, reach: number): Pt => curvePoint(q, reach);
-    let head: Pt | null = n >= 0 ? at(y[0]) : null;
+    let head: Pt | null = n >= 0 ? at(y[0], 0) : null;
     for (let i = 0; i < n && i + 1 < y.length; i++) {
-      const q = segment(y[i], y[i + 1], i, flat);
+      const q = segment(y[i], y[i + 1], i);
       const growing = i === n - 1 && a.from === n - 1;
       const reach = growing ? easeOut(u) : 1;
       const part = reach >= 0.999 ? q : subCurve(q, reach);
@@ -152,9 +173,9 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
       const v = still ? 1 : clamp01((now - a.returnAt) / motion.pulse);
       if (v < 1) moving = true;
       const last = y[y.length - 1];
-      // Down the page it bows into the gutter; across, up over the stops.
+      // It bows up over the stops.
       const bow = -26;
-      const q: Curve = { p0: at(last), c0: at(last - 20, bow), c1: at(y[1] + 20, bow), p1: at(y[1]) };
+      const q: Curve = { p0: at(last, 0), c0: at(last - 20, bow), c1: at(y[1] + 20, bow), p1: at(y[1], 0) };
       const part = v >= 0.999 ? q : subCurve(q, easeInOut(v));
       for (const l of LAYERS) {
         ctx.fillStyle = rgba(l.c, l.a * 0.55);
@@ -164,7 +185,7 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
 
     // The stops: the one reached shines; those to come are hollow.
     y.forEach((yy, i) => {
-      const stop = at(yy);
+      const stop = at(yy, 0);
       ctx.beginPath();
       ctx.arc(stop.x, stop.y, i === n ? 6 : 4.5, 0, Math.PI * 2);
       if (i <= n) {
@@ -193,42 +214,48 @@ export function LoopVein({ rows, returned, reducedMotion, onSeek, across = false
   };
 
   return (
-    <ol className={`loop-vein${across ? ' is-across' : ''}`} ref={box} aria-label="The loop, stop by stop">
+    <ol className="loop-vein" ref={box} aria-label={label} style={{ '--stops': rows.length } as CSSProperties}>
       <canvas ref={canvas} className="vein-canvas" aria-hidden="true" />
-      {rows.map((r) => {
+      {rows.map((r, i) => {
         const said = stopWord(r);
-        const body = across ? (
+        const body = (
           <>
             <span className="vein-dot" aria-hidden="true" />
             <span className="vein-word">{r.word}</span>
             <span className={`vein-status label${r.warn ? ' tone-warn' : ''}`}><span aria-hidden="true">{said.glyph} </span>{said.word}</span>
           </>
-        ) : (
-          <>
-            <span className="vein-dot" aria-hidden="true" />
-            <span className="vein-word">{r.word}</span>
-            <span className={r.fact ? `vein-fact mono-s${r.warn ? ' tone-warn' : ''}` : 'vein-promise body'} key={r.fact ?? 'p'}>
-              {r.fact ?? r.promise}
-            </span>
-          </>
         );
+        const tip = tips?.[r.key];
+        const button = onSeek && (
+          <button type="button" className="vein-stop" onClick={() => onSeek(r.key)} aria-label={seekName?.(r.word)} aria-description="Show this stop">
+            {body}
+          </button>
+        );
+        const stop = button ?? <span className="vein-stop">{body}</span>;
         return (
           <li key={r.key} className={`vein-row is-${r.state}${r.warn ? ' is-warn' : ''}`} aria-current={r.state === 'now' ? 'step' : undefined}>
-            {onSeek ? (
-              <button type="button" className="vein-stop" onClick={() => onSeek(r.key)} aria-description="Show this stop">
-                {body}
-              </button>
-            ) : (
-              <span className="vein-stop">{body}</span>
-            )}
-            {!across && r.tx && !r.tx.endsWith(')') && (
-              <a className="vein-tx mono-s" href={`${EXPLORER}/${r.tx}`} target="_blank" rel="noreferrer" aria-label={`${r.word} tx ${r.tx}, opens the explorer`}>
-                tx ↗
-              </a>
-            )}
+            {/* The last stops' tips open inward, so they stay on the page. */}
+            {tip ? <Tooltip focusable={false} align={i >= rows.length / 2 ? 'end' : 'start'} content={tip}>{stop}</Tooltip> : stop}
           </li>
         );
       })}
+    </ol>
+  );
+}
+
+/** The story so far, as a causal chain: each stop's promise until it has happened, then the run's figures and their tx. */
+export function LoopChain({ rows }: { rows: LoopRow[] }) {
+  return (
+    <ol className="loop-chain" aria-label="What each stop means and what the run did">
+      {rows.map((r) => (
+        <li key={r.key} className={`chain-row is-${r.state}${r.warn ? ' is-warn' : ''}`}>
+          <span className="chain-word label">{r.word}</span>
+          <span className={r.fact ? `chain-fact mono-s${r.warn ? ' tone-warn' : ''}` : 'chain-promise body'} key={r.fact ?? 'p'}>{r.fact ?? r.promise}</span>
+          {r.tx && !r.tx.endsWith(')') ? (
+            <a className="chain-tx mono-s" href={`${EXPLORER}/${r.tx}`} target="_blank" rel="noreferrer" aria-label={`${r.word} tx ${r.tx}, opens the explorer`}>tx ↗</a>
+          ) : <span />}
+        </li>
+      ))}
     </ol>
   );
 }
