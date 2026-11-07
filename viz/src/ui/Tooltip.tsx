@@ -2,9 +2,37 @@
 // click/tap (touch has no hover); role=tooltip, max 280 px; Escape dismisses
 // it (WCAG 1.4.13). Used instead of the native `title`, which keyboard and
 // touch users never see.
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+//
+// The bubble is portalled to <body> and placed with `position: fixed` from the
+// anchor's rectangle, so no ancestor's stacking context, overflow or transform
+// can put it underneath something: it is always the top layer (--z-tooltip).
+// React events still bubble through the portal, so moving the pointer from the
+// anchor onto the bubble does not close it.
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 export const TOOLTIP_DELAY_MS = 400;
+
+const GAP = 8;
+const MARGIN = 8;
+
+/** Fixed position for the bubble: below the anchor (above when there is no room), kept inside the viewport. */
+function place(anchor: HTMLElement, bubble: HTMLElement, align: 'start' | 'end'): CSSProperties {
+  let r = anchor.getBoundingClientRect();
+  // A zero-size anchor (an absolutely positioned child inside it) is measured by that child.
+  const child = anchor.firstElementChild;
+  if (r.width === 0 && r.height === 0 && child) r = child.getBoundingClientRect();
+  const { width, height } = bubble.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth;
+  const vh = document.documentElement.clientHeight;
+  let left = align === 'end' ? r.right - width : r.left;
+  left = Math.max(MARGIN, Math.min(left, vw - width - MARGIN));
+  let top = r.bottom + GAP;
+  const above = r.top - GAP - height;
+  if (top + height > vh - MARGIN && above >= MARGIN) top = above;
+  top = Math.max(MARGIN, top);
+  return { left, top, visibility: 'visible' };
+}
 
 export function Tooltip({
   content,
@@ -22,6 +50,9 @@ export function Tooltip({
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<CSSProperties>({ left: 0, top: 0, visibility: 'hidden' });
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const bubbleRef = useRef<HTMLSpanElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const show = () => {
     clearTimeout(timer.current);
@@ -46,9 +77,26 @@ export function Tooltip({
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // Measure before paint (the bubble is hidden until placed), and follow scroll and resize while open.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (anchorRef.current && bubbleRef.current) setPos(place(anchorRef.current, bubbleRef.current, align));
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+      setPos({ left: 0, top: 0, visibility: 'hidden' });
+    };
+  }, [open, align, content]);
+
   const describedBy = open ? id : undefined;
   return (
     <span
+      ref={anchorRef}
       className="tip-anchor"
       tabIndex={focusable ? 0 : undefined}
       aria-describedby={typeof children === 'function' ? undefined : describedBy}
@@ -59,11 +107,13 @@ export function Tooltip({
       onClick={toggle}
     >
       {typeof children === 'function' ? children(describedBy) : children}
-      {open && (
-        <span role="tooltip" id={id} className={`tooltip tooltip-${align} body`}>
-          {content}
-        </span>
-      )}
+      {open &&
+        createPortal(
+          <span ref={bubbleRef} role="tooltip" id={id} className={`tooltip tooltip-${align} body`} style={pos}>
+            {content}
+          </span>,
+          document.body,
+        )}
     </span>
   );
 }

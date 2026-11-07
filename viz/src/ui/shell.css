@@ -364,17 +364,18 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   color: var(--text-3);
 }
 
-/* Tooltip (§7): hover and focus, max 280 px, popover layer, one float shadow */
+/* Tooltip (§7): hover and focus, max 280 px, one float shadow. The bubble is portalled to <body>
+   and placed with inline `left`/`top` (ui/Tooltip.tsx), so it sits on the top layer. */
 .tip-anchor {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 .tooltip {
-  position: absolute;
-  top: calc(100% + var(--s-2));
+  position: fixed;
+  top: 0;
   left: 0;
-  z-index: var(--z-popover);
+  z-index: var(--z-tooltip);
   width: max-content;
   max-width: 280px;
   padding: var(--s-2) var(--s-3);
@@ -389,8 +390,6 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   animation: ooze-in var(--t-ui) var(--ease-grow) both;
 }
 .tooltip-end {
-  left: auto;
-  right: 0;
   transform-origin: top right;
 }
 .sr-only {

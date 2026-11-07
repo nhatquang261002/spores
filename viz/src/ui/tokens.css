@@ -128,6 +128,7 @@
   --z-dialog: 50;
   --z-toast: 60;
   --z-skip-link: 70;
+  --z-tooltip: 80; /* above everything, the skip link included */
 
   /* §3.5 motion */
   --t-instant: 0ms;
