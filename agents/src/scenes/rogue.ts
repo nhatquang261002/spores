@@ -340,7 +340,8 @@ export const ROOT = resolve(import.meta.dirname, '../../..');
 export function loadDotEnv(root = ROOT): Record<string, string> {
   const env: Record<string, string> = {};
   const file = join(root, '.env');
-  if (!existsSync(file)) return env;
+  // No .env (a container keeps its keys as environment variables): the environment is the source.
+  if (!existsSync(file)) return Object.fromEntries(Object.entries(process.env).filter((e): e is [string, string] => e[1] !== undefined));
   for (const line of readFileSync(file, 'utf8').split('\n')) {
     const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
     if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, '');
