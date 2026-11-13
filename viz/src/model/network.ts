@@ -307,8 +307,11 @@ const isqrt = (n: number) => Math.floor(Math.sqrt(n));
 
 /** Width `1 + 6·isqrt(D)/isqrt(Dmax)` px. */
 export const tubeWidth = (d: number, dMax: number) => (dMax > 0 ? 1 + (6 * isqrt(d)) / Math.max(1, isqrt(dMax)) : 1);
-/** Opacity `0.25 + 0.75·D/Dmax`. */
-export const tubeAlpha = (d: number, dMax: number) => (dMax > 0 ? 0.25 + 0.75 * Math.min(1, d / dMax) : 0.25);
+/**
+ * Opacity `0.45 + 0.55·√(D/Dmax)`, on the same √ scale as the width. It was linear from 0.25,
+ * and on router5 (2026-11-13) two thirds of the 24 tubes sat near 0.3, so the map looked like 8.
+ */
+export const tubeAlpha = (d: number, dMax: number) => (dMax > 0 ? 0.45 + 0.55 * Math.sqrt(Math.min(1, Math.max(0, d) / dMax)) : 0.45);
 /** Active core radius `3 + 6·√(R/Rmax)` px. */
 export const nodeRadius = (r: number, rMax: number) => 3 + 6 * Math.sqrt(rMax > 0 ? Math.min(1, Math.max(0, r) / rMax) : 0);
 

@@ -139,9 +139,9 @@ describe('a decision as bars', () => {
     expect(bars[1]).toMatchObject({ quote: 0.25, effective: 0.25 });
     expect(bars[2]).toMatchObject({ quote: 1, effective: 1 });
     expect(hireBars(d, 0n, 0)[0].quote).toBe(0);
-    // The map's own tube: width √D, brightness D, against the log's largest D.
+    // The map's own tube: width and brightness √D, against the log's largest D.
     expect(bars[0]).toMatchObject({ width: 7, alpha: 1 });
-    expect(bars[1]).toMatchObject({ width: 1, alpha: 0.25 });
+    expect(bars[1]).toMatchObject({ width: 1, alpha: 0.45 });
     expect(hireBars(d, YOCTO / 5n, 3_360_000)[0].width).toBeCloseTo(4, 1);
     expect(build().stats.maxD).toBe(Math.max(...decisions.flatMap((x) => x.candidates.map((c) => Number(c.d)))));
     expect(BigInt(build().stats.maxQuote)).toBe(decisions.flatMap((x) => x.candidates).reduce((m, x) => (BigInt(x.price) > m ? BigInt(x.price) : m), 0n));
