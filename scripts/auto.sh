@@ -2,14 +2,14 @@
 # Start, stop and check the open-ended supervisor (agents/src/auto.ts): the
 # keeper closes epochs and the agents trade on router5, with no one watching.
 #
-#   bash scripts/auto.sh start [--spores 12] [--cycle-hours 6] [--min-keeper-near 1] [--min-free-gb 1]
+#   bash scripts/auto.sh start [--spores 12] [--cycle-hours 6] [--min-keeper-near 1] [--min-operator-near 1] [--min-free-gb 1]
 #   bash scripts/auto.sh status
 #   bash scripts/auto.sh logs          # follow out/auto/auto.log
 #   bash scripts/auto.sh stop
 #
 # `start` runs it in the background under caffeinate (the Mac stays awake while
-# it runs). It spends testnet gas from the keeper account until stopped, and stops
-# itself below the keeper-balance and disk floors. Keys come from .env.
+# it runs). It spends testnet gas from the keeper and operator accounts until stopped, and stops
+# itself below their balance floors and the disk floor. Keys come from .env.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export PATH="$HOME/.cargo/bin:$PATH"

@@ -2,13 +2,14 @@
 // `run.ts` is one finite run with exit checks; this is the open-ended version of
 // the same processes (outside service, keeper, agents) under a supervisor:
 //
-//   node agents/src/auto.ts [--spores 12] [--cycle-hours 6] [--min-keeper-near 1] [--min-free-gb 1]
+//   node agents/src/auto.ts [--spores 12] [--cycle-hours 6] [--min-keeper-near 1] [--min-operator-near 1] [--min-free-gb 1]
 //
 // Every cycle it re-runs `demo-prep.ts` (picks the spores, tops up any below the
 // floor), starts the processes in a fresh `out/agents/auto-<time>/`, restarts one
 // that dies, and after --cycle-hours stops them and starts the next cycle.
 // It stops everything and exits 1 (so no more gas is burned) when:
 //   - the keeper account is below --min-keeper-near,
+//   - the operator account (the agents' gas) is below --min-operator-near,
 //   - the disk has less than --min-free-gb free,
 //   - a process keeps dying (more than 5 restarts in 10 minutes).
 // State for `scripts/auto.sh status`: out/auto/status.json. Log: out/auto/auto.log.
@@ -23,7 +24,7 @@ import { appendJsonl, ensureDir, parseIds, writeControl } from './common.ts';
 const ROOT = resolve(import.meta.dirname, '../..');
 const execFileAsync = promisify(execFile);
 const args = process.argv.slice(2);
-const KNOWN = ['spores', 'cycle-hours', 'min-keeper-near', 'min-free-gb'];
+const KNOWN = ['spores', 'cycle-hours', 'min-keeper-near', 'min-operator-near', 'min-free-gb'];
 for (let i = 0; i < args.length; i += 2) {
   if (!args[i]?.startsWith('--') || !KNOWN.includes(args[i].slice(2)) || args[i + 1] === undefined) {
     console.error(`usage: node src/auto.ts ${KNOWN.map((k) => `[--${k} V]`).join(' ')}`);
@@ -37,8 +38,9 @@ const opt = (name: string, dflt: string) => {
 const sporeCount = Number(opt('spores', '12'));
 const cycleMs = Number(opt('cycle-hours', '6')) * 3_600_000;
 const minKeeperYocto = BigInt(Math.round(Number(opt('min-keeper-near', '1')) * 1000)) * 10n ** 21n;
+const minOperatorYocto = BigInt(Math.round(Number(opt('min-operator-near', '1')) * 1000)) * 10n ** 21n;
 const minFreeBytes = Number(opt('min-free-gb', '1')) * 2 ** 30;
-if (![sporeCount, cycleMs, Number(opt('min-keeper-near', '1')), minFreeBytes].every((n) => Number.isFinite(n) && n > 0)) {
+if (![sporeCount, cycleMs, Number(opt('min-keeper-near', '1')), Number(opt('min-operator-near', '1')), minFreeBytes].every((n) => Number.isFinite(n) && n > 0)) {
   console.error('every option must be a positive number');
   process.exit(2);
 }
@@ -56,7 +58,8 @@ function loadEnv(): Record<string, string> {
 const dotenv = loadEnv();
 const router = dotenv.PHASE5_ROUTER_ACCOUNT_ID;
 const keeperId = dotenv.KEEPER_ACCOUNT_ID ?? dotenv.DEPLOYER_ACCOUNT_ID;
-if (!router || !keeperId) throw new Error('.env needs PHASE5_ROUTER_ACCOUNT_ID and a keeper (or deployer) account: run scripts/phase6-setup.sh');
+const operatorId = dotenv.OPERATOR_ACCOUNT_ID;
+if (!router || !keeperId || !operatorId) throw new Error('.env needs PHASE5_ROUTER_ACCOUNT_ID, OPERATOR_ACCOUNT_ID and a keeper (or deployer) account: run scripts/phase6-setup.sh');
 if (!router.endsWith('.testnet')) throw new Error(`refusing ${router}: testnet only`);
 
 // The same settings `scripts/demo.sh` runs with. Set before near.ts is imported: it reads NEAR_RPCS once.
@@ -122,6 +125,9 @@ function pruneOldRuns(keep = 3) {
 async function guard(): Promise<string | null> {
   const keeper = await balanceOf(keeperId!).catch(() => null);
   if (keeper != null && keeper < minKeeperYocto) return `keeper ${keeperId} is down to ${near(keeper)} NEAR (floor ${near(minKeeperYocto)})`;
+  // The agents' gas (about 1.3 NEAR an hour at 12 spores on 2026-11-13).
+  const operator = await balanceOf(operatorId!).catch(() => null);
+  if (operator != null && operator < minOperatorYocto) return `operator ${operatorId} is down to ${near(operator)} NEAR (floor ${near(minOperatorYocto)})`;
   const fs = statfsSync(ROOT);
   if (fs.bavail * fs.bsize < minFreeBytes) return `disk has ${(fs.bavail * fs.bsize / 2 ** 30).toFixed(2)} GiB free (floor ${(minFreeBytes / 2 ** 30).toFixed(2)})`;
   return null;
@@ -203,7 +209,7 @@ async function cycle(): Promise<string | null> {
     }
     writeFileSync(
       join(AUTO, 'status.json'),
-      JSON.stringify({ pid: process.pid, run: runName, router, spores, epoch, seconds_past_end: lateS, keeper_near: near(await balanceOf(keeperId!).catch(() => null)), restarts_10min: restarts.length, cycle_ends: new Date(until).toISOString(), at: new Date().toISOString() }, null, 2),
+      JSON.stringify({ pid: process.pid, run: runName, router, spores, epoch, seconds_past_end: lateS, keeper_near: near(await balanceOf(keeperId!).catch(() => null)), operator_near: near(await balanceOf(operatorId!).catch(() => null)), restarts_10min: restarts.length, cycle_ends: new Date(until).toISOString(), at: new Date().toISOString() }, null, 2),
     );
   }
   await stopAll();
@@ -217,7 +223,7 @@ async function main() {
   };
   process.on('SIGTERM', quit);
   process.on('SIGINT', quit);
-  say(`auto started: router ${router}, ${sporeCount} spores, cycles of ${cycleMs / 3_600_000} h, floors ${near(minKeeperYocto)} NEAR / ${(minFreeBytes / 2 ** 30).toFixed(2)} GiB`);
+  say(`auto started: router ${router}, ${sporeCount} spores, cycles of ${cycleMs / 3_600_000} h, floors keeper ${near(minKeeperYocto)} NEAR, operator ${near(minOperatorYocto)} NEAR, disk ${(minFreeBytes / 2 ** 30).toFixed(2)} GiB`);
   // On a platform that restarts crashed workers, exiting would just restart into the same stop:
   // AUTO_HOLD_ON_STOP=1 idles instead, spends nothing, and resumes once the floors are met again.
   const hold = process.env.AUTO_HOLD_ON_STOP === '1';
