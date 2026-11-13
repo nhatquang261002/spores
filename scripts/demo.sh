@@ -123,12 +123,12 @@ install_deps agents
 cargo build --release -q -p spores-renderer -p spores-sim -p spores-verify > out/demo/build.log 2>&1 || die "cargo build failed, see out/demo/build.log"
 ok "renderer, sim and verify built"
 
-PLAN=$(ROUTER="$ROUTER" KEY_PREFIX=P6_,P5_ node agents/src/demo-prep.ts --spores "$SPORES")
+PLAN=$(ROUTER="$ROUTER" KEY_PREFIX=P7_ node agents/src/demo-prep.ts --spores "$SPORES")
 read -r SPORE_LIST HERO < <(node -e 'const p=JSON.parse(process.argv[1]);console.log(p.spores,p.hero)' "$PLAN")
 ok "spores $SPORE_LIST will trade; Spore #$HERO is the one to watch"
 
 RUN=demo-$(date -u +%Y%m%dT%H%M%SZ)
-export ROUTER KEY_PREFIX=P6_,P5_
+export ROUTER KEY_PREFIX=P7_
 export NEAR_RPCS=${NEAR_RPCS:-https://test.rpc.fastnear.com,https://near-testnet.drpc.org,https://testnet-rpc.intea.rs}
 export QUOTE_FANOUT=${QUOTE_FANOUT:-3} RPC_CONCURRENCY=${RPC_CONCURRENCY:-8} CONTROL_EVERY=${CONTROL_EVERY:-1000}
 export POST_EVERY=${POST_EVERY:-1} BUY_EVERY=${BUY_EVERY:-4} JOBS_PER_EPOCH=${JOBS_PER_EPOCH:-1} POLL_MS=${POLL_MS:-3000}

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Start, stop and check the open-ended supervisor (agents/src/auto.ts): the
-# keeper closes epochs and the agents trade on router4, with no one watching.
+# keeper closes epochs and the agents trade on router5, with no one watching.
 #
 #   bash scripts/auto.sh start [--spores 12] [--cycle-hours 6] [--min-keeper-near 1] [--min-free-gb 1]
 #   bash scripts/auto.sh status

@@ -12,10 +12,11 @@
 //   - the disk has less than --min-free-gb free,
 //   - a process keeps dying (more than 5 restarts in 10 minutes).
 // State for `scripts/auto.sh status`: out/auto/status.json. Log: out/auto/auto.log.
-// Keys come from .env and are never printed. Testnet only: ROUTER is router4's.
+// Keys come from .env and are never printed. Testnet only: ROUTER is PHASE5_ROUTER_ACCOUNT_ID (router5 since 2026-11-13).
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
-import { appendFileSync, createWriteStream, readdirSync, readFileSync, rmSync, statfsSync, writeFileSync } from 'node:fs';
+import { appendFileSync, createWriteStream, existsSync, readdirSync, readFileSync, rmSync, statfsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { createServer } from 'node:net';
 import { promisify } from 'node:util';
 import { appendJsonl, ensureDir, parseIds, writeControl } from './common.ts';
 
@@ -63,7 +64,7 @@ const runEnv: Record<string, string> = {
   ...(process.env as Record<string, string>),
   ...dotenv,
   ROUTER: router,
-  KEY_PREFIX: 'P6_,P5_',
+  KEY_PREFIX: 'P7_', // router5's keys (P6_/P5_ target router4)
   NEAR_RPCS: process.env.NEAR_RPCS ?? 'https://test.rpc.fastnear.com,https://near-testnet.drpc.org,https://testnet-rpc.intea.rs',
   QUOTE_FANOUT: process.env.QUOTE_FANOUT ?? '3',
   RPC_CONCURRENCY: process.env.RPC_CONCURRENCY ?? '8',
@@ -75,6 +76,7 @@ const runEnv: Record<string, string> = {
   SEED: '1',
   EPOCHS: '1000000000', // the keeper exits after EPOCHS closes: effectively never
   KEEPER_ACCOUNT_ID: keeperId,
+  AUTO_PARENT_PID: String(process.pid), // children exit when this process is gone (common.ts)
 };
 process.env.NEAR_RPCS = runEnv.NEAR_RPCS;
 const { balanceOf, view } = await import('./near.ts');
@@ -124,6 +126,19 @@ async function guard(): Promise<string | null> {
   return null;
 }
 
+/** The first port from `from` that nothing listens on, tested the way `outside` listens (all interfaces). */
+function freePort(from: number): Promise<number> {
+  return new Promise((resolvePort) => {
+    const probe = (port: number) => {
+      const s = createServer();
+      s.once('error', () => probe(port + 1));
+      s.once('listening', () => s.close(() => resolvePort(port)));
+      s.listen(port);
+    };
+    probe(from);
+  });
+}
+
 async function cycle(): Promise<string | null> {
   const { stdout } = await execFileAsync(process.execPath, [join(ROOT, 'agents/src/demo-prep.ts'), '--spores', String(sporeCount)], { env: runEnv, cwd: ROOT, timeout: 600_000 }).catch((e) => {
     throw new Error(`demo-prep failed: ${String(e.stderr ?? e.message).trim().split('\n').slice(-3).join(' | ')}`);
@@ -136,6 +151,10 @@ async function cycle(): Promise<string | null> {
   writeControl(runDir, { killed: [], raise: {}, cut: [] });
   runEnv.SPORES = spores.join(',');
   runEnv.OUTSIDE_LOG = join(runDir, 'outside.jsonl');
+  // 8787 is often taken (another project held it on 2026-11-12 and `outside` died 5 times): take the first free port.
+  const port = await freePort(8787);
+  runEnv.PORT = String(port);
+  runEnv.OUTSIDE_URL = `http://127.0.0.1:${port}`;
   const events = join(runDir, 'events.jsonl');
   const startInfo = await view(router!, 'epoch_info');
   writeFileSync(join(runDir, 'run.json'), JSON.stringify({ run: runName, router, spores, epochs: null, seed: '1', shocks: '', start_epoch: startInfo.epoch, auto: true }, null, 2));

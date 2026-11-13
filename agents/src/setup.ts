@@ -54,7 +54,10 @@ for (const line of readFileSync(ENV_FILE, 'utf8').split('\n')) {
 
 const PHASE6 = process.env.SETUP_PHASE === '6';
 const PHASE5 = process.env.SETUP_PHASE === '5' || PHASE6;
-const KP = PHASE5 ? 'P5_' : '';
+// SETUP_KEY_PREFIX (e.g. P7_) gives a fresh router its own keys: the P5_/P6_ keys on the operators target router4.
+const KEY_PREFIX_OVERRIDE = process.env.SETUP_KEY_PREFIX;
+const KP = KEY_PREFIX_OVERRIDE ?? (PHASE5 ? 'P5_' : '');
+const P6K = KEY_PREFIX_OVERRIDE ?? 'P6_';
 const PARENT = env.SPORES_PARENT_ACCOUNT_ID;
 const ROUTER_VAR = PHASE5 ? 'PHASE5_ROUTER_ACCOUNT_ID' : 'PHASE4_ROUTER_ACCOUNT_ID';
 const ROUTER_KEY_VAR = PHASE5 ? 'PHASE5_ROUTER_PRIVATE_KEY' : 'PHASE4_ROUTER_PRIVATE_KEY';
@@ -240,12 +243,12 @@ async function phase6() {
 
   // 5. Function-call keys for the spores that have none on the operator account.
   const keys = await operatorKeys(OPERATOR);
-  const hasKey = (id: number) => ['P6_', 'P5_'].some((p) => env[`${p}SPORE_${id}_FC_PRIVATE_KEY`] && keys.has(KeyPair.fromString(env[`${p}SPORE_${id}_FC_PRIVATE_KEY`] as any).getPublicKey().toString()));
+  const hasKey = (id: number) => (KEY_PREFIX_OVERRIDE ? [KEY_PREFIX_OVERRIDE] : ['P6_', 'P5_']).some((p) => env[`${p}SPORE_${id}_FC_PRIVATE_KEY`] && keys.has(KeyPair.fromString(env[`${p}SPORE_${id}_FC_PRIVATE_KEY`] as any).getPublicKey().toString()));
   const needKeys = Array.from({ length: MAX_ACTIVE }, (_, id) => id).filter((id) => id !== 5 && !hasKey(id));
   if (needKeys.length) {
     const fresh = needKeys.map((id) => {
       const kp = KeyPair.fromRandom('ed25519');
-      saveEnv(`P6_SPORE_${id}_FC_PRIVATE_KEY`, kp.toString());
+      saveEnv(`${P6K}SPORE_${id}_FC_PRIVATE_KEY`, kp.toString());
       return kp.getPublicKey();
     });
     for (let i = 0; i < fresh.length; i += 50) {
@@ -255,10 +258,10 @@ async function phase6() {
   } else console.log('skip | every spore has a function-call key on chain');
   // The keeper's key: a 300 Tgas close holds about 0.03 NEAR of allowance.
   const deployerKeys = await operatorKeys(DEPLOYER);
-  if (env.P6_KEEPER_FC_PRIVATE_KEY && deployerKeys.has(KeyPair.fromString(env.P6_KEEPER_FC_PRIVATE_KEY as any).getPublicKey().toString())) console.log('skip | P6_ keeper key on chain');
+  if (env[`${P6K}KEEPER_FC_PRIVATE_KEY`] && deployerKeys.has(KeyPair.fromString(env[`${P6K}KEEPER_FC_PRIVATE_KEY`] as any).getPublicKey().toString())) console.log('skip | P6_ keeper key on chain');
   else {
     const kp = KeyPair.fromRandom('ed25519');
-    saveEnv('P6_KEEPER_FC_PRIVATE_KEY', kp.toString());
+    saveEnv(`${P6K}KEEPER_FC_PRIVATE_KEY`, kp.toString());
     check(`P6_ keeper FC key on ${DEPLOYER} (${KEEPER_METHODS.join(', ')}, 5 NEAR allowance)`, await deployer.send(DEPLOYER, [actions.addFunctionCallAccessKey(kp.getPublicKey(), ROUTER, KEEPER_METHODS, nearToYocto('5'))]));
   }
 
@@ -411,7 +414,7 @@ async function main() {
     check(`keeper FC key on ${DEPLOYER} (${KEEPER_METHODS.join(', ')})`, await deployer.send(DEPLOYER, [actions.addFunctionCallAccessKey(kp.getPublicKey(), ROUTER, KEEPER_METHODS, KEY_ALLOWANCE)]));
   }
   if (PHASE5) {
-    const v = 'P5_OPERATOR2_FC_PRIVATE_KEY';
+    const v = `${KP}OPERATOR2_FC_PRIVATE_KEY`;
     const op2Keys = await operatorKeys(OPERATOR2);
     if (env[v] && op2Keys.has(KeyPair.fromString(env[v] as any).getPublicKey().toString())) console.log(`skip | ${v} on chain`);
     else {

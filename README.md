@@ -257,7 +257,7 @@ With the living allowance the router enforces:
 
 ### On chain
 
-All on `spores-hack-router4.testnet`, epochs 1 to 63. `node scripts/chain-stats.mjs` reproduces the chain figures from public RPC, with no keys.
+All on `spores-hack-router4.testnet` (the evidence router; the live one is router5), epochs 1 to 63. `node scripts/chain-stats.mjs` reproduces the chain figures from public RPC, with no keys.
 
 | Stat | Value |
 | --- | --- |
@@ -277,7 +277,8 @@ All on `spores-hack-router4.testnet`, epochs 1 to 63. `node scripts/chain-stats.
 
 | Account | Role |
 | --- | --- |
-| [`spores-hack-router4.testnet`](https://testnet.nearblocks.io/address/spores-hack-router4.testnet) | **The current router.** 64 spores, all active. Wasm sha256 `b82f4dcd37484fca2b58638aff7d1b939baf882891b2dedb31084de84db2f1c5`, which this tree rebuilds to and the on-chain code hash matches |
+| [`spores-hack-router5.testnet`](https://testnet.nearblocks.io/address/spores-hack-router5.testnet) | **The live router** (fresh account, created 2026-11-13; the hosted app's LIVE view reads it). 64 spores, all active, same wasm as router4. It started at epoch 1 with an empty graph, and its history isn't in any figure on this page |
+| [`spores-hack-router4.testnet`](https://testnet.nearblocks.io/address/spores-hack-router4.testnet) | **The evidence router.** Every figure, recording and `verify` run on this page is from it: 64 spores, epochs 1 to 63. Wasm sha256 `b82f4dcd37484fca2b58638aff7d1b939baf882891b2dedb31084de84db2f1c5`, which this tree rebuilds to and the on-chain code hash matches. Its trading graph was left empty on 2026-11-12, when an unattended run lost its `outside` service and the keeper went on closing idle epochs (each close decays every edge by 25%); the committed recordings and its close list are unaffected |
 | `router3.spores-hack.testnet`, `spores-hack-router2.testnet`, `spores-hack-router.testnet` | Earlier routers, kept as evidence for the earlier runs (one abandoned) |
 | `deployer.spores-hack.testnet` | Admin, keeper and royalty account |
 | `owner.spores-hack.testnet`, `buyer.spores-hack.testnet` | Seller and buyer in the sales. We control both, so no sale here is a market price |

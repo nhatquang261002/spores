@@ -537,7 +537,7 @@ describe('My Spores and the wallet menu', () => {
     await renderAt('/mine', fakeRouter().router, fakeWallet(OTHER));
     await connect();
     await settle();
-    expect(screen.getByText(`${OTHER} owns no spores on router4`)).toBeTruthy();
+    expect(screen.getByText(`${OTHER} owns no spores on router5`)).toBeTruthy();
     expect(localStorage.getItem('spores.wallet')).toBe('1');
     fireEvent.click(screen.getAllByRole('button', { name: OTHER })[0]);
     fireEvent.click(screen.getByRole('menuitem', { name: 'Disconnect' }));

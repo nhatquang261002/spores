@@ -50,7 +50,7 @@ describe('shell', () => {
     await renderApp('/network', fakeRouter(async () => info(26, now - 10_000, now + 20_000)));
     expect(screen.getByText('E 26')).toBeTruthy();
     expect(screen.getAllByText('LIVE').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/testnet · router4/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/testnet · router5/).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: 'Network' })[0].getAttribute('href')).toBe('/network');
   });
 

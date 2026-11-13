@@ -2,7 +2,7 @@
 // persists across navigation (Design §5.1), and its labels (Design §4.1).
 import type { Source } from '../model/types';
 
-export const DEFAULT_ROUTER: string = import.meta.env?.VITE_ROUTER || 'spores-hack-router4.testnet';
+export const DEFAULT_ROUTER: string = import.meta.env?.VITE_ROUTER || 'spores-hack-router5.testnet';
 
 const RUN_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 

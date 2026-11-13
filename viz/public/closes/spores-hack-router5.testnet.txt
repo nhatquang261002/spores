@@ -1,0 +1,1 @@
+# close tx hashes for spores-hack-router5.testnet, one per line (router4 history: spores-hack-router4.testnet.txt)

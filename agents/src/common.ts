@@ -30,7 +30,25 @@ export interface RunConfig {
   postEvery: number;
 }
 
+/**
+ * Under `auto.ts`: when the supervisor is gone (killed, not stopped), exit too.
+ * A keeper left running with no agents closes idle epochs, and every close
+ * decays every edge by 25%: 28 of them emptied router4's graph on 2026-11-12.
+ */
+function exitWithSupervisor() {
+  const parent = Number(process.env.AUTO_PARENT_PID);
+  if (!parent) return;
+  setInterval(() => {
+    try {
+      process.kill(parent, 0);
+    } catch {
+      process.exit(0);
+    }
+  }, 3_000).unref();
+}
+
 export function loadConfig(): RunConfig {
+  exitWithSupervisor();
   const need = (k: string) => {
     const v = process.env[k];
     if (!v) throw new Error(`missing env ${k}`);
