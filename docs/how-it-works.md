@@ -293,7 +293,7 @@ All on testnet; admin `deployer.spores-hack.testnet`.
 
 | Router | Use | Wasm sha256 |
 | --- | --- | --- |
-| `spores-hack-router5.testnet` | **Live** (2026-11-13). A fresh account on the same wasm, 64 spores active, epoch 1 on an empty graph; the hosted app's LIVE view reads it. Nothing in this document's evidence comes from it | `b82f4dcd37484fca2b58638aff7d1b939baf882891b2dedb31084de84db2f1c5` (setup found it already running this wasm) |
+| `spores-hack-router5.testnet` | **Live** (2026-11-13). A fresh account on the same wasm with 150 s epochs (state wiped in place with NEAR's state-cleanup contract and set up again the same day), 64 spores active, epoch 1 on an empty graph; the hosted app's LIVE view reads it. Nothing in this document's evidence comes from it | `b82f4dcd37484fca2b58638aff7d1b939baf882891b2dedb31084de84db2f1c5` (setup found it already running this wasm) |
 | `spores-hack-router4.testnet` | **Evidence.** Phase 5 exit run (14/14) and Phase 6 (64 active), 63 epochs | `b82f4dcd37484fca2b58638aff7d1b939baf882891b2dedb31084de84db2f1c5`. This tree rebuilds to it, and it matches the on-chain `code_hash`. Epochs 1–8 ran on `9d2238e0…` and 9–16 on `640c093f…`, before code-only redeploys; `verify` matches across all three builds |
 | `router3.spores-hack.testnet` | Phase 4 exit run (6/6) | `418b3f0c…` |
 | `spores-hack-router2.testnet` | Phase 3 exit run (83/83) | `0dc71d70…` |

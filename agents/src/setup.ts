@@ -75,6 +75,8 @@ const ROUTER_FUNDING = nearToYocto(process.env.ROUTER_FUNDING ?? '5.8');
 const SPORE_DEPOSIT = nearToYocto(process.env.SPORE_DEPOSIT ?? '0.5');
 const OP_METHODS = ['post_job', 'quote', 'accept', 'deliver', 'settle', 'reject', 'timeout_job', 'pay_service'];
 const KEY_ALLOWANCE = nearToYocto('1');
+const EPOCH_LEN_S = Number(process.env.EPOCH_LEN_S ?? 30);
+if (!Number.isInteger(EPOCH_LEN_S) || EPOCH_LEN_S <= 0) throw new Error('EPOCH_LEN_S must be a positive whole number of seconds');
 const GAS_RESERVE = nearToYocto('0.05');
 const fmt = (y: bigint) => (Number(y / 10n ** 18n) / 1e6).toFixed(3);
 
@@ -355,7 +357,8 @@ async function main() {
     const wasm = readFileSync(join(ROOT, 'target/near/spores_router/spores_router.wasm'));
     const config = {
       supply_cap: 64, max_active: 16,
-      epoch_len_ns: '30000000000', job_timeout_ns: '60000000000',
+      // EPOCH_LEN_S (default 30) sets the epoch; the job timeout stays twice it. Router5 runs 150 s since its reset on 2026-11-13.
+      epoch_len_ns: String(BigInt(EPOCH_LEN_S) * 1_000_000_000n), job_timeout_ns: String(BigInt(EPOCH_LEN_S) * 2_000_000_000n),
       min_activation_deposit: '100000000000000000000000',
       decay_bps: 2500, gain: '1000000', k: '100000000000000000000000', d_min: '50000',
       fee_bps: 100, rebate_bps: 5000, breadth_full: 4, reject_bps: 5000,
@@ -430,7 +433,18 @@ async function main() {
 
 async function operatorKeys(account: string): Promise<Set<string>> {
   const r = await rpc('query', { request_type: 'view_access_key_list', finality: 'final', account_id: account });
-  return new Set((r.result?.keys ?? []).map((k: any) => k.public_key));
+  if (r.result) return new Set(r.result.keys.map((k: any) => k.public_key));
+  // Over 100 keys the list is refused (TOO_MANY_ACCESS_KEYS, operator on 2026-11-13), and an empty
+  // set here made setup add duplicate keys: look up each function-call key in .env one by one instead.
+  if (r.error?.cause?.name !== 'TOO_MANY_ACCESS_KEYS') throw new Error(`view_access_key_list ${account}: ${JSON.stringify(r.error ?? r).slice(0, 200)}`);
+  const found = new Set<string>();
+  for (const [k, v] of Object.entries(env)) {
+    if (!k.endsWith('_FC_PRIVATE_KEY') || (KEY_PREFIX_OVERRIDE && !k.startsWith(KEY_PREFIX_OVERRIDE))) continue;
+    const pk = KeyPair.fromString(v as any).getPublicKey().toString();
+    const one = await rpc('query', { request_type: 'view_access_key', finality: 'final', account_id: account, public_key: pk });
+    if (one.result) found.add(pk);
+  }
+  return found;
 }
 
 main().catch((e) => {
