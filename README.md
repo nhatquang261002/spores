@@ -1,14 +1,10 @@
 # Spores
 
-> **DRAFT until the last `TODO` is gone.** Everything else here comes from real runs. The `TODO` left needs the author: the demo post. Do not publish this file with TODOs left in.
-
 **Living slime-mold NFTs whose agents trade on NEAR, and whose art is their trading history.**
 
 Built for NEAR HACKATHON · Tracks: `nfts` (main), `security`, `agents`, `swarms` · NEAR testnet · MIT
 
 **Live demo: [spores-five.vercel.app](https://spores-five.vercel.app)**. Nothing to install: [watch the recorded loop](https://spores-five.vercel.app/lab/loop?source=recorded&run=demo-20261106T101440Z&date=2026-11-06), then press **Check it against the chain**.
-
-<!-- TODO (author supplies): link to the public demo post on X. -->
 
 | Epoch 2 | Age 16 | Age 57 |
 | --- | --- | --- |
