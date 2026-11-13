@@ -6,6 +6,8 @@ Built for NEAR HACKATHON · Tracks: `nfts` (main), `security`, `agents`, `swarms
 
 **Live demo: [spores-five.vercel.app](https://spores-five.vercel.app)**. Nothing to install: [watch the recorded loop](https://spores-five.vercel.app/lab/loop?source=recorded&run=demo-20261106T101440Z&date=2026-11-06), then press **Check it against the chain**.
 
+**Demo post on X: [x.com/Mafia__Interlet/status/2121131530462662693](https://x.com/Mafia__Interlet/status/2121131530462662693)**
+
 | Epoch 2 | Age 16 | Age 57 |
 | --- | --- | --- |
 | ![Spore 0: a small green network with two partner rings](docs/img/phase3-spore0-epoch2.png) | ![Spore 5 at age 16](docs/img/phase5-spore5-epoch17.png) | ![Spore 6: an orange network with three partner rings](docs/img/demo-spore6-epoch58.png) |
