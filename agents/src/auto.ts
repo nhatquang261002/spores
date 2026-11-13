@@ -95,6 +95,7 @@ const near = (y: bigint | null) => (y == null ? 'unknown' : (Number(y / 10n ** 2
 let stopping = false;
 let children = new Map<string, { p: ChildProcess; script: string; extra: Record<string, string>; log: string }>();
 let restarts: number[] = [];
+let keeperKilledAt: number | null = null;
 
 function start(runDir: string, name: string, script: string, extra: Record<string, string> = {}) {
   const log = join(runDir, `${name}.log`);
@@ -171,7 +172,7 @@ async function cycle(): Promise<string | null> {
     const why = await guard();
     if (why) return why;
     for (const [name, c] of children) {
-      if (c.p.exitCode == null) continue;
+      if (c.p.exitCode == null && c.p.signalCode == null) continue; // a child killed by a signal has exitCode null
       const now = Date.now();
       restarts = restarts.filter((t) => now - t < 600_000);
       if (restarts.length >= 5) return `${name} keeps dying (exit ${c.p.exitCode}); last log lines in ${c.log}`;
@@ -188,6 +189,15 @@ async function cycle(): Promise<string | null> {
       epoch = info.epoch;
       lateS = Math.max(0, Math.round((Date.now() * 1e6 - Number(info.ends_ns)) / 1e9));
       if (lateS > 180) say(`epoch ${epoch} ended ${lateS} s ago and no close has landed`);
+      // The keeper has hung with a close overdue (epochs 8 and 78 on router5, 2026-11-13): kill it, and the loop above restarts it.
+      if (lateS > 90) {
+        const k = children.get('keeper');
+        if (k && k.p.exitCode == null && k.p.signalCode == null && Date.now() - (keeperKilledAt ?? 0) > 120_000) {
+          say(`epoch ${epoch} is ${lateS} s overdue: restarting the keeper`);
+          keeperKilledAt = Date.now();
+          k.p.kill('SIGKILL');
+        }
+      }
     } catch {
       /* RPC blip: the next tick looks again */
     }
